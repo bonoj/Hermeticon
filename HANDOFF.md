@@ -1,29 +1,43 @@
-# Wanderer handoff
+# Hermeticon — operational handoff
 
 ## Where to work
 
-- Authoritative standalone source: `bonoj/Hermeticon/index.html`.
-- Pages workflow: `.github/workflows/pages.yml`; public URL: `https://bonoj.github.io/Hermeticon/`.
-- Original JIT source: `bonoj/Repository/src/jit/hermeticon-wanderer/index.html`; **do not edit it as part of Hermeticon work**.
-- Original JIT public page: `https://bonoj.github.io/jit/hermeticon-wanderer/?terrain=authored-v1`.
-- Gate: `bonoj/Gate/README.md`. Read before delivery. This repo's direct Actions publication is a new route, not the old two-repository JIT route.
+- **Authoritative implementation:** `bonoj/Hermeticon/examples/wanderer-separated/`. `world.js` owns world behavior and still includes some camera/UI coupling; `interface.css` owns styling; `errors.js` owns error capture; `index.html` is the example entry.
+- **Primary public entrance:** https://bonoj.github.io/Hermeticon/ . Root `index.html` is an entry pointing to those shared assets, **not** a second world implementation.
+- **Secondary fixture:** https://bonoj.github.io/Hermeticon/examples/wanderer-separated/ . Keep operational.
+- **Archived original:** `archive/legacy-monolith/index.html`. Historical reference only; do not overwrite, resurrect, or publish it as the root.
+- **Publisher:** `.github/workflows/pages.yml`, GitHub Pages via Actions on `main`.
+- **Original JIT ancestor:** `bonoj/Repository/src/jit/hermeticon-wanderer/index.html`, source commit `f8fd252ca4abb91f7ca7c445197944a044df2173`. Do not change its code or deployment during Hermeticon work.
+- **Delivery guardrails:** read `bonoj/Gate/README.md` before publication changes. This repo uses direct Pages Actions, not the older two-repository JIT path.
 
-## Baseline
+## World contracts
 
-Cloned from JIT source commit `f8fd252ca4abb91f7ca7c445197944a044df2173`, including individual pumpkin micro ownership on Crucible wall contact. The initial standalone clone deliberately preserves the original monolithic HTML and source-provenance BUILD label. Do not infer that this BUILD label changes on subsequent commits.
+- Physical Crucible contact transfers matter ownership; proximity or spawning alone does not.
+- Thump affects vessel-owned material regardless of height; do not restore spatial eligibility filters.
+- Micro and macro material must not gain ownership merely through fracture.
+- Keep terrain collision/tunneling improvements distinct from ownership changes.
+- Preserve conservation, instrumentation, deterministic/reproducible behavior where present, phone-first controls, and large reliable tap targets.
+- Do not casually rewrite physics, camera, controls, or UI while fixing deployment. Prove parity for changes that cross boundaries.
+- The original monolith is historical evidence, **not** the current runtime baseline. The separated example and root must execute the same world assets.
 
-## Important contracts
+## Build identity and deployment
 
-- Physical Crucible contact transfers matter ownership; mere proximity or spawning does not.
-- Thump affects vessel-owned material regardless of height. Do not reintroduce spatial eligibility filters.
-- Micro material and macro material must not acquire ownership merely through fracture.
-- Keep terrain collision/tunneling improvements separate from ownership.
-- Preserve conservation, instrumentation, phone-first controls, and deterministic/reproducible behavior where present.
+`Publish Hermeticon` assembles `site/`, stamps the current full `github.sha` into `examples/wanderer-separated/world.js`, displays its first eight characters, and adds `?v=<full SHA>` to both entries' references to `world.js`, `interface.css`, and `errors.js`. It also writes `build.json` and `examples/wanderer-separated/release.json`. The static source version of `world.js` is intentionally unverified before stamping. Do not display an ancestral SHA as the live build.
 
-## Delivery and verification
+Expected public URLs (never use a `/releases/<sha>/index.html` link):
+- https://bonoj.github.io/Hermeticon/
+- https://bonoj.github.io/Hermeticon/examples/wanderer-separated/
 
-A push to `main` triggers `Publish Hermeticon`. Check the Actions run, Pages deployment, and actual public HTML before claiming live. The clone should match the JIT source byte-for-byte except for replacing `__WANDERER_SOURCE_SHA__` with the originating commit SHA.
+A successful source commit alone does not establish publication. Inspect the latest **push** run of `Publish Hermeticon` and its steps, then verify both public HTML entries reference the expected SHA-stamped assets; where possible, verify the executing build and behavior. A missing PR-filtered workflow result is **not** proof of success or failure. Be precise about what was and wasn't verified.
 
-## Future work
+## Failure and retry: never dead-end
 
-Gradually apply established standardized tooling without turning graduation into a physics rewrite. When modularizing, prove behavior parity first.
+1. Identify the failed step in the latest Actions run; obtain job logs when available. Do not infer a cause from a stale browser view.
+2. If assembly fails, fix its actual source/asset/assertion issue. If deploy fails, inspect Pages permissions/environment and job error. If public verification fails, compare the deployed HTML/build SHA with the expected SHA; distinguish CDN delay from a failed deployment.
+3. Fix the smallest responsible seam; keep both entry points and existing publication path intact. Push the repair to `main` (automatically triggers a fresh run), or rerun the workflow with `workflow_dispatch` when appropriate. **A previous failed run is not a prerequisite and must never block a new attempt.**
+4. New commits should supersede older queued/in-progress builds. Do not stack speculative workflow rewrites, invent release URLs, or ask the user to repeatedly refresh.
+5. If verification remains unavailable, say so; do not claim `live` until actual public evidence exists. Continue retrying by diagnosing the next concrete failure, not by waiting indefinitely.
+
+## Next development
+
+Favor small composable changes in the shared example. Avoid duplicated code and document any change to the deployment contract here and in the root README.
