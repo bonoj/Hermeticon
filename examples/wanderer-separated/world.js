@@ -1001,13 +1001,11 @@ const fireButton=document.querySelector('#fire'),FIRE_X=-1.1,FIRE_Z=6.1,FIRE_N=4
 function hearthAperture(material){
  material.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vHearthAperture;');
-  shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;');
-  // Instanced beads need their per-instance transform in the aperture witness.
-  shader.vertexShader=shader.vertexShader.replace('vHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;','vHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;\n#ifdef USE_INSTANCING\nvHearthAperture=(modelMatrix * instanceMatrix * vec4(transformed,1.0)).xyz;\n#endif');
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;\n#ifdef USE_INSTANCING\nvHearthAperture=(modelMatrix * instanceMatrix * vec4(transformed,1.0)).xyz;\n#endif');
   shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHearthAperture;');
   shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vHearthAperture,vHearthAperture)>9.72*9.72) discard;');
  };
- material.customProgramCacheKey=()=> 'hearth-aperture-v1';
+ material.customProgramCacheKey=()=> 'hearth-aperture-v2';
  return material;
 }
 const fireMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.055,0),hearthAperture(new T.MeshBasicMaterial({color:0xffffff})),FIRE_N);
@@ -1023,8 +1021,8 @@ setFireMode(1);fireButton.addEventListener('click',()=>{if(wanderEye.state==='id
 function fireStep(dt){
  fire.time+=dt;const target=[.06,1,2.1][fire.mode];fire.energy+=(target-fire.energy)*Math.min(1,dt*(fire.mode===0?1.6:2.7));
  const ground=walkSurface(FIRE_X,FIRE_Z),x=FIRE_X-wanderX,z=FIRE_Z-wanderZ,y=ground??1;
- const inside=ground!==null&&x*x+z*z+(y+3)**2<(R-.4)**2;
- fireRoot.visible=inside;fireMesh.visible=inside;if(!inside)return;
+ // The shared aperture clips individual fragments; never gate the entire hearth by its anchor.
+ fireRoot.visible=ground!==null;fireMesh.visible=ground!==null;if(ground===null)return;
  fireRoot.position.set(x,y,z);
  for(let i=0;i<FIRE_N;i++){
   const strand=i%6,slot=Math.floor(i/6),u=(slot/80+fire.time*(.17+.012*strand))%1;
