@@ -1,12 +1,14 @@
-# Wanderer mechanical separation — parity fixture
+# Wanderer — shared implementation and retained example
 
-This fixture is a mechanical extraction of the current root `index.html`, without rewriting its logic.
+This directory began as a mechanical extraction of the original Hermeticon monolith. It is **now the authoritative application source** for both the root Hermeticon entrance and this preserved example. The original monolith is archived at `archive/legacy-monolith/index.html`.
 
-- `index.html`: original DOM and element order; references external files
-- `interface.css`: original CSS, byte-for-byte extracted
-- `errors.js`: original global error capture, byte-for-byte extracted
-- `world.js`: original module script, byte-for-byte extracted (still mixes world, camera, and UI logic)
+- `index.html`: example entry, using local assets.
+- `interface.css`: shared interface styles.
+- `errors.js`: shared error capture.
+- `world.js`: shared simulation, rendering, camera, controls, and UI logic.
 
-**Important:** This is *file separation*, not yet a clean behavioral boundary. Camera and controls remain coupled inside `world.js`; do not claim otherwise. It exists to compare against the unchanged root Wanderer before any further extraction. No new camera, physics, or interface implementations were invented.
+The root `/index.html` references these same assets via `./examples/wanderer-separated/`; **do not fork the implementation into the root**. File separation does not yet imply clean behavioral separation: world, camera, and UI remain coupled in `world.js`. Preserve their behavior during future refactoring.
 
-Build display in this fixture remains inherited from the original module; it is **not** the live Hermeticon commit SHA. Root Wanderer is untouched. The next task is parity testing and identifying safe, small seams for camera and controls.
+The Pages workflow stamps the deployed commit SHA into `world.js` and cache-busts asset references for **both** entry points. The build number on the live page is the first eight characters of the deployed Hermeticon commit, not the original JIT source commit. The unstamped repository source is not itself a deployed build.
+
+For publication, failure recovery, and engineering contracts, see the root `README.md` and `HANDOFF.md`. Both URLs must stay functional.
