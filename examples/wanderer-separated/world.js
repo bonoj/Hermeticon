@@ -1398,9 +1398,27 @@ function inspectSpatialEyes(){
  const summarize=(kind)=>{
   let peak={count:0,elevation:0,azimuth:0};
   for(let e=0;e<elevations;e++)for(let a=0;a<azimuths;a++)if(grids[kind][e][a]>peak.count)peak={count:grids[kind][e][a],elevation:e,azimuth:a};
-  return {count:totals[kind],nearWall:wall[kind],interior:interior[kind],moving:moving[kind],meanSpeed:round(velocity[kind]/(totals[kind]||1),3),angularY:round(angular[kind],2),peakSector:peak,occupancy:grids[kind],projectedCount:projected[kind],screenOccupancy:screens[kind]};
+  return {count:totals[kind],nearWall:wall[kind],interior:interior[kind],moving:moving[kind],meanSpeed:round(velocity[kind]/(totals[kind]||1),3),angularY:round(angular[kind],2),peakSector:peak,occupiedSectors:grids[kind].flatMap((row,e)=>row.flatMap((count,a)=>count?[[e,a,count]]:[])),projectedCount:projected[kind],occupiedScreenCells:screens[kind].flatMap((row,y)=>row.flatMap((count,x)=>count?[[x,y,count]]:[]))};
  };
  return {frame:'Crucible-centered; elevation 0 is bottom pole, 11 near equator; azimuth 0..23 around vertical axis',shape:[elevations,azimuths],screen:{shape:[screenSize,screenSize],resolution:[W,H],origin:'top-left',cameraPosition:camera.position.toArray().map(n=>round(n,3)),cameraTarget:[0,round(targetY,3),0]},materials:Object.fromEntries(names.map((name,i)=>[name,summarize(i)])),limits:'Projected samples are not pixels: no occlusion, lighting, or depth visibility test; counts cover bowl-contained emitted rain and pumpkin micros; sampled on Inspect only'};
+}
+// Hearth witness: CPU-projected carrier positions, not GPU pixels or occlusion.
+function inspectFire(){
+ const ground=walkSurface(FIRE_X,FIRE_Z),x=FIRE_X-wanderX,z=FIRE_Z-wanderZ,y=ground??null;
+ const W=renderer.domElement.width,H=renderer.domElement.height;
+ camera.updateMatrixWorld(true);
+ const point=new T.Vector3(),bounds={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity},samples=[];
+ let inFrame=0,inFront=0;
+ for(let i=0;i<fireMesh.count;i++){
+  fireMesh.getMatrixAt(i,fireDummy.matrix);fireDummy.matrix.decompose(point,fireDummy.quaternion,fireDummy.scale);
+  point.project(camera);if(point.z< -1||point.z>1)continue;inFront++;
+  if(Math.abs(point.x)>1||Math.abs(point.y)>1)continue;inFrame++;
+  const px=(point.x+1)*W/2,py=(1-point.y)*H/2;
+  bounds.minX=Math.min(bounds.minX,px);bounds.maxX=Math.max(bounds.maxX,px);
+  bounds.minY=Math.min(bounds.minY,py);bounds.maxY=Math.max(bounds.maxY,py);
+  if(samples.length<5)samples.push([round(px,1),round(py,1)]);
+ }
+ return {mode:fireModes[fire.mode],energy:round(fire.energy,3),worldAnchor:[FIRE_X,ground===null?null:round(ground,3),FIRE_Z],sceneAnchor:[round(x,3),y===null?null:round(y,3),round(z,3)],terrainSupport:ground!==null,meshVisible:fireMesh.visible,instances:fireMesh.count,projectedInDepth:inFront,projectedInViewport:inFrame,screenBounds:inFrame?[round(bounds.minX,1),round(bounds.minY,1),round(bounds.maxX,1),round(bounds.maxY,1)]:null,screenSamples:samples,screenResolution:[W,H],limits:'Projection only. No pixel readback, depth occlusion, or lighting evidence.'};
 }
 function inspectWorld(){
  const blood=fugitive.particles.filter(p=>p.liquid).length,solid=fugitive.particles.length-blood;
@@ -1408,6 +1426,7 @@ function inspectWorld(){
   identity:{build:BUILD,fps:displayFps===null?null:round(displayFps,1),errors:telemetryErrors.slice(-4)},
   matter:{crucibleMode:fugitive.mode,owner:fugitive.owner,rendered:splatMesh.count,rainEmitted,rainActive:rainEmitted-Array.from(rainRest.subarray(0,rainEmitted)).filter(v=>v===2).length,blood:{total:PUMPKIN_LIQUID,released:blood,unreleased:PUMPKIN_LIQUID-blood},solids:{total:PUMPKIN_SOLID,released:solid,unreleased:PUMPKIN_SOLID-solid}},
   spatialEyes:inspectSpatialEyes(),
+  hearth:inspectFire(),
   interactions:{thump:{count:lowerTaps,...thumpStats},terrain:{...terrainContactStats},micro:{contacts:microStats.contacts,energyLost:round(microStats.energyLost,3),bowlImpacts:microStats.bowlImpacts},motionRecent:crucibleMotion.slice(-3)},
   events:telemetryEvents.slice(-12)
  };
