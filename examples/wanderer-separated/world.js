@@ -1375,8 +1375,17 @@ function inspectWorld(){
  };
  probeReport=JSON.stringify(report,null,2);probeText.value=probeReport;return report;
 }
-probeButton.onclick=()=>{probePanel.classList.toggle('open');if(probePanel.classList.contains('open'))inspectWorld()};
-document.querySelector('#closeProbe').onclick=()=>probePanel.classList.remove('open');
+probeButton.onclick=()=>{
+ probePanel.classList.toggle('open');
+ if(probePanel.classList.contains('open'))inspectWorld();
+ else {probePanel.classList.remove('details');detailsButton.setAttribute('aria-expanded','false');detailsButton.textContent='DETAILS ▾'}
+};
+const detailsButton=document.querySelector('#detailsProbe');
+detailsButton.onclick=()=>{
+ const expanded=probePanel.classList.toggle('details');
+ detailsButton.setAttribute('aria-expanded',String(expanded));
+ detailsButton.textContent=expanded?'DETAILS ▴':'DETAILS ▾';
+};
 const copyButton=document.querySelector('#copyProbe');
 copyButton.textContent='COPY REPORT';
 // Transfer recovery action dormant with the hidden experiment.
