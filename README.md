@@ -1,17 +1,25 @@
 # Hermeticon — Wanderer
 
-A standalone executable world. Open the GitHub Pages site at https://bonoj.github.io/Hermeticon/.
+Hermeticon is a standalone executable world. **Live entrance:** https://bonoj.github.io/Hermeticon/ . **Preserved example:** https://bonoj.github.io/Hermeticon/examples/wanderer-separated/ .
+
+## Source of truth
+
+- `examples/wanderer-separated/world.js`: running world, simulation, camera, controls, and current UI behavior.
+- `examples/wanderer-separated/interface.css`: shared interface styling.
+- `examples/wanderer-separated/errors.js`: error capture.
+- `examples/wanderer-separated/index.html`: example entry.
+- `index.html`: **thin root entry**, referencing the same example assets; do not put a second copy of the world here.
+- `archive/legacy-monolith/index.html`: original monolithic reference, preserved; never use it as the active source.
+- `.github/workflows/pages.yml`: only publication route; stamps the executing commit and verifies both public entries.
 
 ## Provenance
 
-Graduated by **cloning**, not moving, the JIT Wanderer from `bonoj/Repository/src/jit/hermeticon-wanderer/index.html` at source commit `f8fd252ca4abb91f7ca7c445197944a044df2173`. The original JIT source and its public deployment remain untouched. The clone's embedded BUILD string records this source provenance, **not** its own subsequent Hermeticon commits.
+Graduated by **cloning**, not moving, the JIT Wanderer from `bonoj/Repository/src/jit/hermeticon-wanderer/index.html` at source commit `f8fd252ca4abb91f7ca7c445197944a044df2173`. The JIT ancestor and its deployment are untouched. The current displayed eight-character BUILD is stamped from the deployed Hermeticon commit, **not** the ancestral JIT SHA.
 
-## Publication
+## Development and publication
 
-This repository is both source and deployment. GitHub Pages is configured to use GitHub Actions. On push to `main`, `.github/workflows/pages.yml` uploads and deploys the repository as a static Pages artifact. `index.html` is the standalone entrypoint. No mirror repository, bundler, or server.
+Edit the shared example assets; preserve the root entry and example as two entrances to **one** implementation. Push to `main` to trigger `Publish Hermeticon` in GitHub Actions. The workflow assembles a static `site/` artifact, stamps `world.js`, adds SHA cache-busting asset URLs to both HTML entries, and deploys to GitHub Pages. There is no mirror repository, bundler, or application server.
 
-Before changing publication mechanics, read `bonoj/Gate/README.md` and inspect current workflow and public bytes. Do not claim a build is live merely because a commit or workflow exists.
+Before changing deployment mechanics, read `bonoj/Gate/README.md`, the existing workflow, and `HANDOFF.md`. **Do not improvise a new publishing path or SHA-specific release URL.** A commit is not proof that the public build is live; verify the actual public HTML/build SHA and runtime.
 
-## Development
-
-Keep the JIT ancestor intact. Treat this copy as an independent world. Preserve physics and interaction behavior during graduation; make future architecture changes separately. See `HANDOFF.md` for the operating surface.
+**Failure is recoverable, not a lock:** a failed build, verification, or deployment does not prohibit another push or manual `workflow_dispatch` retry. Diagnose the failing step; repair and trigger a new run. New pushes supersede in-flight work; never require the user to chase refreshes or manually prove delivery. Do not report success without evidence. See `HANDOFF.md` for retry steps and engineering contracts.
