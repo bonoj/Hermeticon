@@ -677,6 +677,49 @@ function walkTarget(clientX,clientY){
  if(walker.target)walker.accepted++;else walker.rejected++;
 }
 
+// Wanderer's independent hearth expedition. The user's orbit camera is untouched.
+// On the first 🔥 tap, request a supported vantage; subsequent taps retain fire modes.
+const wanderEye={state:'idle',goal:null,forward:[0,0,1],distance:null,clear:null,terrainSamples:0};
+function sendWandererToHearth(){
+ const candidates=[];
+ for(let a=0;a<16;a++){const theta=a*Math.PI/8;for(const radius of [2.6,3.3,4.1]){
+  const x=FIRE_X+Math.cos(theta)*radius,z=FIRE_Z+Math.sin(theta)*radius;
+  if(walkSupport(x,z)===null)continue;
+  const dx=FIRE_X-x,dz=FIRE_Z-z;
+  candidates.push({x,z,score:Math.hypot(x-walker.x,z-walker.z)+radius*.3,forward:[dx/radius,dz/radius]});
+ }}
+ candidates.sort((a,b)=>a.score-b.score);
+ for(const candidate of candidates){
+  const route=walkRoute(candidate.x,candidate.z);
+  if(!route.length&&Math.hypot(candidate.x-walker.x,candidate.z-walker.z)>.25)continue;
+  walker.route=route;walker.target=walker.route.shift()??null;
+  wanderEye.goal={x:candidate.x,z:candidate.z};wanderEye.state='walking';
+  wanderEye.forward=[candidate.forward[0],0,candidate.forward[1]];
+  telemetryEvent('wander-eye-depart',JSON.stringify(wanderEye.goal));
+  return;
+ }
+ wanderEye.state='no-supported-vantage';telemetryEvent('wander-eye-blocked','no supported route');
+}
+function wanderEyeStep(){
+ if(wanderEye.state!=='walking'&&wanderEye.state!=='observing')return;
+ if(wanderEye.state==='walking'&&wanderEye.goal&&!walker.target&&walker.route.length===0){
+  if(Math.hypot(walker.x-wanderEye.goal.x,walker.z-wanderEye.goal.z)<.4){
+   wanderEye.state='observing';telemetryEvent('wander-eye-arrived','hearth');
+  }else{wanderEye.state='route-stopped';return}
+ }
+ const dx=FIRE_X-walker.x,dz=FIRE_Z-walker.z,dy=(walkSurface(FIRE_X,FIRE_Z)??walker.y)+.85-(walker.y+.33);
+ const length=Math.hypot(dx,dy,dz)||1;
+ wanderEye.forward=[dx/length,dy/length,dz/length];
+ wanderEye.distance=length;
+ // Signed-field visibility sampling: a terrain witness from the Wanderer's eye,
+ // not a claim about final rendered pixels.
+ let blocked=0,total=0;
+ for(let i=1;i<32;i++){
+  const t=i/32,x=walker.x+dx*t,y=walker.y+.33+dy*t,z=walker.z+dz*t;
+  if(fieldSample(x,y,z)>0)blocked++;total++;
+ }
+ wanderEye.terrainSamples=total;wanderEye.clear=blocked===0;
+}
 // Mists inhabitant: one frightened cube, one irreversible flight and splat.
 const fugitiveSize=.32,fugitiveRadius=.23;
 const fugitiveMesh=put(world,new T.BoxGeometry(fugitiveSize,fugitiveSize,fugitiveSize),new T.MeshStandardMaterial({color:0xff8b29,emissive:0x9d3100,emissiveIntensity:.2,roughness:.68}));
@@ -962,7 +1005,7 @@ for(let k=0;k<9;k++){const a=k*2.39996,r=.15+.12*Math.sqrt(k);put(fireRoot,new T
 const fire={time:0,mode:1,energy:1},fireModes=['embers','flame','conflagration'];
 fireButton.disabled=false;
 function setFireMode(mode){fire.mode=mode;fireButton.title='Hearth: '+fireModes[mode]+' · next '+fireModes[(mode+1)%3];fireButton.setAttribute('aria-label',fireButton.title);fireButton.setAttribute('aria-pressed',String(mode!==0))}
-setFireMode(1);fireButton.addEventListener('click',()=>setFireMode((fire.mode+1)%3));
+setFireMode(1);fireButton.addEventListener('click',()=>{if(wanderEye.state==='idle')sendWandererToHearth();setFireMode((fire.mode+1)%3)});
 function fireStep(dt){
  fire.time+=dt;const target=[.06,1,2.1][fire.mode];fire.energy+=(target-fire.energy)*Math.min(1,dt*(fire.mode===0?1.6:2.7));
  const ground=walkSurface(FIRE_X,FIRE_Z),x=FIRE_X-wanderX,z=FIRE_Z-wanderZ,y=ground??1;
@@ -1252,6 +1295,7 @@ function simulate(dt){
   sharedApertureOffset.set(wanderX,0,wanderZ);
  }
  wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5,walker.z-wanderZ);
+ wanderEyeStep();
 }
 let angle=.6,elev=.27,dist=27,targetY=0,lastX=0,lastY=0;
 const pointers=new Map(),pointerStarts=new Map();let pinch=0,multiGesture=false;
@@ -1427,6 +1471,7 @@ function inspectWorld(){
   matter:{crucibleMode:fugitive.mode,owner:fugitive.owner,rendered:splatMesh.count,rainEmitted,rainActive:rainEmitted-Array.from(rainRest.subarray(0,rainEmitted)).filter(v=>v===2).length,blood:{total:PUMPKIN_LIQUID,released:blood,unreleased:PUMPKIN_LIQUID-blood},solids:{total:PUMPKIN_SOLID,released:solid,unreleased:PUMPKIN_SOLID-solid}},
   spatialEyes:inspectSpatialEyes(),
   hearth:inspectFire(),
+  wanderEye:{state:wanderEye.state,position:[round(walker.x,3),round(walker.y,3),round(walker.z,3)],goal:wanderEye.goal,forward:wanderEye.forward.map(v=>round(v,3)),distance:wanderEye.distance===null?null:round(wanderEye.distance,3),terrainLineOfSight:wanderEye.clear,terrainSamples:wanderEye.terrainSamples},
   interactions:{thump:{count:lowerTaps,...thumpStats},terrain:{...terrainContactStats},micro:{contacts:microStats.contacts,energyLost:round(microStats.energyLost,3),bowlImpacts:microStats.bowlImpacts},motionRecent:crucibleMotion.slice(-3)},
   events:telemetryEvents.slice(-12)
  };
