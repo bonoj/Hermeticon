@@ -33,3 +33,6 @@
 #buttons > button{background:#172333;border:1px solid #66543a;border-radius:9px;color:#d9b879;opacity:1;box-shadow:none}
 #buttons > button:disabled{opacity:.65}
 #buttons > #rainToggle.active{background:#263b46;border-color:#82b8d4}
+
+/* Build identifier shares FPS typography; FPS remains the single style source. */
+#buildRow #build{font:inherit;font-size:12px;color:#e7dbb7}
