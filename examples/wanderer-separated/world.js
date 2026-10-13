@@ -1380,7 +1380,14 @@ probeButton.onclick=()=>{
  if(probePanel.classList.contains('open'))inspectWorld();
  else {probePanel.classList.remove('details');detailsButton.setAttribute('aria-expanded','false');detailsButton.textContent='DETAILS ▾'}
 };
-const detailsButton=document.querySelector('#detailsProbe');
+const detailsButton=document.querySelector('#detailsProbe') || (()=>{
+ const button=document.createElement('button');
+ button.id='detailsProbe';button.type='button';button.textContent='DETAILS ▾';
+ button.setAttribute('aria-expanded','false');
+ const actions=document.querySelector('#probeActions');
+ actions?.appendChild(button);
+ return button;
+})();
 detailsButton.onclick=()=>{
  const expanded=probePanel.classList.toggle('details');
  detailsButton.setAttribute('aria-expanded',String(expanded));
