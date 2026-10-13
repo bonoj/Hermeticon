@@ -12,7 +12,8 @@
 
 ## World contracts
 
-- Physical Crucible contact transfers matter ownership; proximity or spawning alone does not.
+- **Target material contract (not yet implemented):** matter has persistent world identity and geological position; the Crucible is a moving contact vessel, not the owner of a separate material universe. Track support/contact, motion, phase, provenance and rendering frame independently. Do not change ownership merely to handle a coordinate transform.
+- **Current legacy behavior:** rain uses `rainOwner` and `rainWorld`; lower bowl contact transfers to Hermeticon-local coordinates, while geological contact can set `rainRest` without transferring back. Settled spilled BBs may consequently travel with the Crucible. Wanderer fire-burst BBs already integrate in geological coordinates and provide a reference implementation. Treat this as an observed defect and a migration seam, not a solved contract.
 - Thump affects vessel-owned material regardless of height; do not restore spatial eligibility filters.
 - Micro and macro material must not gain ownership merely through fracture.
 - Keep terrain collision/tunneling improvements distinct from ownership changes.
@@ -38,6 +39,10 @@ A successful source commit alone does not establish publication. Inspect the lat
 4. New commits should supersede older queued/in-progress builds. Do not stack speculative workflow rewrites, invent release URLs, or ask the user to repeatedly refresh.
 5. If verification remains unavailable, say so; do not claim `live` until actual public evidence exists. Continue retrying by diagnosing the next concrete failure, not by waiting indefinitely.
 
+## Material-world migration (design direction, 2026-10-13)
+
+The old rain, Pumpkin and Wanderer populations have different frame and contact rules. Our understanding has outgrown the vessel-centric ownership system. Do not patch by simply untagging slow particles: speed alone is not evidence of terrain support. Establish a single geological/world coordinate convention for persistent BBs, keep source identity and material accounting independent of where matter rests, and model the Crucible as geometry/contact constraints. Preserve existing gravity, restitution, damping, thump and terrain collision behavior while migrating population by population. The aperture is presentation, not an ownership boundary. A resting BB must remain with terrain when the vessel/aperture moves, and resume motion if its support is removed. Verify in a live build before claiming success. No implementation change is implied by this documentation.
+
 ## Next development
 
 Favor small composable changes in the shared example. Avoid duplicated code and document any change to the deployment contract here and in the root README.
@@ -50,6 +55,6 @@ Favor small composable changes in the shared example. Avoid duplicated code and 
 - **Frame versus ownership:** geological matter coordinates must track the moving geological world (`wanderX`/`wanderZ`) while continuing to integrate gravity and respond to terrain contact. Ownership/provenance and coordinate frame are distinct. Resting contact is physical equilibrium, **not** a fixed transform or permanent `rest` flag. If terrain support vanishes, matter must fall.
 - **Contact:** Wanderer BBs have stronger normal and tangential dissipation on geological contact. Other populations' restitution was not intentionally changed. Validate slopes, repeated impacts, terrain deformation, and whether particles truly settle without sliding or tunneling.
 - **Aperture:** shared `apertureClip(material)` provides per-fragment spherical visibility for fire and Wanderer BB instances; terrain retains its own shader/fog path using the shared `APERTURE_RADIUS`. Rendering outside the aperture is not a despawn or ownership event. Do not create another ad hoc radius/discard rule when adding a population; converge remaining render paths deliberately.
-- **Crucible:** existing lower-hemisphere bowl contact/ownership behavior remains in place for rain, Pumpkin, and Wanderer; do not conflate a render cut with transfer. Existing ownership rules were not redesigned during this pass.
+- **Crucible (legacy runtime):** lower-hemisphere bowl contact still drives population-specific ownership/frame behavior. This is the migration target above; it has **not** been redesigned in code. Do not conflate a render cut with physical contact.
 - **Outstanding:** inspect actual live execution before asserting physics/visual correctness. In particular test geological BBs when the world translates, support removal, accumulation across multiple bursts, and the aperture edge. Do not assume that source commits prove runtime behavior.
 - **Initialization caution:** declare `APERTURE_RADIUS` before constructing diagnostics or materials that read it. An earlier build failed to wake due to temporal-dead-zone initialization order; fixed in `442ef3c5`.
