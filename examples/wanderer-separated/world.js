@@ -1,10 +1,17 @@
 
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-// One canonical build identity: UI and inspection report share this constant.
-// Publication replaces this token with the exact Repository source commit SHA.
-const BUILD='f8fd252ca4abb91f7ca7c445197944a044df2173';
-document.querySelector('#build').textContent=BUILD.slice(0,8);
+// Build metadata is stamped by the Pages workflow from the deployed commit.
+// Never display the inherited JIT source revision as the current build.
+let BUILD='unverified';
+try {
+ const response=await fetch('../../build.json',{cache:'no-store'});
+ if(!response.ok)throw Error('Build metadata HTTP '+response.status);
+ const info=await response.json();
+ if(!/^[0-9a-f]{40}$/.test(info.sha))throw Error('Invalid deployment SHA');
+ BUILD=info.sha;
+} catch(error){console.warn('Hermeticon build identity unavailable',error)}
+document.querySelector('#build').textContent=BUILD==='unverified'?'--------':BUILD.slice(0,8);
 document.querySelector('#fresh').onclick=()=>location.reload();
 
 
