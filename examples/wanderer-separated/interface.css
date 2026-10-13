@@ -19,5 +19,3 @@
 #buttons #probe{order:4;font-size:23px}
 #buttons #fresh{order:5;border:1px solid #66543a;background:#172333;color:#d9b879;width:46px;height:46px}
 #buttons svg{display:block;flex:none}
-#copyToast{position:fixed;z-index:50;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#15202af0;color:#f0d5a0;border:1px solid #9c8556aa;border-radius:8px;padding:8px 14px;font:600 12px system-ui;letter-spacing:.12em;pointer-events:none;opacity:0;transition:opacity .18s}
-#copyToast.visible{opacity:1}
