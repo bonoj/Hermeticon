@@ -46,7 +46,10 @@ jobs:
           (base/'release.json').write_text(json.dumps({'sha':sha})+'\n')
           (root/'build.json').write_text(json.dumps({'sha':sha})+'\n')
           assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
-          print('PUBLIC ENTRY READY',sha)
+          for html,prefix in ((base/'index.html','./'),(root/'index.html','./examples/wanderer-separated/')):
+              page=html.read_text()
+              assert all(f'{prefix}{name}?v={sha}' in page for name in ('world.js','interface.css','errors.js'))
+          print('PUBLIC ENTRIES READY',sha)
           PY
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -61,9 +64,9 @@ jobs:
           import os,time,urllib.request
           sha=os.environ['BUILD_SHA']
           for url,prefix in (('https://bonoj.github.io/Hermeticon/','./examples/wanderer-separated/'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./')):
-              for i in range(18):
+              for i in range(36):
                   try:
-                      req=urllib.request.Request(url,headers={'Cache-Control':'no-cache'})
+                      req=urllib.request.Request(url+'?deployment='+sha+'&attempt='+str(i),headers={'Cache-Control':'no-cache','Pragma':'no-cache'})
                       with urllib.request.urlopen(req,timeout=15) as response:
                           html=response.read().decode()
                       assert prefix+'world.js?v='+sha in html
@@ -72,6 +75,6 @@ jobs:
                       break
                   except Exception as e:
                       print('Awaiting public entry',url,i+1,str(e))
-                      if i==17:raise
+                      if i==35:raise
                       time.sleep(10)
           PY
