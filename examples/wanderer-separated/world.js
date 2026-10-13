@@ -668,7 +668,10 @@ function walkTarget(clientX,clientY){
  if(!walkRay.ray.intersectPlane(walkPlane,walkPoint)){walker.rejected++;return}
  const x=walkPoint.x,z=walkPoint.z;
  if(!Number.isFinite(x)||!Number.isFinite(z)){walker.rejected++;return}
- walker.route=walkRoute(x+wanderX,z+wanderZ);
+ // Reject non-walkable picks before synchronous pathfinding. A miss is not a route.
+ const tx=x+wanderX,tz=z+wanderZ;
+ if(walkSupport(tx,tz)===null){walker.rejected++;return}
+ walker.route=walkRoute(tx,tz);
  walker.target=walker.route.shift()??null;
  if(walker.target)walker.accepted++;else walker.rejected++;
 }
