@@ -1376,9 +1376,6 @@ function inspectWorld(){
  };
  probeReport=JSON.stringify(report,null,2);probeText.value=probeReport;return report;
 }
-const copyToast=document.querySelector('#copyToast');
-let toastTimeout;
-function showCopyToast(message){copyToast.textContent=message;copyToast.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>copyToast.classList.remove('visible'),1600)}
 probeButton.onclick=()=>{
  try{
   inspectWorld();
@@ -1390,9 +1387,9 @@ probeButton.onclick=()=>{
    let ok=false;try{ok=document.execCommand('copy')===true}catch(e){telemetryEvent('copy-error',e)}
    probeText.style.removeProperty('display');return ok;
   };
-  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(snapshot).then(()=>showCopyToast('COPIED'),()=>showCopyToast(legacyCopy()?'COPIED':'COPY FAILED'));
-  else showCopyToast(legacyCopy()?'COPIED':'COPY FAILED');
- }catch(e){telemetryEvent('inspect-copy-error',e);showCopyToast('COPY FAILED')}
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(snapshot).catch(()=>{if(!legacyCopy())telemetryEvent('copy-failed',Error('Clipboard unavailable'))});
+  else if(!legacyCopy())telemetryEvent('copy-failed',Error('Clipboard unavailable'));
+ }catch(e){telemetryEvent('inspect-copy-error',e)}
 };
 const detailsButton=document.querySelector('#detailsProbe') || (()=>{
  const button=document.createElement('button');
