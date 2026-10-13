@@ -1038,6 +1038,58 @@ function fireStep(dt){
  fireMesh.count=FIRE_N;fireMesh.instanceMatrix.needsUpdate=true;if(fireMesh.instanceColor)fireMesh.instanceColor.needsUpdate=true;
  if(!fire.lastShutter||fire.time-fire.lastShutter>=.15){captureFireShutter();fire.lastShutter=fire.time;}
 }
+// Wanderer fire consequence: same 125 blood / 375 solid units as Pumpkin.
+const burnN=PUMPKIN_TOTAL,burnRadius=pumpkinBeadRadius;
+const burnMesh=new T.InstancedMesh(splatGeo,splatMat.clone(),burnN);burnMesh.count=0;burnMesh.frustumCulled=false;burnMesh.userData.matterTag='micro';world.add(burnMesh);
+const burnDummy=new T.Object3D(),burnParticles=[],burn={phase:'ready',t:0,cooldown:0,impacts:0,respawns:0};
+const burnMaterial=wanderCube.material.clone();burnMaterial.emissive=new T.Color(0xff3100);wanderCube.material=burnMaterial;
+for(let i=0;i<burnN;i++)burnMesh.setColorAt(i,new T.Color(i<PUMPKIN_LIQUID?0xc51e30:0xffd23b));
+burnMesh.instanceColor.needsUpdate=true;
+function burnStep(dt){
+ burn.cooldown=Math.max(0,burn.cooldown-dt);
+ if(burn.phase==='ready'&&burn.cooldown===0&&fire.energy>.22){
+  const dx=walker.x-FIRE_X,dz=walker.z-FIRE_Z,d=Math.hypot(dx,dz);
+  if(d<.7){burn.phase='recoil';burn.t=0;burn.ux=dx/(d||1);burn.uz=dz/(d||1);walker.target=null;walker.route=[];burn.impacts++}
+ }
+ if(burn.phase==='recoil'){
+  burn.t+=dt;const nx=walker.x+burn.ux*4.8*dt,nz=walker.z+burn.uz*4.8*dt,h=walkSupport(nx,nz);
+  if(h!==null){walker.x=nx;walker.z=nz;walker.y=h}
+  burnMaterial.emissiveIntensity=1+Math.sin(burn.t*31)*.5;
+  if(burn.t>=.55){
+   burn.phase='burst';burn.t=0;burnParticles.length=0;
+   const cx=walker.x-wanderX,cy=walker.y+WANDER_SIZE*.5,cz=walker.z-wanderZ;
+   for(let i=0;i<burnN;i++){
+    const lobe=i%7,a=lobe*2.39996323+(rainRandom(i,71)-.5)*.85;
+    const v=(rainRandom(i,72)-.35)*1.4,rad=Math.sqrt(Math.max(.03,1-v*v));
+    const dx=Math.cos(a)*rad,dz=Math.sin(a)*rad;
+    const force=(1.5+rainRandom(i,73)*3.7)*(lobe===2?1.8:lobe===5?.5:1)*(i%31===0?1.9:1);
+    burnParticles.push({x:cx+dx*.1,y:cy+v*.1,z:cz+dz*.1,vx:dx*force,vy:1.4+v*force,vz:dz*force,rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
+   }
+   burnMesh.count=burnN;wanderCube.visible=false;
+  }
+ }else if(burn.phase==='burst'){
+  burn.t+=dt;
+  if(burn.t>=1.5){burn.phase='ready';burn.t=0;burn.cooldown=2.5;burn.respawns++;
+   walker.x=0;walker.z=0;walker.y=walkSurface(0,0)??walker.y;walker.target=null;walker.route=[];
+   wanderCube.visible=true;burnMaterial.emissiveIntensity=0;
+  }
+ }
+ for(let i=0;i<burnParticles.length;i++){
+  const p=burnParticles[i];
+  if(!p.rest){
+   const ox=p.x,oy=p.y,oz=p.z;p.vy-=9.8*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+   terrainMicroContact(p,ox,oy,oz,burnRadius);
+   const rr=Math.hypot(p.x,p.y,p.z);
+   if(p.y<0&&rr>INNER_R-.06){
+    p.owner='hermeticon';const limit=INNER_R-.06,k=limit/rr;p.x*=k;p.y*=k;p.z*=k;
+    const nx=-p.x/limit,ny=-p.y/limit,nz=-p.z/limit,vn=p.vx*nx+p.vy*ny+p.vz*nz;
+    if(vn<0){p.vx-=1.38*vn*nx;p.vy-=1.38*vn*ny;p.vz-=1.38*vn*nz}
+   }
+  }
+  burnDummy.position.set(p.x,p.y,p.z);burnDummy.updateMatrix();burnMesh.setMatrixAt(i,burnDummy.matrix);
+ }
+ if(burnParticles.length)burnMesh.instanceMatrix.needsUpdate=true;
+}
 // Four short temporal shutters, sampled from actual instanced carrier matrices/colors.
 // Retain only compact aggregate slices; no render passes, GPU reads or camera mutation.
 const FIRE_SHUTTERS=4,FIRE_SLICES=8,fireShutters=[];
@@ -1311,7 +1363,7 @@ function simulate(dt){
  gardenStep(dt);
  fireStep(dt);
  mistReedsStep(dt);
- if(walker.target){
+ if(walker.target&&burn.phase==='ready'){
   const dx=walker.target.x-walker.x,dz=walker.target.z-walker.z,d=Math.hypot(dx,dz);
   if(d<=.07)walker.target=walker.route.shift()??null;
   else{
@@ -1335,6 +1387,7 @@ function simulate(dt){
   solid.position.set(-wanderX,0,-wanderZ);
   sharedApertureOffset.set(wanderX,0,wanderZ);
  }
+ burnStep(dt);
  wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5,walker.z-wanderZ);
  wanderEyeStep();
 }
