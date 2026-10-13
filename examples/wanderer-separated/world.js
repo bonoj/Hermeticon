@@ -1024,6 +1024,35 @@ function fireStep(dt){
   fireColor.copy(fireRed).lerp(fireGold,Math.min(1,u*2.1+.1)).lerp(fireWhite,Math.pow(u,2.7)*.8);fireMesh.setColorAt(i,fireColor);
  }
  fireMesh.count=FIRE_N;fireMesh.instanceMatrix.needsUpdate=true;if(fireMesh.instanceColor)fireMesh.instanceColor.needsUpdate=true;
+ if(!fire.lastShutter||fire.time-fire.lastShutter>=.15){captureFireShutter();fire.lastShutter=fire.time;}
+}
+// Four short temporal shutters, sampled from actual instanced carrier matrices/colors.
+// Retain only compact aggregate slices; no render passes, GPU reads or camera mutation.
+const FIRE_SHUTTERS=4,FIRE_SLICES=8,fireShutters=[];
+function captureFireShutter(){
+ if(!fireMesh.visible||!fireMesh.count)return;
+ const ground=walkSurface(FIRE_X,FIRE_Z);if(ground===null)return;
+ const bins=Array.from({length:FIRE_SLICES},()=>({n:0,radius:0,radius2:0,red:0,green:0,blue:0,cx:0,cz:0}));
+ const p=new T.Vector3(),q=new T.Quaternion(),scale=new T.Vector3(),c=new T.Color();
+ const height=.45+1.85*fire.energy;
+ for(let i=0;i<fireMesh.count;i++){
+  fireMesh.getMatrixAt(i,fireDummy.matrix);fireDummy.matrix.decompose(p,q,scale);
+  const h=p.y-ground-.12,k=Math.max(0,Math.min(FIRE_SLICES-1,Math.floor(h/height*FIRE_SLICES)));
+  const b=bins[k],dx=p.x-(FIRE_X-wanderX),dz=p.z-(FIRE_Z-wanderZ),radius=Math.hypot(dx,dz);
+  fireMesh.getColorAt(i,c);
+  b.n++;b.radius+=radius;b.radius2+=radius*radius;b.red+=c.r;b.green+=c.g;b.blue+=c.b;b.cx+=dx;b.cz+=dz;
+ }
+ const slices=bins.map(b=>b.n?{n:b.n,r:round(b.radius/b.n,3),spread:round(Math.sqrt(Math.max(0,b.radius2/b.n-(b.radius/b.n)**2)),3),rgb:[round(b.red/b.n,2),round(b.green/b.n,2),round(b.blue/b.n,2)],centroid:[round(b.cx/b.n,3),round(b.cz/b.n,3)]}:{n:0});
+ fireShutters.push({t:round(fire.time,2),mode:fireModes[fire.mode],slices});
+ if(fireShutters.length>FIRE_SHUTTERS)fireShutters.shift();
+}
+function inspectFireShutters(){
+ const frames=fireShutters.slice(),changes=[];
+ for(let i=1;i<frames.length;i++){
+  const a=frames[i-1],b=frames[i],dt=b.t-a.t;
+  changes.push({dt:round(dt,2),sliceDisplacement:a.slices.map((v,k)=>v.centroid&&b.slices[k].centroid?round(Math.hypot(v.centroid[0]-b.slices[k].centroid[0],v.centroid[1]-b.slices[k].centroid[1]),3):null)});
+ }
+ return {frameCount:frames.length,interval:'~0.15 seconds',sliceOrder:'bottom to crown',sliceFields:'n=count,r=mean radial distance,spread=radial stddev,rgb=mean linear instance color,centroid=horizontal offset from hearth',frames,changes,limits:'Carrier geometry and instance colors, not rendered pixels; slice motion is aggregate displacement, not individual bead velocity.'};
 }
 // V82 Mists: sparse bead-lattice reedbeds. One instanced draw, rooted to authored geology.
 // Mists population gallery: 50 deterministic, distinct bead-lattice ecologies.
@@ -1442,7 +1471,7 @@ function inspectSpatialEyes(){
  const summarize=(kind)=>{
   let peak={count:0,elevation:0,azimuth:0};
   for(let e=0;e<elevations;e++)for(let a=0;a<azimuths;a++)if(grids[kind][e][a]>peak.count)peak={count:grids[kind][e][a],elevation:e,azimuth:a};
-  return {count:totals[kind],nearWall:wall[kind],interior:interior[kind],moving:moving[kind],meanSpeed:round(velocity[kind]/(totals[kind]||1),3),angularY:round(angular[kind],2),peakSector:peak,occupiedSectors:grids[kind].flatMap((row,e)=>row.flatMap((count,a)=>count?[[e,a,count]]:[])),projectedCount:projected[kind],occupiedScreenCells:screens[kind].flatMap((row,y)=>row.flatMap((count,x)=>count?[[x,y,count]]:[]))};
+  return {count:totals[kind],nearWall:wall[kind],interior:interior[kind],moving:moving[kind],meanSpeed:round(velocity[kind]/(totals[kind]||1),3),angularY:round(angular[kind],2),peakSector:peak,occupiedSectors:grids[kind].flatMap((row,e)=>row.flatMap((count,a)=>count?[[e,a,count]]:[])),projectedCount:projected[kind],screenPeaks:screens[kind].flatMap((row,y)=>row.flatMap((count,x)=>count?[[x,y,count]]:[])).sort((a,b)=>b[2]-a[2]).slice(0,8)};
  };
  return {frame:'Crucible-centered; elevation 0 is bottom pole, 11 near equator; azimuth 0..23 around vertical axis',shape:[elevations,azimuths],screen:{shape:[screenSize,screenSize],resolution:[W,H],origin:'top-left',cameraPosition:camera.position.toArray().map(n=>round(n,3)),cameraTarget:[0,round(targetY,3),0]},materials:Object.fromEntries(names.map((name,i)=>[name,summarize(i)])),limits:'Projected samples are not pixels: no occlusion, lighting, or depth visibility test; counts cover bowl-contained emitted rain and pumpkin micros; sampled on Inspect only'};
 }
@@ -1471,6 +1500,7 @@ function inspectWorld(){
   matter:{crucibleMode:fugitive.mode,owner:fugitive.owner,rendered:splatMesh.count,rainEmitted,rainActive:rainEmitted-Array.from(rainRest.subarray(0,rainEmitted)).filter(v=>v===2).length,blood:{total:PUMPKIN_LIQUID,released:blood,unreleased:PUMPKIN_LIQUID-blood},solids:{total:PUMPKIN_SOLID,released:solid,unreleased:PUMPKIN_SOLID-solid}},
   spatialEyes:inspectSpatialEyes(),
   hearth:inspectFire(),
+  fireShutters:inspectFireShutters(),
   wanderEye:{state:wanderEye.state,position:[round(walker.x,3),round(walker.y,3),round(walker.z,3)],goal:wanderEye.goal,forward:wanderEye.forward.map(v=>round(v,3)),distance:wanderEye.distance===null?null:round(wanderEye.distance,3),terrainLineOfSight:wanderEye.clear,terrainSamples:wanderEye.terrainSamples},
   interactions:{thump:{count:lowerTaps,...thumpStats},terrain:{...terrainContactStats},micro:{contacts:microStats.contacts,energyLost:round(microStats.energyLost,3),bowlImpacts:microStats.bowlImpacts},motionRecent:crucibleMotion.slice(-3)},
   events:telemetryEvents.slice(-12)
