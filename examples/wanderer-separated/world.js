@@ -996,11 +996,25 @@ function gardenStep(dt){
 // Hearth: six reusable spiral strands of visual carrier beads, rooted in geology.
 // Not conserved matter or a thermodynamic combustion model.
 const fireButton=document.querySelector('#fire'),FIRE_X=-1.1,FIRE_Z=6.1,FIRE_N=480;
-const fireMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.055,0),new T.MeshBasicMaterial({color:0xffffff}),FIRE_N);
+// Share the geological aperture's 9.72-unit spherical boundary per fragment.
+// A hearth crossing the shell loses only the fragments outside it, never the whole population.
+function hearthAperture(material){
+ material.onBeforeCompile=shader=>{
+  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vHearthAperture;');
+  shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;');
+  // Instanced beads need their per-instance transform in the aperture witness.
+  shader.vertexShader=shader.vertexShader.replace('vHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;','vHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;\n#ifdef USE_INSTANCING\nvHearthAperture=(modelMatrix * instanceMatrix * vec4(transformed,1.0)).xyz;\n#endif');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHearthAperture;');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vHearthAperture,vHearthAperture)>9.72*9.72) discard;');
+ };
+ material.customProgramCacheKey=()=> 'hearth-aperture-v1';
+ return material;
+}
+const fireMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.055,0),hearthAperture(new T.MeshBasicMaterial({color:0xffffff})),FIRE_N);
 fireMesh.count=0;fireMesh.frustumCulled=false;fireMesh.userData.worldDomain=true;world.add(fireMesh);
 const fireDummy=new T.Object3D(),fireColor=new T.Color(),fireGold=new T.Color(0xffb13a),fireWhite=new T.Color(0xfff1ad),fireRed=new T.Color(0xb52716);
 const fireRoot=new T.Group();world.add(fireRoot);
-const coalMat=new T.MeshStandardMaterial({color:0x352b2b,roughness:.95});
+const coalMat=hearthAperture(new T.MeshStandardMaterial({color:0x352b2b,roughness:.95}));
 for(let k=0;k<9;k++){const a=k*2.39996,r=.15+.12*Math.sqrt(k);put(fireRoot,new T.DodecahedronGeometry(.13+(k%3)*.035,0),coalMat,Math.cos(a)*r,.09,Math.sin(a)*r)}
 const fire={time:0,mode:1,energy:1},fireModes=['embers','flame','conflagration'];
 fireButton.disabled=false;
