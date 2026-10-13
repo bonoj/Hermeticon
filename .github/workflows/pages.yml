@@ -19,10 +19,84 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Stamp deployed source revision
-        run: printf '{"sha":"%s"}\n' "$GITHUB_SHA" > build.json
+      - name: Assemble one identified build and validate its references
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil, json, re
+          root=pathlib.Path('site')
+          src=pathlib.Path('examples/wanderer-separated')
+          sha=os.environ['BUILD_SHA']
+          assert re.fullmatch(r'[0-9a-f]{40}',sha)
+          shutil.copytree('.',root,ignore=shutil.ignore_patterns('.git','site','.github','__pycache__'))
+          dest=root/'examples/wanderer-separated'
+          bundle=dest/'releases'/sha
+          bundle.mkdir(parents=True)
+          for name in ('index.html','interface.css','errors.js','world.js'):
+              shutil.copy2(src/name,bundle/name)
+          js=(bundle/'world.js').read_text()
+          start=js.index('// Build metadata is stamped by the Pages workflow')
+          end=js.index("document.querySelector('#fresh').onclick=()=>location.reload();",start)
+          js=js[:start]+f"const BUILD='{sha}';\ndocument.querySelector('#build').textContent=BUILD.slice(0,8);\n"+js[end:]
+          (bundle/'world.js').write_text(js)
+          # The immutable HTML loads CSS and JS only from its own release directory.
+          page=(bundle/'index.html').read_text()
+          assert './interface.css' in page and './world.js' in page and './errors.js' in page
+          assert f"const BUILD='{sha}'" in js
+          # Stable entry point loads a single revision, never independently cached assets.
+          loader="""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hermeticon</title><style>body{margin:0;background:#050b14;color:#f5dfb2;font:14px system-ui;display:grid;place-items:center;min-height:100dvh}main{padding:24px;text-align:center}</style></head><body><main id="message">Opening Hermeticon…</main><script>
+          (async()=>{
+            try{
+              const r=await fetch('./release.json',{cache:'no-store'});
+              if(!r.ok)throw Error('Release manifest unavailable: '+r.status);
+              const m=await r.json();
+              if(!/^[0-9a-f]{40}$/.test(m.sha))throw Error('Invalid release identity');
+              const path='./releases/'+m.sha+'/index.html';
+              const ready=await fetch(path,{cache:'no-store'});
+              if(!ready.ok)throw Error('Release not ready: '+ready.status);
+              location.replace(path);
+            }catch(e){document.querySelector('#message').textContent='Hermeticon release unavailable: '+e.message}
+          })();
+          </script></body></html>"""
+          (dest/'index.html').write_text(loader)
+          (dest/'release.json').write_text(json.dumps({'sha':sha})+'\n')
+          (root/'build.json').write_text(json.dumps({'sha':sha})+'\n')
+          assert (bundle/'index.html').exists() and (bundle/'world.js').exists()
+          PY
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify publicly served release
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os,time,urllib.request,json
+          sha=os.environ['BUILD_SHA']
+          base='https://bonoj.github.io/Hermeticon/examples/wanderer-separated/'
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'Hermeticon-release-check'})
+              with urllib.request.urlopen(req,timeout=20) as r:return r.read().decode()
+          for attempt in range(18):
+              try:
+                  manifest=json.loads(get('release.json'))
+                  if manifest.get('sha')!=sha:raise ValueError('manifest points to another release')
+                  html=get('releases/'+sha+'/index.html')
+                  css=get('releases/'+sha+'/interface.css')
+                  errors=get('releases/'+sha+'/errors.js')
+                  js=get('releases/'+sha+'/world.js')
+                  loader=get('index.html')
+                  assert './release.json' in loader
+                  assert './world.js' in html and './interface.css' in html and './errors.js' in html
+                  assert "const BUILD='"+sha+"'" in js
+                  assert css and errors
+                  print('VERIFIED LIVE RELEASE',sha)
+                  break
+              except Exception as e:
+                  print('Verification pending',attempt+1,str(e))
+                  if attempt==17:raise
+                  time.sleep(10)
+          PY
