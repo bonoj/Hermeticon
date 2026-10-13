@@ -1,12 +1,12 @@
 # Hermeticon — repository and hosting handoff
 
-Hermeticon is a home for executable worlds; **Wanderer is one world, not Hermeticon itself**. The root and `athanor/` entrances run the same empty Athanor observer shell. The original Wanderer remains a separate reference fixture. No general-purpose shell is wired into the live application; the unused `shell/` scaffold was removed. Evolve shared hosting contracts from working worlds, inside out.
+Hermeticon is a home for executable worlds; **Wanderer is one world, not Hermeticon itself**. The root and `athanor/` entrances run the same Athanor observer. The original Wanderer remains a separate reference fixture. No alternate shell is wired into the live application; the unused `shell/` scaffold was removed. Evolve shared hosting contracts from working worlds, inside out.
 
 ## Boundaries
 
 - **Wanderer source and operational handoff:** `examples/wanderer-separated/`, especially [Wanderer HANDOFF](examples/wanderer-separated/HANDOFF.md). Its geology, Crucible, BBs, inhabitants, encounters and material contracts are not Hermeticon-wide requirements.
 - **Public root:** https://bonoj.github.io/Hermeticon/ ; root `index.html` mirrors `athanor/index.html` (with only the relative build manifest path adjusted).
-- **Athanor specimen:** https://bonoj.github.io/Hermeticon/athanor/ ; an empty observer shell; the original Wanderer clone files remain available as `athanor/world.js` but are not loaded.
+- **Athanor specimen:** https://bonoj.github.io/Hermeticon/athanor/ ; an empty observer; the original Wanderer clone files remain available as `athanor/world.js` but are not loaded.
 - **Wanderer fixture:** https://bonoj.github.io/Hermeticon/examples/wanderer-separated/ ; preserve both entrances until an explicitly tested hosting change.
 - **Historical source:** `archive/legacy-monolith/index.html` is not the live baseline.
 - **Publishing:** `.github/workflows/pages.yml` runs GitHub Pages Actions on `main`; consult `bonoj/Gate/README.md` before altering delivery.

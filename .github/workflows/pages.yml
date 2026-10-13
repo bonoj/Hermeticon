@@ -53,9 +53,10 @@ jobs:
           assert all(f'./{name}?v={sha}' in wanderer for name in ('world.js','interface.css','errors.js'))
           for entry in (root/'index.html',athanor/'index.html'):
               html=entry.read_text()
-              assert 'ATHANOR' in html and 'three.module.js' in html
+              assert 'ATHANOR' in html and 'athanor.js' in html
               assert 'world.js' not in html
           assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
+          assert (athanor/'athanor.js').is_file()
           print('PUBLIC ENTRIES READY',sha)
           PY
       - uses: actions/upload-pages-artifact@v3
