@@ -855,13 +855,28 @@ function encounterStep(dt){
   encounterVisualStep(e);
  }
 }
+function inspectEncounterVisual(e){
+ const scene=encounterScenes.get(e.id);
+ if(!scene)return {exists:false,meshes:0,groupVisible:false,withinAperture:false};
+ const centerDistance=Math.hypot(e.x-wanderX,e.z-wanderZ);
+ const visible=scene.group.visible;
+ const meshes=scene.group.children.length;
+ return {exists:true,meshes,groupVisible:visible,centerDistance:round(centerDistance,2),
+  withinAperture:centerDistance<APERTURE_RADIUS,
+  phaseVisible:visible&&(e.phase==='performing'||e.phase==='settled'),
+  geometryCount:meshes,ground:round(scene.ground,3)};
+}
 function inspectEncounters(){
  const nearest=encounterRegistry.map(e=>({e,d:Math.hypot(walker.x-e.x,walker.z-e.z)})).sort((a,b)=>a.d-b.d)[0];
  return {status:'eighteen-visual-prototypes-one-geological-transaction',implemented:0,visualPrototypes:encounterScenes.size,planned:encounterRegistry.length,
   primeRadius:ENCOUNTER_PRIME_RADIUS,startRadius:ENCOUNTER_START_RADIUS,
+  audit:{registryCount:encounterRegistry.length,sceneCount:encounterScenes.size,
+   missingScenes:encounterRegistry.filter(e=>!encounterScenes.has(e.id)).map(e=>e.id),
+   activeScenes:encounterRegistry.filter(e=>encounterScenes.get(e.id)?.group.visible).map(e=>e.id),
+   geologicalTransactions:encounterRegistry.reduce((n,e)=>n+e.materialTransactions.length,0)},
   nearest:nearest?{id:nearest.e.id,distance:round(nearest.d,2)}:null,
   encounters:encounterRegistry.map(e=>({id:e.id,seed:e.seed,anchor:[e.x,e.z],phase:e.phase,
-   implementation:e.implementation,visits:e.visits,activationReason:e.activationReason,
+   implementation:e.implementation,visual:inspectEncounterVisual(e),visits:e.visits,activationReason:e.activationReason,
    timeInPhase:round(clock.time-e.phaseStartedAt,2),near:e.near,performanceSteps:e.performanceSteps,
    transitions:e.transitions,materialTransactions:e.materialTransactions,
    visibleCount:e.visibleCount,clippedCount:e.clippedCount,errors:e.errors})),
