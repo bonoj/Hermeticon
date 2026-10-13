@@ -568,21 +568,53 @@ const landmarkOrbs=landmarkSpecs.map(([name,x,z,icon,color],i)=>{
  label.visible=false;landmarkGroup.add(label);
  return {x,z,y,sphere,label,phase:i*1.71};
 });
-// Eighteen proposed encounters: inspectable, deterministic dormant registry.
-// Presence in this registry is NOT implementation or acceptance of an encounter.
+// Encounter foundation: deterministic world-space lifecycle, no speculative matter edits.
+// Rendering and geological transactions remain disabled until independently implemented.
 const activeLandmarkNames=new Set(['Quills','Amaranthine Fields','Mists','Downton']);
 const encounterRegistry=landmarkSpecs.filter(spec=>!activeLandmarkNames.has(spec[0])).map(([id,x,z],i)=>({
- id,x,z,seed:(741+i*7919)>>>0,phase:'unimplemented',visits:0,transitions:[],materialTransactions:[],
- visibleCount:0,clippedCount:0,errors:[]
+ id,x,z,seed:(741+i*7919)>>>0,phase:'dormant',visits:0,transitions:[],
+ materialTransactions:[],visibleCount:0,clippedCount:0,errors:[],
+ activationReason:null,phaseStartedAt:0,elapsed:0,near:false,
+ implementation:'lifecycle-only',performanceSteps:0
 }));
+const ENCOUNTER_PRIME_RADIUS=7.2,ENCOUNTER_START_RADIUS=2.9;
+function encounterTransition(e,next,reason){
+ if(e.phase===next)return;
+ e.transitions.push({from:e.phase,to:next,reason,time:round(clock.time,3)});
+ if(e.transitions.length>12)e.transitions.shift();
+ e.phase=next;e.phaseStartedAt=clock.time;
+ if(next==='performing')e.visits++;
+}
+function encounterStep(dt){
+ // A location can be primed only when its anchor is within the aperture's
+ // horizontal vicinity. Performance begins on Wanderer approach, not camera orbit.
+ for(const e of encounterRegistry){
+  const apertureDistance=Math.hypot(e.x-wanderX,e.z-wanderZ);
+  const walkerDistance=Math.hypot(e.x-walker.x,e.z-walker.z);
+  const near=apertureDistance<=ENCOUNTER_PRIME_RADIUS;
+  e.near=near;
+  if(!near)continue;
+  e.performanceSteps++;
+  if(e.phase==='dormant')encounterTransition(e,'primed','aperture-near');
+  if(e.phase==='primed'&&walkerDistance<=ENCOUNTER_START_RADIUS){
+   e.activationReason='wanderer-near';
+   encounterTransition(e,'performing','wanderer-near');
+  }
+  // A performing state is a witnessable trigger, NOT a fabricated scene.
+  // Scene-specific transitions to consequence/settled will be implemented later.
+ }
+}
 function inspectEncounters(){
  const nearest=encounterRegistry.map(e=>({e,d:Math.hypot(walker.x-e.x,walker.z-e.z)})).sort((a,b)=>a.d-b.d)[0];
- return {status:'specification-only',implemented:0,planned:encounterRegistry.length,
+ return {status:'lifecycle-foundation-only',implemented:0,planned:encounterRegistry.length,
+  primeRadius:ENCOUNTER_PRIME_RADIUS,startRadius:ENCOUNTER_START_RADIUS,
   nearest:nearest?{id:nearest.e.id,distance:round(nearest.d,2)}:null,
   encounters:encounterRegistry.map(e=>({id:e.id,seed:e.seed,anchor:[e.x,e.z],phase:e.phase,
-   visits:e.visits,transitions:e.transitions,materialTransactions:e.materialTransactions,
+   implementation:e.implementation,visits:e.visits,activationReason:e.activationReason,
+   timeInPhase:round(clock.time-e.phaseStartedAt,2),near:e.near,performanceSteps:e.performanceSteps,
+   transitions:e.transitions,materialTransactions:e.materialTransactions,
    visibleCount:e.visibleCount,clippedCount:e.clippedCount,errors:e.errors})),
-  limits:'No new encounter rendering, geology mutation, or physical BB transactions have been implemented yet.'};
+  limits:'Lifecycle transitions are instrumented; no new encounter rendering, geological edits, or BB transactions yet.'};
 }
 function landmarkStep(dt){
  landmarkTime+=dt;landmarkGroup.position.set(-wanderX,0,-wanderZ);
@@ -1412,6 +1444,7 @@ function simulate(dt){
  if(quarry){quarry.step(dt);quarry.sync()}
  rainStep(dt);
  landmarkStep(dt);
+ encounterStep(dt);
  fugitiveStep(dt);
  quillStep(dt);
  gardenStep(dt);
