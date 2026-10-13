@@ -37,25 +37,25 @@ jobs:
           content=content[:start]+f"const BUILD='{sha}';\ndocument.querySelector('#build').textContent=BUILD.slice(0,8);\n"+content[end:]
           js.write_text(content)
           athanor=root/'athanor'
-          athanor_js=athanor/'world.js'
-          athanor_content=athanor_js.read_text()
-          athanor_start=athanor_content.index('// Build metadata is stamped by the Pages workflow')
-          athanor_end=athanor_content.index("document.querySelector('#fresh').onclick=()=>location.reload();",athanor_start)
-          athanor_js.write_text(athanor_content[:athanor_start]+f"const BUILD='{sha}';\ndocument.querySelector('#build').textContent=BUILD.slice(0,8);\n"+athanor_content[athanor_end:])
-          for html,prefix in ((base/'index.html','./'),(athanor/'index.html','./'),(root/'index.html','./athanor/')):
-              page=html.read_text()
-              for name in ('world.js','interface.css','errors.js'):
-                  asset=f'{prefix}{name}'
-                  assert asset in page
-                  page=page.replace(asset,f'{asset}?v={sha}')
-              html.write_text(page)
+          # Wanderer remains a separate stamped regression fixture.
+          page=base/'index.html'
+          html=page.read_text()
+          for name in ('world.js','interface.css','errors.js'):
+              asset='./'+name
+              assert asset in html
+              html=html.replace(asset,f'{asset}?v={sha}')
+          page.write_text(html)
           (base/'release.json').write_text(json.dumps({'sha':sha})+'\n')
           (athanor/'release.json').write_text(json.dumps({'sha':sha})+'\n')
           (root/'build.json').write_text(json.dumps({'sha':sha})+'\n')
           assert all((base/n).is_file() and (athanor/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
-          for html,prefix in ((base/'index.html','./'),(athanor/'index.html','./'),(root/'index.html','./athanor/')):
-              page=html.read_text()
-              assert all(f'{prefix}{name}?v={sha}' in page for name in ('world.js','interface.css','errors.js'))
+          wanderer=(base/'index.html').read_text()
+          assert all(f'./{name}?v={sha}' in wanderer for name in ('world.js','interface.css','errors.js'))
+          for entry in (root/'index.html',athanor/'index.html'):
+              html=entry.read_text()
+              assert 'ATHANOR' in html and 'three.module.js' in html
+              assert 'world.js' not in html
+          assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
           print('PUBLIC ENTRIES READY',sha)
           PY
       - uses: actions/upload-pages-artifact@v3
@@ -70,14 +70,13 @@ jobs:
           python3 - <<'PY'
           import os,time,urllib.request
           sha=os.environ['BUILD_SHA']
-          for url,prefix in (('https://bonoj.github.io/Hermeticon/','./athanor/'),('https://bonoj.github.io/Hermeticon/athanor/','./'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./')):
+          for url,marker in (('https://bonoj.github.io/Hermeticon/','ATHANOR'),('https://bonoj.github.io/Hermeticon/athanor/','ATHANOR'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./world.js?v='+sha)):
               for i in range(36):
                   try:
                       req=urllib.request.Request(url+'?deployment='+sha+'&attempt='+str(i),headers={'Cache-Control':'no-cache','Pragma':'no-cache'})
                       with urllib.request.urlopen(req,timeout=15) as response:
                           html=response.read().decode()
-                      assert prefix+'world.js?v='+sha in html
-                      assert prefix+'interface.css?v='+sha in html
+                      assert marker in html
                       print('PUBLIC ENTRY VERIFIED',url,sha)
                       break
                   except Exception as e:

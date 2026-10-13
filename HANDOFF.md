@@ -1,19 +1,19 @@
 # Hermeticon — repository and hosting handoff
 
-Hermeticon is a home for executable worlds; **Wanderer is one world, not Hermeticon itself**. The root entrance opens the Athanor clone of Wanderer, while the original Wanderer remains a separate reference fixture. No general-purpose shell is wired into the live application; the unused `shell/` scaffold was removed. Evolve shared hosting contracts from working worlds, inside out.
+Hermeticon is a home for executable worlds; **Wanderer is one world, not Hermeticon itself**. The root and `athanor/` entrances run the same empty Athanor observer shell. The original Wanderer remains a separate reference fixture. No general-purpose shell is wired into the live application; the unused `shell/` scaffold was removed. Evolve shared hosting contracts from working worlds, inside out.
 
 ## Boundaries
 
 - **Wanderer source and operational handoff:** `examples/wanderer-separated/`, especially [Wanderer HANDOFF](examples/wanderer-separated/HANDOFF.md). Its geology, Crucible, BBs, inhabitants, encounters and material contracts are not Hermeticon-wide requirements.
-- **Public root:** https://bonoj.github.io/Hermeticon/ ; root `index.html` is a thin entrance to `athanor/` assets, not a second implementation.
-- **Athanor specimen:** https://bonoj.github.io/Hermeticon/athanor/ ; currently an intact clone of Wanderer, prior to architectural subtraction.
+- **Public root:** https://bonoj.github.io/Hermeticon/ ; root `index.html` mirrors `athanor/index.html` (with only the relative build manifest path adjusted).
+- **Athanor specimen:** https://bonoj.github.io/Hermeticon/athanor/ ; an empty observer shell; the original Wanderer clone files remain available as `athanor/world.js` but are not loaded.
 - **Wanderer fixture:** https://bonoj.github.io/Hermeticon/examples/wanderer-separated/ ; preserve both entrances until an explicitly tested hosting change.
 - **Historical source:** `archive/legacy-monolith/index.html` is not the live baseline.
 - **Publishing:** `.github/workflows/pages.yml` runs GitHub Pages Actions on `main`; consult `bonoj/Gate/README.md` before altering delivery.
 
 ## Build identity and deployment
 
-`Publish Hermeticon` assembles `site/`, stamps the current full `github.sha` into both `examples/wanderer-separated/world.js` and `athanor/world.js`, displays its first eight characters, and adds `?v=<full SHA>` to all three entries' references to `world.js`, `interface.css`, and `errors.js`. It also writes `build.json` and release manifests in both world directories. The static source version of `world.js` is intentionally unverified before stamping. Do not display an ancestral SHA as the live build.
+`Publish Hermeticon` assembles `site/`, stamps the current full `github.sha` into the preserved `examples/wanderer-separated/world.js` and cache-busts that fixture's three assets. Both Athanor entrances read `build.json` directly for the current build identity. It also writes `build.json` and release manifests in both world directories. The static source version of `world.js` is intentionally unverified before stamping. Do not display an ancestral SHA as the live build.
 
 Expected public URLs (never use a `/releases/<sha>/index.html` link):
 - https://bonoj.github.io/Hermeticon/
