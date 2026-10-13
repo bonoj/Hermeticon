@@ -76,6 +76,8 @@ These are **proposed experiences, not implemented behaviors or canonical lore**.
 - **Keep budgets bounded.** Small macro grammars and BB lattices should be CPU/phone-first, instrumentable, and composable; avoid 18 always-running heavy simulations.
 - **Instrument the surprise.** Each experiment should expose state, transition, counts, ownership and build identity so an observer can distinguish intended magic from a bug.
 
+For the implementation boundaries, lifecycle, material accounting, and eighteen-report witness contract, see [ENCOUNTERS_SPEC.md](ENCOUNTERS_SPEC.md).
+
 ## Second pass — geological theatre inside the Hermeticon (2026-10-13)
 
 **This section supersedes the staging/mechanics of the first-pass proposals above, not the original map evidence.** All eighteen remain *proposed, unimplemented* experiences. Prefer terrain mutation and consequential material movement over merely showing an animation. Existing geology is authoritative; don't counterfeit excavation by spawning unrelated particles. Any genuinely excavated or deposited quantity must reconcile against the world/material ledger, and any unimplemented conversion must be marked a visual prototype.
