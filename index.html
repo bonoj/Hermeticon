@@ -23,7 +23,7 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.modul
 // Publication replaces this token with the exact Repository source commit SHA.
 const BUILD='f8fd252ca4abb91f7ca7c445197944a044df2173';
 document.querySelector('#build').textContent=BUILD.slice(0,8);
-document.querySelector('#fresh').onclick=()=>{const u=new URL(location.href);u.searchParams.set('fresh',Date.now().toString(36));location.replace(u.href)};
+document.querySelector('#fresh').onclick=()=>location.reload();
 
 
 try {
