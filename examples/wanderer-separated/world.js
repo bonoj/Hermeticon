@@ -582,7 +582,7 @@ const ENCOUNTER_PRIME_RADIUS=7.2,ENCOUNTER_START_RADIUS=2.9;
 // First six macro scenes. All surfaces use the same inner-aperture fragment clip.
 // These are visual witnesses; no geology/material conservation is claimed.
 const encounterScenes=new Map();
-const encounterFirstSix=new Set(['Summerlands',"Winter King's Realm",'Ice Vale','Gradient','Heart of Darkness','Bood Lakes']);
+const encounterPrototypeNames=new Set(['Summerlands',"Winter King's Realm",'Ice Vale','Gradient','Heart of Darkness','Bood Lakes','Jade Peak','Silverpass and Gemgates','Cinderglade and Fell Crater','Whisperwood','Brambles','Rift']);
 function encounterMaterial(color,emissive=0){
  const mat=new T.MeshStandardMaterial({color,emissive,emissiveIntensity:emissive?.35:0,roughness:.68,side:T.DoubleSide});
  apertureClip(mat);return mat;
@@ -650,12 +650,60 @@ function buildEncounterScene(e){
     moving.push({mesh:bell,kind:'bell',phase:i*.9+j});
    }
   }
+ }else if(e.id==='Jade Peak'){
+  // Folded triangular silhouette: a mountain skin becoming a dragon.
+  for(let i=0;i<12;i++){
+   const a=i*.55;
+   const scale=encounterPart(group,encounterGeo.petal,i%3?blue:gold,e.x+Math.cos(a)*(.18+i*.07),base+.5+i*.085,e.z+Math.sin(a)*(.18+i*.07),1.1,1.1,1.1);
+   moving.push({mesh:scale,kind:'dragon-scale',phase:i*.35});
+  }
+  const head=encounterPart(group,encounterGeo.sphere,ember,e.x+.65,base+1.8,e.z,.95,1.1,1.5);
+  moving.push({mesh:head,kind:'dragon-head',phase:0});
+ }else if(e.id==='Silverpass and Gemgates'){
+  for(let j=0;j<3;j++){
+   const x=e.x+(j-1)*.9;
+   for(const side of [-1,1])encounterPart(group,encounterGeo.column,j===0?gold:j===1?blue:violet,x+side*.29,base+.48,e.z,.8,.85,.8);
+   encounterPart(group,encounterGeo.block,j===0?gold:j===1?blue:violet,x,base+.92,e.z,2.7,.7,.8);
+  }
+  for(let i=0;i<9;i++){
+   const bead=encounterPart(group,encounterGeo.sphere,i%3===0?gold:i%3===1?blue:violet,e.x-1.4+i*.23,base+.2,e.z+.6);
+   moving.push({mesh:bead,kind:'cargo',phase:i*.3});
+  }
+ }else if(e.id==='Cinderglade and Fell Crater'){
+  for(let i=0;i<8;i++){
+   const a=i*Math.PI*2/8,r=.8+(i%2)*.18;
+   const tree=encounterPart(group,encounterGeo.petal,dark,e.x+Math.cos(a)*r,base+.4,e.z+Math.sin(a)*r,1.3,1.4,1.3);
+   moving.push({mesh:tree,kind:'firefighter',phase:i*.6});
+  }
+  for(let i=0;i<5;i++){
+   const coal=encounterPart(group,encounterGeo.sphere,ember,e.x,base+.22+i*.16,e.z);
+   moving.push({mesh:coal,kind:'ember',phase:i*.9});
+  }
+ }else if(e.id==='Whisperwood'){
+  for(let i=0;i<9;i++){
+   const a=i*2.399,r=.3+Math.sqrt(i)*.34;
+   const trunk=encounterPart(group,encounterGeo.column,dark,e.x+Math.cos(a)*r,base+.47,e.z+Math.sin(a)*r,.75,.85,.75);
+   const branch=encounterPart(group,encounterGeo.needle,violet,trunk.position.x,base+1.05,trunk.position.z,1,1.2,1);
+   moving.push({mesh:branch,kind:'listening-branch',phase:i*.7});
+  }
+ }else if(e.id==='Brambles'){
+  for(let i=0;i<14;i++){
+   const a=i*Math.PI*2/14,r=.95+(i%3)*.16;
+   const thorn=encounterPart(group,encounterGeo.needle,i%2?violet:dark,e.x+Math.cos(a)*r,base+.36,e.z+Math.sin(a)*r,1,1.5,1);
+   moving.push({mesh:thorn,kind:'bramble',phase:a});
+  }
+ }else if(e.id==='Rift'){
+  for(let i=0;i<13;i++){
+   const x=e.x-1.1+i*.18;
+   const stitch=encounterPart(group,encounterGeo.block,i%2?violet:pale,x,base+.28,e.z+Math.sin(i*1.4)*.2,.9,.45,1.1);
+   moving.push({mesh:stitch,kind:'stitch',phase:i*.35});
+  }
  }
  group.position.set(-wanderX,0,-wanderZ);group.visible=false;
  encounterScenes.set(e.id,{group,moving,ground,base});
  e.implementation='visual-prototype';e.visibleCount=group.children.length;
 }
-for(const e of encounterRegistry)if(encounterFirstSix.has(e.id))buildEncounterScene(e);
+for(const e of encounterRegistry)if(encounterPrototypeNames.has(e.id))buildEncounterScene(e);
 function encounterVisualStep(e){
  const sceneData=encounterScenes.get(e.id);if(!sceneData)return;
  const {group,moving}=sceneData;
@@ -672,6 +720,14 @@ function encounterVisualStep(e){
   else if(kind==='stair')mesh.scale.y=.45*Math.min(1,Math.max(.05,(t-phase)*.9));
   else if(kind==='optic')mesh.rotation.y=t*.9;
   else if(kind==='bell')mesh.rotation.z=Math.sin(t*2.3+phase)*.23;
+  else if(kind==='dragon-scale')mesh.rotation.z=Math.sin(t*.9+phase)*.7;
+  else if(kind==='dragon-head')mesh.position.y=sceneData.base+1.8+Math.sin(t*.8)*.25;
+  else if(kind==='cargo')mesh.position.x=e.x-1.4+phase*.5+Math.min(.8,t*.09);
+  else if(kind==='firefighter')mesh.rotation.z=Math.sin(t*1.8+phase)*.24;
+  else if(kind==='ember')mesh.position.y=sceneData.base+.22+phase*.18+Math.abs(Math.sin(t*1.4+phase))*.5;
+  else if(kind==='listening-branch')mesh.rotation.z=Math.sin(t*.6+phase)*.28;
+  else if(kind==='bramble')mesh.scale.y=1.5+Math.sin(t*.8+phase)*.45;
+  else if(kind==='stitch')mesh.position.y=sceneData.base+.28+Math.sin(t*.75+phase)*.13;
  }
  if(e.phase==='performing'&&t>11)encounterTransition(e,'settled','visual-cycle-complete');
 }
@@ -703,7 +759,7 @@ function encounterStep(dt){
 }
 function inspectEncounters(){
  const nearest=encounterRegistry.map(e=>({e,d:Math.hypot(walker.x-e.x,walker.z-e.z)})).sort((a,b)=>a.d-b.d)[0];
- return {status:'six-visual-prototypes',implemented:0,visualPrototypes:encounterScenes.size,planned:encounterRegistry.length,
+ return {status:'twelve-visual-prototypes',implemented:0,visualPrototypes:encounterScenes.size,planned:encounterRegistry.length,
   primeRadius:ENCOUNTER_PRIME_RADIUS,startRadius:ENCOUNTER_START_RADIUS,
   nearest:nearest?{id:nearest.e.id,distance:round(nearest.d,2)}:null,
   encounters:encounterRegistry.map(e=>({id:e.id,seed:e.seed,anchor:[e.x,e.z],phase:e.phase,
@@ -711,7 +767,7 @@ function inspectEncounters(){
    timeInPhase:round(clock.time-e.phaseStartedAt,2),near:e.near,performanceSteps:e.performanceSteps,
    transitions:e.transitions,materialTransactions:e.materialTransactions,
    visibleCount:e.visibleCount,clippedCount:e.clippedCount,errors:e.errors})),
-  limits:'Six clipped macro visual prototypes; none excavates geology or transacts authoritative material. Not complete encounters.'};
+  limits:'Twelve clipped macro visual prototypes; none excavates geology or transacts authoritative material. Not complete encounters.'};
 }
 function landmarkStep(dt){
  landmarkTime+=dt;landmarkGroup.position.set(-wanderX,0,-wanderZ);
