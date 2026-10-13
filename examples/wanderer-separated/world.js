@@ -754,7 +754,8 @@ function encounterVisualStep(e){
  const {group,moving}=sceneData;
  group.position.set(-wanderX,0,-wanderZ);
  const local=Math.hypot(e.x-wanderX,e.z-wanderZ);
- group.visible=e.phase==='performing'&&local<APERTURE_RADIUS+2;
+ // Keep the completed scene as a persistent witness rather than erasing it at settlement.
+ group.visible=(e.phase==='performing'||e.phase==='settled')&&local<APERTURE_RADIUS+2;
  const t=clock.time-e.phaseStartedAt;
  for(const item of moving){
   const {mesh,kind,phase}=item;
@@ -780,7 +781,6 @@ function encounterVisualStep(e){
    const flee=Math.min(1,Math.max(0,(t-1)/5));
    mesh.position.x=item.originX+Math.cos(phase)*flee*.75;
    mesh.position.z=item.originZ+Math.sin(phase)*flee*.75;
-   mesh.position.y+=(kind==='house'?.002:.002)*Math.sin(t*3+phase);
   }
   else if(kind==='tower-brick')mesh.position.x=e.x+Math.sin(t*.6+phase)*Math.min(.5,t*.045);
   else if(kind==='tower-flame')mesh.scale.y=1.8+Math.sin(t*3)*.25;
@@ -807,7 +807,7 @@ function summerlandsGeology(e){
  }
  source.sort((a,b)=>a.score-b.score);destination.sort((a,b)=>a.score-b.score);
  const count=Math.min(12,source.length,destination.length);
- if(!count){e.errors.push('Summerlands geological sample transfer unavailable at authored terrain resolution');return;}
+ if(!count){const reason='Summerlands geological sample transfer unavailable at authored terrain resolution';if(!e.errors.includes(reason))e.errors.push(reason);return;}
  let initial=solidCount;
  for(let i=0;i<count;i++){
   const from=source[i],to=destination[i],value=field[from.index];
