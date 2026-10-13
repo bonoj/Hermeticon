@@ -26,6 +26,6 @@ Before changing deployment mechanics, read `bonoj/Gate/README.md`, the existing 
 
 ## Current world and material behavior
 
-The authored terrain has **22 named geographical nodes**. Quills, Amaranthine Fields, and Mists currently have dedicated local animations/systems; the other 19 have authored geography and landmark markers without distinct local behaviors. Names are not a license to invent canonical lore.
+The authored terrain has **22 named geographical nodes**, derived from an author-supplied hand-drawn map. Their source descriptions, clarifications, and historical atlas experiments are preserved in [WORLD_GENERATION_EXPERIMENT.md](examples/wanderer-separated/WORLD_GENERATION_EXPERIMENT.md); proposed systems in that note are not necessarily implemented. Quills, Amaranthine Fields, and Mists currently have dedicated local animations/systems; the other 19 have authored geography and landmark markers without distinct local behaviors. Names are not a license to invent canonical lore.
 
 Wanderer fire produces **125 red blood BBs and 375 yellow solid BBs per burst**. Released BBs persist across respawns, use geological coordinates, and remain gravity-driven. Wanderer tap navigation is suspended during the fire sequence and resumes on respawn. Fire and Wanderer fragments use shared aperture clipping; visibility is not material ownership. The current material arrays are transitional. For contracts, caveats, and verification, see `HANDOFF.md`.
