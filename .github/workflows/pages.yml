@@ -56,6 +56,12 @@ jobs:
               assert 'HERMETICON' in html and 'athanor.js' in html
               assert 'world.js' not in html
           assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
+          # Every public entrance must reference the newly deployed Athanor script.
+          for entry in (root/'index.html',athanor/'index.html'):
+              html=entry.read_text()
+              assert 'athanor.js' in html
+              html=html.replace('athanor.js',f'athanor.js?v={sha}')
+              entry.write_text(html)
           assert (athanor/'athanor.js').is_file()
           print('PUBLIC ENTRIES READY',sha)
           PY
