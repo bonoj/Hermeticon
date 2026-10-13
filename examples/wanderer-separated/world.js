@@ -1426,7 +1426,8 @@ renderer.domElement.addEventListener('pointercancel',e=>endGesture(e,true),{capt
 renderer.domElement.addEventListener('wheel',e=>recordInteraction('wheel',{deltaY:round(e.deltaY),cameraDistance:round(dist)}),{passive:true});
 probeButton.addEventListener('click',()=>recordInteraction('inspect-toggle',{open:probePanel.classList.contains('open')}));
 document.querySelector('#copyProbe').addEventListener('click',()=>recordInteraction('copy-report'));
-document.querySelector('#closeProbe').addEventListener('click',()=>recordInteraction('inspect-close'));
+// The Inspect button is the sole close affordance; the removed Close button must not be queried.
+document.querySelector('#detailsProbe')?.addEventListener('click',()=>recordInteraction('inspect-details'));
 
 
 const mainRenderStats={calls:0,triangles:0};let last=performance.now();
