@@ -19,3 +19,12 @@
 #buttons #probe{order:4;font-size:23px}
 #buttons #fresh{order:5;border:1px solid #66543a;background:#172333;color:#d9b879;width:46px;height:46px}
 #buttons svg{display:block;flex:none}
+
+/* Anchor the rightmost controls on the bottom line; overflow to the upper left. */
+#buttons{flex-direction:row-reverse;flex-wrap:wrap-reverse;justify-content:flex-start}
+#buttons #fresh{order:0}
+#buttons #probe{order:1}
+#buttons #mapLens{order:2}
+#buttons #populationNext{order:3}
+#buttons #rainToggle{order:4}
+#buttons #fire{order:5}
