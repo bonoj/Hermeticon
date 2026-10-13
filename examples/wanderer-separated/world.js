@@ -320,6 +320,7 @@ const gelSpacing=.42,gelYield=4*Math.PI*RAIN_R**3/3*12,gelArea=gelSpacing*gelSpa
 const gelColumns=new Map(),gelNodes=[];let gelAbsorbed=0,gelVolume=0,gelEdges=0,gelRejected=0,gelMoves=0,gelLastDraw=0,gelLastFlow=0,gelRimNodes=0,gelBeadVolume=0,gelStretch=0,gelAirEdges=0,gelReleased=0,gelReleasedVolume=0,gelPending=0,gelSegmentEmissions=0,gelEmissionSpan=0;
 const gelGroup=new T.Group();gelGroup.userData.worldDomain=true;world.add(gelGroup);
 const gelNodeMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.052,0),new T.MeshBasicMaterial({color:0xcaa66b}),2048);
+gelNodeMesh.count=0; // No uninitialized origin instances before the first gel rebuild.
 gelNodeMesh.instanceMatrix.setUsage(T.DynamicDrawUsage);gelNodeMesh.frustumCulled=false;gelGroup.add(gelNodeMesh);
 const gelLineGeo=new T.BufferGeometry(),gelLines=new T.LineSegments(gelLineGeo,new T.LineBasicMaterial({color:0xcfae77,transparent:true,opacity:.83,depthWrite:false}));
 gelLines.frustumCulled=false;gelGroup.add(gelLines);
