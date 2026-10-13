@@ -1035,7 +1035,7 @@ function mistReedsStep(dt){
   gallery.phase=Math.max(0,gallery.phase-dt*3.8);
   if(gallery.phase===0){
    gallery.index=gallery.next;gallery.phase=0;gallery.changing=false;
-   populationButton.textContent='✦ '+(gallery.index+1)+'/50';
+   populationButton.textContent='🌱';
    populationButton.title=populationNames[gallery.index]+' · next';
   }
  }
