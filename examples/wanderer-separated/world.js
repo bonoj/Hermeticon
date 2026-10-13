@@ -1041,7 +1041,7 @@ function fireStep(dt){
 // Wanderer fire consequence: same 125 blood / 375 solid units as Pumpkin.
 const burnN=PUMPKIN_TOTAL,burnRadius=pumpkinBeadRadius;
 const burnMesh=new T.InstancedMesh(splatGeo,splatMat.clone(),burnN);burnMesh.count=0;burnMesh.frustumCulled=false;burnMesh.userData.matterTag='micro';world.add(burnMesh);
-const burnDummy=new T.Object3D(),burnParticles=[],burn={phase:'ready',t:0,cooldown:0,impacts:0,respawns:0};
+const burnDummy=new T.Object3D(),burnParticles=[],burn={phase:'ready',t:0,cooldown:0,impacts:0,respawns:0,hop:0,headingX:1,headingZ:0};
 const burnMaterial=wanderCube.material.clone();burnMaterial.emissive=new T.Color(0xff3100);wanderCube.material=burnMaterial;
 for(let i=0;i<burnN;i++)burnMesh.setColorAt(i,new T.Color(i<PUMPKIN_LIQUID?0xc51e30:0xffd23b));
 burnMesh.instanceColor.needsUpdate=true;
@@ -1049,15 +1049,26 @@ function burnStep(dt){
  burn.cooldown=Math.max(0,burn.cooldown-dt);
  if(burn.phase==='ready'&&burn.cooldown===0&&fire.energy>.22){
   const dx=walker.x-FIRE_X,dz=walker.z-FIRE_Z,d=Math.hypot(dx,dz);
-  if(d<.7){burn.phase='recoil';burn.t=0;burn.ux=dx/(d||1);burn.uz=dz/(d||1);walker.target=null;walker.route=[];burn.impacts++}
+  if(d<.7){burn.phase='recoil';burn.t=0;burn.ux=dx/(d||1);burn.uz=dz/(d||1);burn.headingX=burn.ux;burn.headingZ=burn.uz;walker.target=null;walker.route=[];burn.impacts++}
  }
  if(burn.phase==='recoil'){
   burn.t+=dt;const nx=walker.x+burn.ux*4.8*dt,nz=walker.z+burn.uz*4.8*dt,h=walkSupport(nx,nz);
   if(h!==null){walker.x=nx;walker.z=nz;walker.y=h}
   burnMaterial.emissiveIntensity=1+Math.sin(burn.t*31)*.5;
-  if(burn.t>=.55){
-   burn.phase='burst';burn.t=0;burnParticles.length=0;
-   const cx=walker.x-wanderX,cy=walker.y+WANDER_SIZE*.5,cz=walker.z-wanderZ;
+  if(burn.t>=.4){burn.phase='panic';burn.t=0;}
+ }else if(burn.phase==='panic'){
+  burn.t+=dt;
+  burn.hop=Math.abs(Math.sin(burn.t*17))*.32;
+  burnMaterial.emissiveIntensity=1.3+Math.sin(burn.t*23)*.55;
+  if(burn.t>=1.05){burn.phase='flight';burn.t=0;}
+ }else if(burn.phase==='flight'){
+  burn.t+=dt;burn.hop=Math.abs(Math.sin(burn.t*19))*.14;
+  const nx=walker.x+burn.headingX*3.4*dt,nz=walker.z+burn.headingZ*3.4*dt,h=walkSupport(nx,nz);
+  if(h!==null){walker.x=nx;walker.z=nz;walker.y=h}
+  burnMaterial.emissiveIntensity=1.5+Math.sin(burn.t*27)*.4;
+  if(burn.t>=1.05){
+   burn.phase='burst';burn.t=0;burn.hop=0;burnParticles.length=0;
+   const cx=walker.x-wanderX,cy=walker.y+WANDER_SIZE*.5+burn.hop,cz=walker.z-wanderZ;
    for(let i=0;i<burnN;i++){
     const lobe=i%7,a=lobe*2.39996323+(rainRandom(i,71)-.5)*.85;
     const v=(rainRandom(i,72)-.35)*1.4,rad=Math.sqrt(Math.max(.03,1-v*v));
@@ -1069,7 +1080,7 @@ function burnStep(dt){
   }
  }else if(burn.phase==='burst'){
   burn.t+=dt;
-  if(burn.t>=1.5){burn.phase='ready';burn.t=0;burn.cooldown=2.5;burn.respawns++;
+  if(burn.t>=1.5){burn.phase='ready';burn.t=0;burn.hop=0;burn.cooldown=2.5;burn.respawns++;
    walker.x=0;walker.z=0;walker.y=walkSurface(0,0)??walker.y;walker.target=null;walker.route=[];
    wanderCube.visible=true;burnMaterial.emissiveIntensity=0;
   }
@@ -1079,6 +1090,16 @@ function burnStep(dt){
   if(!p.rest){
    const ox=p.x,oy=p.y,oz=p.z;p.vy-=9.8*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
    terrainMicroContact(p,ox,oy,oz,burnRadius);
+   // Contact friction is separate from normal restitution: damp only the
+   // tangential component while a bead is resting against geological rock.
+   const density=fieldSample(p.x+wanderX,p.y,p.z+wanderZ);
+   if(density>-burnRadius*.95&&density<burnRadius*.3){
+    const [nx,ny,nz]=rainSurfaceNormal(p.x+wanderX,p.y,p.z+wanderZ);
+    const vn=p.vx*nx+p.vy*ny+p.vz*nz;
+    const tx=p.vx-vn*nx,ty=p.vy-vn*ny,tz=p.vz-vn*nz;
+    const friction=Math.min(1,7*dt);
+    p.vx-=tx*friction;p.vy-=ty*friction;p.vz-=tz*friction;
+   }
    const rr=Math.hypot(p.x,p.y,p.z);
    if(p.y<0&&rr>INNER_R-.06){
     p.owner='hermeticon';const limit=INNER_R-.06,k=limit/rr;p.x*=k;p.y*=k;p.z*=k;
@@ -1388,7 +1409,7 @@ function simulate(dt){
   sharedApertureOffset.set(wanderX,0,wanderZ);
  }
  burnStep(dt);
- wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5,walker.z-wanderZ);
+ wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5+burn.hop,walker.z-wanderZ);
  wanderEyeStep();
 }
 let angle=.6,elev=.27,dist=27,targetY=0,lastX=0,lastY=0;
