@@ -23,3 +23,9 @@ Edit the shared example assets; preserve the root entry and example as two entra
 Before changing deployment mechanics, read `bonoj/Gate/README.md`, the existing workflow, and `HANDOFF.md`. **Do not improvise a new publishing path or SHA-specific release URL.** A commit is not proof that the public build is live; verify the actual public HTML/build SHA and runtime.
 
 **Failure is recoverable, not a lock:** a failed build, verification, or deployment does not prohibit another push or manual `workflow_dispatch` retry. Diagnose the failing step; repair and trigger a new run. New pushes supersede in-flight work; never require the user to chase refreshes or manually prove delivery. Do not report success without evidence. See `HANDOFF.md` for retry steps and engineering contracts.
+
+## Current world and material behavior
+
+The authored terrain has **22 named geographical nodes**. Quills, Amaranthine Fields, and Mists currently have dedicated local animations/systems; the other 19 have authored geography and landmark markers without distinct local behaviors. Names are not a license to invent canonical lore.
+
+Wanderer fire produces **125 red blood BBs and 375 yellow solid BBs per burst**. Released BBs persist across respawns, use geological coordinates, and remain gravity-driven. Wanderer tap navigation is suspended during the fire sequence and resumes on respawn. Fire and Wanderer fragments use shared aperture clipping; visibility is not material ownership. The current material arrays are transitional. For contracts, caveats, and verification, see `HANDOFF.md`.
