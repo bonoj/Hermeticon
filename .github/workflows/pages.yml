@@ -53,7 +53,7 @@ jobs:
           assert all(f'./{name}?v={sha}' in wanderer for name in ('world.js','interface.css','errors.js'))
           for entry in (root/'index.html',athanor/'index.html'):
               html=entry.read_text()
-              assert 'ATHANOR' in html and 'athanor.js' in html
+              assert 'HERMETICON' in html and 'athanor.js' in html
               assert 'world.js' not in html
           assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
           assert (athanor/'athanor.js').is_file()
@@ -71,7 +71,7 @@ jobs:
           python3 - <<'PY'
           import os,time,urllib.request
           sha=os.environ['BUILD_SHA']
-          for url,marker in (('https://bonoj.github.io/Hermeticon/','ATHANOR'),('https://bonoj.github.io/Hermeticon/athanor/','ATHANOR'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./world.js?v='+sha)):
+          for url,marker in (('https://bonoj.github.io/Hermeticon/','HERMETICON'),('https://bonoj.github.io/Hermeticon/athanor/','HERMETICON'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./world.js?v='+sha)):
               for i in range(36):
                   try:
                       req=urllib.request.Request(url+'?deployment='+sha+'&attempt='+str(i),headers={'Cache-Control':'no-cache','Pragma':'no-cache'})

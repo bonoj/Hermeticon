@@ -5,7 +5,7 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.modul
 // Never display the inherited JIT source revision as the current build.
 let BUILD='unverified';
 try {
- const response=await fetch('../build.json',{cache:'no-store'});
+ const response=await fetch(new URL('../build.json',import.meta.url),{cache:'no-store'});
  if(!response.ok)throw Error('Build metadata HTTP '+response.status);
  const info=await response.json();
  if(!/^[0-9a-f]{40}$/.test(info.sha))throw Error('Invalid deployment SHA');
@@ -65,12 +65,22 @@ const detailsButton=document.querySelector('#detailsProbe'),copyButton=document.
 let probeFrames=0,probeFrameMs=0,probeLast=performance.now(),displayFps=null;
 const fpsLabel=document.querySelector('#fps');
 function inspectWorld(){
- const report={identity:{build:BUILD,fps:displayFps},mount:{name:'empty',children:world.children.length},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov},lighting:{hemisphere:true,directional:true,point:true},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()}};
+ const report={identity:{build:BUILD,fps:displayFps},mount:{name:'empty',children:world.children.length},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()}};
  probeText.value=JSON.stringify(report,null,2);return report;
 }
 probeButton.onclick=()=>{
- const opened=probePanel.classList.toggle('open');
- if(opened)inspectWorld();
+ try{
+  const snapshot=JSON.stringify(inspectWorld(),null,2);
+  if(!snapshot)throw Error('Empty inspection');
+  const legacyCopy=()=>{
+   probeText.value=snapshot;probeText.style.setProperty('display','block','important');
+   probeText.focus();probeText.select();probeText.setSelectionRange(0,snapshot.length);
+   let ok=false;try{ok=document.execCommand('copy')===true}catch(e){console.warn('copy-error',e)}
+   probeText.style.removeProperty('display');return ok;
+  };
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(snapshot).catch(()=>{if(!legacyCopy())console.warn('Clipboard unavailable')});
+  else if(!legacyCopy())console.warn('Clipboard unavailable');
+ }catch(e){console.error('inspect-copy-error',e)}
 };
 detailsButton.onclick=()=>{
  const expanded=probePanel.classList.toggle('details');
