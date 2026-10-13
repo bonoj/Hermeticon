@@ -247,7 +247,7 @@ function paintMapLens(chunks=terrainChunks){
  }
  color.needsUpdate=true;
  }
- document.querySelector('#mapLens').textContent='◈ '+mode;
+ document.querySelector('#lensName').textContent=mode;
 }
 document.querySelector('#mapLens').onclick=()=>{mapModeIndex=(mapModeIndex+1)%mapModes.length;paintMapLens()};
 if(atlas)paintMapLens();
@@ -256,6 +256,8 @@ else document.querySelector('#mapLens').hidden=true;
 let lastMeshX=0,lastMeshZ=0;
 /* Matter v2: one conserved 10k-unit cloud inventory and terrain contact. */
 const RAIN_N=10000,RAIN_DURATION=18,RAIN_R=.037;
+let rainEnabled=true;
+document.querySelector('#rainToggle').addEventListener('click',()=>{rainEnabled=!rainEnabled;const b=document.querySelector('#rainToggle');b.classList.toggle('active',rainEnabled);b.setAttribute('aria-pressed',String(rainEnabled));});
 const rainX=new Float32Array(RAIN_N),rainY=new Float32Array(RAIN_N),rainZ=new Float32Array(RAIN_N),rainVX=new Float32Array(RAIN_N),rainVY=new Float32Array(RAIN_N),rainVZ=new Float32Array(RAIN_N),rainRest=new Uint8Array(RAIN_N);
 // Geological coordinates persist independently of the moving aperture.
 const rainOwner=new Uint8Array(RAIN_N);
@@ -467,8 +469,7 @@ function rainStep(dt){
   if(y>=0&&x*x+y*y+z*z<INNER_R*INNER_R)overlap++;
  }
  // Cloud emission paused for material-system exploration; existing BBs remain live.
- const rainEnabled=true;
- cloud.visible=rainEnabled;
+ cloud.visible=true;
  if(rainEnabled)rainBudget+=dt*RAIN_N/RAIN_DURATION*overlap/64;
  // Failed emission candidates are retried, never silently deducted.
  let attempts=rainEnabled?Math.min(RAIN_N-rainEmitted,Math.floor(rainBudget)):0;
@@ -1375,10 +1376,23 @@ function inspectWorld(){
  };
  probeReport=JSON.stringify(report,null,2);probeText.value=probeReport;return report;
 }
+const copyToast=document.querySelector('#copyToast');
+let toastTimeout;
+function showCopyToast(message){copyToast.textContent=message;copyToast.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>copyToast.classList.remove('visible'),1600)}
 probeButton.onclick=()=>{
- probePanel.classList.toggle('open');
- if(probePanel.classList.contains('open'))inspectWorld();
- else {probePanel.classList.remove('details');detailsButton.setAttribute('aria-expanded','false');detailsButton.textContent='DETAILS ▾'}
+ try{
+  inspectWorld();
+  const snapshot=probeReport;
+  if(!snapshot)throw Error('Empty inspection');
+  const legacyCopy=()=>{
+   probeText.value=snapshot;probeText.style.setProperty('display','block','important');
+   probeText.focus();probeText.select();probeText.setSelectionRange(0,snapshot.length);
+   let ok=false;try{ok=document.execCommand('copy')===true}catch(e){telemetryEvent('copy-error',e)}
+   probeText.style.removeProperty('display');return ok;
+  };
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(snapshot).then(()=>showCopyToast('COPIED'),()=>showCopyToast(legacyCopy()?'COPIED':'COPY FAILED'));
+  else showCopyToast(legacyCopy()?'COPIED':'COPY FAILED');
+ }catch(e){telemetryEvent('inspect-copy-error',e);showCopyToast('COPY FAILED')}
 };
 const detailsButton=document.querySelector('#detailsProbe') || (()=>{
  const button=document.createElement('button');
@@ -1424,7 +1438,7 @@ function endGesture(e,cancelled=false){const p=screenPoint(e);recordInteraction(
 renderer.domElement.addEventListener('pointerup',e=>endGesture(e),{capture:false});
 renderer.domElement.addEventListener('pointercancel',e=>endGesture(e,true),{capture:false});
 renderer.domElement.addEventListener('wheel',e=>recordInteraction('wheel',{deltaY:round(e.deltaY),cameraDistance:round(dist)}),{passive:true});
-probeButton.addEventListener('click',()=>recordInteraction('inspect-toggle',{open:probePanel.classList.contains('open')}));
+probeButton.addEventListener('click',()=>recordInteraction('inspect-copy'));
 document.querySelector('#copyProbe').addEventListener('click',()=>recordInteraction('copy-report'));
 // The Inspect button is the sole close affordance; the removed Close button must not be queried.
 document.querySelector('#detailsProbe')?.addEventListener('click',()=>recordInteraction('inspect-details'));
