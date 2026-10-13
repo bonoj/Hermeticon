@@ -577,7 +577,105 @@ const encounterRegistry=landmarkSpecs.filter(spec=>!activeLandmarkNames.has(spec
  activationReason:null,phaseStartedAt:0,elapsed:0,near:false,
  implementation:'lifecycle-only',performanceSteps:0
 }));
+
 const ENCOUNTER_PRIME_RADIUS=7.2,ENCOUNTER_START_RADIUS=2.9;
+// First six macro scenes. All surfaces use the same inner-aperture fragment clip.
+// These are visual witnesses; no geology/material conservation is claimed.
+const encounterScenes=new Map();
+const encounterFirstSix=new Set(['Summerlands',"Winter King's Realm",'Ice Vale','Gradient','Heart of Darkness','Bood Lakes']);
+function encounterMaterial(color,emissive=0){
+ const mat=new T.MeshStandardMaterial({color,emissive,emissiveIntensity:emissive?.35:0,roughness:.68,side:T.DoubleSide});
+ apertureClip(mat);return mat;
+}
+const encounterGeo={
+ sphere:new T.SphereGeometry(.12,8,6),
+ column:new T.CylinderGeometry(.08,.12,1,7),
+ petal:new T.ConeGeometry(.12,.5,5),
+ block:new T.BoxGeometry(.24,.24,.24),
+ ring:new T.TorusGeometry(.38,.065,6,18),
+ needle:new T.ConeGeometry(.08,.5,5)
+};
+function encounterPart(group,geometry,material,x,y,z,sx=1,sy=1,sz=1){
+ const mesh=new T.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);group.add(mesh);return mesh;
+}
+function buildEncounterScene(e){
+ const group=new T.Group();world.add(group);
+ const ground=walkSurface(e.x,e.z)??.2;
+ const base=ground+.12;
+ const gold=encounterMaterial(0xe8b851,0x543009),pale=encounterMaterial(0xbadbf3,0x193b5c),
+  violet=encounterMaterial(0x8b6ab9,0x291240),dark=encounterMaterial(0x454053),
+  ember=encounterMaterial(0xf39b6b,0x87371a),blue=encounterMaterial(0x669fba,0x16425e);
+ const moving=[];
+ if(e.id==='Summerlands'){
+  for(let i=0;i<9;i++){
+   const a=i*Math.PI*2/9,r=.7+(i%3)*.22;
+   const stem=encounterPart(group,encounterGeo.column,dark,e.x+Math.cos(a)*r,base+.25,e.z+Math.sin(a)*r,.6,.55,.6);
+   const flower=encounterPart(group,encounterGeo.petal,gold,stem.position.x,base+.63,stem.position.z,1,1,1);
+   moving.push({mesh:flower,kind:'flower',phase:a});
+  }
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;encounterPart(group,encounterGeo.block,gold,e.x+Math.cos(a)*.34,base+.09+i*.06,e.z+Math.sin(a)*.34,.65,.45,.65)}
+ }else if(e.id==="Winter King's Realm"){
+  for(let i=0;i<11;i++){const a=i*2.399,r=.2+Math.sqrt(i)*.25;
+   const crystal=encounterPart(group,encounterGeo.needle,pale,e.x+Math.cos(a)*r,base+.32,e.z+Math.sin(a)*r,1,1.2+(i%3)*.5,1);
+   moving.push({mesh:crystal,kind:'crown',phase:i*.43});
+  }
+  for(let i=0;i<7;i++){const a=i*Math.PI*2/7;encounterPart(group,encounterGeo.block,pale,e.x+Math.cos(a)*.5,base+.15,e.z+Math.sin(a)*.5,.8,.9,.8)}
+ }else if(e.id==='Ice Vale'){
+  for(let i=0;i<6;i++){
+   const sled=encounterPart(group,encounterGeo.block,i===5?ember:pale,e.x-1.3+i*.44,base+.2,e.z-.3+i*.09,.85,.4,1.1);
+   moving.push({mesh:sled,kind:'sled',phase:i*.45});
+  }
+ }else if(e.id==='Gradient'){
+  for(let i=0;i<11;i++){
+   const x=e.x-1.2+i*.24;
+   const hinge=encounterPart(group,encounterGeo.petal,i%2?gold:pale,x,base+.3,e.z,1,.8,1);
+   moving.push({mesh:hinge,kind:'fold',phase:i*.55});
+  }
+ }else if(e.id==='Heart of Darkness'){
+  for(let i=0;i<13;i++){
+   const a=i*.67,r=.2+i*.045;
+   const step=encounterPart(group,encounterGeo.block,dark,e.x+Math.cos(a)*r,base+.1+i*.115,e.z+Math.sin(a)*r,.9,.45,.9);
+   moving.push({mesh:step,kind:'stair',phase:i*.2});
+  }
+  encounterPart(group,encounterGeo.column,ember,e.x,base+1.15,e.z,.5,1.6,.5);
+  const optic=encounterPart(group,encounterGeo.ring,gold,e.x,base+2,e.z,.8,.8,.8);
+  moving.push({mesh:optic,kind:'optic',phase:0});
+ }else if(e.id==='Bood Lakes'){
+  for(let j=0;j<3;j++){
+   const x=e.x+(j-1)*.75,z=e.z+(j%2)*.35;
+   encounterPart(group,encounterGeo.ring,violet,x,base+.06,z,.7,.7,.7).rotation.x=Math.PI/2;
+   for(let i=0;i<5;i++){
+    const a=i*Math.PI*2/5;
+    const bell=encounterPart(group,encounterGeo.needle,j===1?ember:blue,x+Math.cos(a)*.24,base+.32,z+Math.sin(a)*.24,.8,.8,.8);
+    moving.push({mesh:bell,kind:'bell',phase:i*.9+j});
+   }
+  }
+ }
+ group.position.set(-wanderX,0,-wanderZ);group.visible=false;
+ encounterScenes.set(e.id,{group,moving,ground,base});
+ e.implementation='visual-prototype';e.visibleCount=group.children.length;
+}
+for(const e of encounterRegistry)if(encounterFirstSix.has(e.id))buildEncounterScene(e);
+function encounterVisualStep(e){
+ const sceneData=encounterScenes.get(e.id);if(!sceneData)return;
+ const {group,moving}=sceneData;
+ group.position.set(-wanderX,0,-wanderZ);
+ const local=Math.hypot(e.x-wanderX,e.z-wanderZ);
+ group.visible=e.phase==='performing'&&local<APERTURE_RADIUS+2;
+ const t=clock.time-e.phaseStartedAt;
+ for(const item of moving){
+  const {mesh,kind,phase}=item;
+  if(kind==='flower')mesh.rotation.z=Math.sin(t*1.2+phase)*.35;
+  else if(kind==='crown')mesh.position.y=sceneData.base+.32+Math.sin(t*1.5+phase)*.15;
+  else if(kind==='sled')mesh.position.x=e.x-1.3+phase*.2+Math.min(1.1,t*.11);
+  else if(kind==='fold')mesh.rotation.z=Math.sin(t*1.5+phase)*.8;
+  else if(kind==='stair')mesh.scale.y=.45*Math.min(1,Math.max(.05,(t-phase)*.9));
+  else if(kind==='optic')mesh.rotation.y=t*.9;
+  else if(kind==='bell')mesh.rotation.z=Math.sin(t*2.3+phase)*.23;
+ }
+ if(e.phase==='performing'&&t>11)encounterTransition(e,'settled','visual-cycle-complete');
+}
+
 function encounterTransition(e,next,reason){
  if(e.phase===next)return;
  e.transitions.push({from:e.phase,to:next,reason,time:round(clock.time,3)});
@@ -593,20 +691,19 @@ function encounterStep(dt){
   const walkerDistance=Math.hypot(e.x-walker.x,e.z-walker.z);
   const near=apertureDistance<=ENCOUNTER_PRIME_RADIUS;
   e.near=near;
-  if(!near)continue;
+  if(!near){const v=encounterScenes.get(e.id);if(v)v.group.visible=false;continue;}
   e.performanceSteps++;
   if(e.phase==='dormant')encounterTransition(e,'primed','aperture-near');
   if(e.phase==='primed'&&walkerDistance<=ENCOUNTER_START_RADIUS){
    e.activationReason='wanderer-near';
    encounterTransition(e,'performing','wanderer-near');
   }
-  // A performing state is a witnessable trigger, NOT a fabricated scene.
-  // Scene-specific transitions to consequence/settled will be implemented later.
+  encounterVisualStep(e);
  }
 }
 function inspectEncounters(){
  const nearest=encounterRegistry.map(e=>({e,d:Math.hypot(walker.x-e.x,walker.z-e.z)})).sort((a,b)=>a.d-b.d)[0];
- return {status:'lifecycle-foundation-only',implemented:0,planned:encounterRegistry.length,
+ return {status:'six-visual-prototypes',implemented:0,visualPrototypes:encounterScenes.size,planned:encounterRegistry.length,
   primeRadius:ENCOUNTER_PRIME_RADIUS,startRadius:ENCOUNTER_START_RADIUS,
   nearest:nearest?{id:nearest.e.id,distance:round(nearest.d,2)}:null,
   encounters:encounterRegistry.map(e=>({id:e.id,seed:e.seed,anchor:[e.x,e.z],phase:e.phase,
@@ -614,7 +711,7 @@ function inspectEncounters(){
    timeInPhase:round(clock.time-e.phaseStartedAt,2),near:e.near,performanceSteps:e.performanceSteps,
    transitions:e.transitions,materialTransactions:e.materialTransactions,
    visibleCount:e.visibleCount,clippedCount:e.clippedCount,errors:e.errors})),
-  limits:'Lifecycle transitions are instrumented; no new encounter rendering, geological edits, or BB transactions yet.'};
+  limits:'Six clipped macro visual prototypes; none excavates geology or transacts authoritative material. Not complete encounters.'};
 }
 function landmarkStep(dt){
  landmarkTime+=dt;landmarkGroup.position.set(-wanderX,0,-wanderZ);
