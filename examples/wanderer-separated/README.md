@@ -13,13 +13,17 @@ The Pages workflow stamps the deployed commit SHA into `world.js` and cache-bust
 
 For publication, failure recovery, and engineering contracts, see the root `README.md` and `HANDOFF.md`. Both URLs must stay functional.
 
+## Material-world direction (2026-10-13)
+
+The rain/Crucible frame ownership rules predate the current material-world understanding. A BB should retain geological/world position and identity independent of the vessel, its contact/support state, its source provenance, and its render transform. Wanderer fire-burst BBs demonstrate geological-coordinate integration; rain BBs can rest on terrain while remaining Hermeticon-owned and move with the vessel. This is an unresolved runtime defect and planned migration, not an implemented refactor. Preserve current dynamics while changing coordinate/ownership contracts; see root `HANDOFF.md`.
+
 ## Simulation notes
 
 The [world-generation experiment](WORLD_GENERATION_EXPERIMENT.md) preserves the original map interpretation and historical atlas research; distinguish author-confirmed geography from provisional generation and unimplemented plans. `world.js` contains the 22 authored terrain nodes and the local Quills, Amaranthine Fields, and Mists systems. Wanderer fire temporarily takes over navigation; each burst releases a persistent 500-BB population (125 blood, 375 solid), stored for now in local particle and instancing batches. These BBs must remain dynamic under gravity and geological contact as the terrain translates; a rest flag must not freeze them. Aperture clipping affects pixels, not material state or ownership. See root `HANDOFF.md` for the current implementation contracts and unresolved validation.
 
-## Landmark activity — 2026-10-13
+## Landmark activity — original inventory, superseded by encounter prototypes (2026-10-13)
 
-**Working creative inventory: 4 active / 18 open for authored activity** among 22 named geographic landmarks. This counts participation in a scene, not only independently scripted residents.
+**Historical planning inventory: 4 established activities / 18 then-open encounters** among 22 named geographic landmarks. The eighteen now have visual/lifecycle prototypes; see the status note below. This counts participation in a scene, not only independently scripted residents.
 
 - **Quills:** turquoise resident opens/closes a nine-quill fan near Wanderer.
 - **Amaranthine Fields:** violet gardener and seven responsive flowers.
@@ -28,9 +32,9 @@ The [world-generation experiment](WORLD_GENERATION_EXPERIMENT.md) preserves the 
 
 The remaining **18 landmarks are open creative territory**, not places without authored identity. Their map-derived descriptions and author clarifications are in [WORLD_GENERATION_EXPERIMENT.md](WORLD_GENERATION_EXPERIMENT.md). Develop activities consistent with those identities without silently canonizing provisional terrain, materials, or speculative lore. This is a planning/observation inventory, not a runtime-verified census of every ambient system.
 
-## Eighteen encounters awaiting incarnation — creative proposals (2026-10-13)
+## Eighteen encounter concepts — original creative proposals (2026-10-13)
 
-These are **proposed experiences, not implemented behaviors or canonical lore**. The source-map observations in [WORLD_GENERATION_EXPERIMENT.md](WORLD_GENERATION_EXPERIMENT.md) take precedence over any invention below. Each is a small, inspectable *cause → response → consequence* rather than a decorative animation. **[Grim]** or **[Subversion]** marks an intentional dark turn or inversion of expectation (12 of 18). The atlas's 2D jurisdiction, elevation, hydrology, strata, provenance, population, and feature fields can seed these; macro entities can be assembled from reusable grammars (hinges, rings, branches, chains, shells, articulated towers), and microstructure from bounded BB lattices. These are design ingredients, **not claims of existing general-purpose runtime systems**.
+These are **original creative proposals, not evidence that their intended physical consequences are implemented or canonical lore**. Eighteen bounded visual/lifecycle prototypes were subsequently authored; 17 activated and settled in the first expedition, Ocean of Tears did not activate, and no geological transaction succeeded. The prototypes mostly use simple repeated primitives, not the existing strand/lattice grammar. Their scene implementation is an inspiration seed, not fulfillment of the richer proposals. The source-map observations in [WORLD_GENERATION_EXPERIMENT.md](WORLD_GENERATION_EXPERIMENT.md) take precedence over any invention below. Each is a small, inspectable *cause → response → consequence* rather than a decorative animation. **[Grim]** or **[Subversion]** marks an intentional dark turn or inversion of expectation (12 of 18). The atlas's 2D jurisdiction, elevation, hydrology, strata, provenance, population, and feature fields can seed these; macro entities can be assembled from reusable grammars (hinges, rings, branches, chains, shells, articulated towers), and microstructure from bounded BB lattices. These are design ingredients, **not claims of existing general-purpose runtime systems**.
 
 1. **Summerlands — The Sun That Borrows [Subversion].** In the yellow jurisdiction, tiny sunflowers turn to follow Wanderer; their collective shadows converge instead of diverging. At dusk the shadow silhouettes rise as delicate jointed creatures and politely return the light they borrowed, leaving one flower temporarily colorless. *Grammar:* petal fans + shadow-branch skeletons. *Maps:* region mask, light/exposure, local cover. *Test:* moving Wanderer changes orientation, not regional identity; the borrowed-light patch persists briefly after departure.
 
