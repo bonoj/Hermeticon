@@ -19,84 +19,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Assemble one identified build and validate its references
+      - name: Assemble and validate public site
         env:
           BUILD_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import os, pathlib, shutil, json, re
-          root=pathlib.Path('site')
-          src=pathlib.Path('examples/wanderer-separated')
           sha=os.environ['BUILD_SHA']
-          assert re.fullmatch(r'[0-9a-f]{40}',sha)
+          assert re.fullmatch('[0-9a-f]{40}',sha)
+          root=pathlib.Path('site')
           shutil.copytree('.',root,ignore=shutil.ignore_patterns('.git','site','.github','__pycache__'))
-          dest=root/'examples/wanderer-separated'
-          bundle=dest/'releases'/sha
-          bundle.mkdir(parents=True)
-          for name in ('index.html','interface.css','errors.js','world.js'):
-              shutil.copy2(src/name,bundle/name)
-          js=(bundle/'world.js').read_text()
-          start=js.index('// Build metadata is stamped by the Pages workflow')
-          end=js.index("document.querySelector('#fresh').onclick=()=>location.reload();",start)
-          js=js[:start]+f"const BUILD='{sha}';\ndocument.querySelector('#build').textContent=BUILD.slice(0,8);\n"+js[end:]
-          (bundle/'world.js').write_text(js)
-          # The immutable HTML loads CSS and JS only from its own release directory.
-          page=(bundle/'index.html').read_text()
-          assert './interface.css' in page and './world.js' in page and './errors.js' in page
-          assert f"const BUILD='{sha}'" in js
-          # Stable entry point loads a single revision, never independently cached assets.
-          loader="""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hermeticon</title><style>body{margin:0;background:#050b14;color:#f5dfb2;font:14px system-ui;display:grid;place-items:center;min-height:100dvh}main{padding:24px;text-align:center}</style></head><body><main id="message">Opening Hermeticon…</main><script>
-          (async()=>{
-            try{
-              const r=await fetch('./release.json',{cache:'no-store'});
-              if(!r.ok)throw Error('Release manifest unavailable: '+r.status);
-              const m=await r.json();
-              if(!/^[0-9a-f]{40}$/.test(m.sha))throw Error('Invalid release identity');
-              const path='./releases/'+m.sha+'/index.html';
-              const ready=await fetch(path,{cache:'no-store'});
-              if(!ready.ok)throw Error('Release not ready: '+ready.status);
-              location.replace(path);
-            }catch(e){document.querySelector('#message').textContent='Hermeticon release unavailable: '+e.message}
-          })();
-          </script></body></html>"""
-          (dest/'index.html').write_text(loader)
-          (dest/'release.json').write_text(json.dumps({'sha':sha})+'\n')
+          base=root/'examples/wanderer-separated'
+          js=base/'world.js'
+          content=js.read_text()
+          start=content.index('// Build metadata is stamped by the Pages workflow')
+          end=content.index("document.querySelector('#fresh').onclick=()=>location.reload();",start)
+          content=content[:start]+f"const BUILD='{sha}';\ndocument.querySelector('#build').textContent=BUILD.slice(0,8);\n"+content[end:]
+          js.write_text(content)
+          html=base/'index.html'
+          page=html.read_text()
+          for name in ('world.js','interface.css','errors.js'):
+              assert f'./{name}' in page
+              page=page.replace(f'./{name}',f'./{name}?v={sha}')
+          html.write_text(page)
+          (base/'release.json').write_text(json.dumps({'sha':sha})+'\n')
           (root/'build.json').write_text(json.dumps({'sha':sha})+'\n')
-          assert (bundle/'index.html').exists() and (bundle/'world.js').exists()
+          assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
+          print('PUBLIC ENTRY READY',sha)
           PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
       - id: deployment
         uses: actions/deploy-pages@v4
-      - name: Verify publicly served release
+      - name: Verify public entry
         env:
           BUILD_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
-          import os,time,urllib.request,json
+          import os,time,urllib.request
           sha=os.environ['BUILD_SHA']
-          base='https://bonoj.github.io/Hermeticon/examples/wanderer-separated/'
-          def get(path):
-              req=urllib.request.Request(base+path,headers={'Cache-Control':'no-cache','User-Agent':'Hermeticon-release-check'})
-              with urllib.request.urlopen(req,timeout=20) as r:return r.read().decode()
-          for attempt in range(18):
+          url='https://bonoj.github.io/Hermeticon/examples/wanderer-separated/index.html'
+          for i in range(18):
               try:
-                  manifest=json.loads(get('release.json'))
-                  if manifest.get('sha')!=sha:raise ValueError('manifest points to another release')
-                  html=get('releases/'+sha+'/index.html')
-                  css=get('releases/'+sha+'/interface.css')
-                  errors=get('releases/'+sha+'/errors.js')
-                  js=get('releases/'+sha+'/world.js')
-                  loader=get('index.html')
-                  assert './release.json' in loader
-                  assert './world.js' in html and './interface.css' in html and './errors.js' in html
-                  assert "const BUILD='"+sha+"'" in js
-                  assert css and errors
-                  print('VERIFIED LIVE RELEASE',sha)
+                  req=urllib.request.Request(url,headers={'Cache-Control':'no-cache'})
+                  with urllib.request.urlopen(req,timeout=15) as response:
+                      html=response.read().decode()
+                  assert 'world.js?v='+sha in html
+                  assert 'interface.css?v='+sha in html
+                  print('PUBLIC ENTRY VERIFIED',sha)
                   break
               except Exception as e:
-                  print('Verification pending',attempt+1,str(e))
-                  if attempt==17:raise
+                  print('Awaiting public entry',i+1,str(e))
+                  if i==17:raise
                   time.sleep(10)
           PY
