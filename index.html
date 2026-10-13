@@ -105,7 +105,7 @@ const rand=(n)=>{let v=Math.sin(n*127.1+seed*311.7)*43758.5453;return v-Math.flo
 let terrainBuildCount=0;
 // Boot-selected terrain provider. 'empty' tests non-instantiation without authored data.
 const terrainRequested=new URLSearchParams(location.search).get('terrain');
-const terrainProvider=terrainRequested==='empty'?'empty':terrainRequested==='authored-v1'?'authored-v1':'legacy-v31';
+const terrainProvider=terrainRequested==='empty'?'empty':terrainRequested==='legacy-v31'?'legacy-v31':'authored-v1';
 // World-coordinate 2D authoring fields are independent of geology and rendering.
 // No inferred map pixels: an unpainted cell has jurisdiction 0 (unassigned).
 const atlas=terrainProvider==='authored-v1'?(()=>{
