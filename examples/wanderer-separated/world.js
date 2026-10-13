@@ -1057,11 +1057,15 @@ function fireStep(dt){
 }
 // Wanderer fire consequence: same 125 blood / 375 solid units as Pumpkin.
 const burnN=PUMPKIN_TOTAL,burnRadius=pumpkinBeadRadius;
-const burnMesh=new T.InstancedMesh(splatGeo,apertureClip(splatMat.clone()),burnN);burnMesh.count=0;burnMesh.frustumCulled=false;burnMesh.userData.matterTag='micro';world.add(burnMesh);
-const burnDummy=new T.Object3D(),burnParticles=[],burn={phase:'ready',t:0,cooldown:0,impacts:0,respawns:0,hop:0,headingX:1,headingZ:0};
+const burnMeshes=[],burnDummy=new T.Object3D(),burnParticles=[],burn={phase:'ready',t:0,cooldown:0,impacts:0,respawns:0,hop:0,headingX:1,headingZ:0};
 const burnMaterial=wanderCube.material.clone();burnMaterial.emissive=new T.Color(0xff3100);wanderCube.material=burnMaterial;
-for(let i=0;i<burnN;i++)burnMesh.setColorAt(i,new T.Color(i<PUMPKIN_LIQUID?0xc51e30:0xffd23b));
-burnMesh.instanceColor.needsUpdate=true;
+function newBurnBatch(){
+ const mesh=new T.InstancedMesh(splatGeo,apertureClip(splatMat.clone()),burnN);
+ mesh.count=burnN;mesh.frustumCulled=false;mesh.userData.matterTag='micro';
+ for(let i=0;i<burnN;i++)mesh.setColorAt(i,new T.Color(i<PUMPKIN_LIQUID?0xc51e30:0xffd23b));
+ mesh.instanceColor.needsUpdate=true;world.add(mesh);burnMeshes.push(mesh);
+ return mesh;
+}
 function burnStep(dt){
  burn.cooldown=Math.max(0,burn.cooldown-dt);
  if(burn.phase==='ready'&&burn.cooldown===0&&fire.energy>.22){
@@ -1084,16 +1088,17 @@ function burnStep(dt){
   if(h!==null){walker.x=nx;walker.z=nz;walker.y=h}
   burnMaterial.emissiveIntensity=1.5+Math.sin(burn.t*27)*.4;
   if(burn.t>=1.05){
-   burn.phase='burst';burn.t=0;burn.hop=0;burnParticles.length=0;
+   burn.phase='burst';burn.t=0;burn.hop=0;
+   const batch=burnMeshes.length;newBurnBatch();
    const cx=walker.x-wanderX,cy=walker.y+WANDER_SIZE*.5+burn.hop,cz=walker.z-wanderZ;
    for(let i=0;i<burnN;i++){
     const lobe=i%7,a=lobe*2.39996323+(rainRandom(i,71)-.5)*.85;
     const v=(rainRandom(i,72)-.35)*1.4,rad=Math.sqrt(Math.max(.03,1-v*v));
     const dx=Math.cos(a)*rad,dz=Math.sin(a)*rad;
     const force=(1.5+rainRandom(i,73)*3.7)*(lobe===2?1.8:lobe===5?.5:1)*(i%31===0?1.9:1);
-    burnParticles.push({x:cx+wanderX+dx*.1,y:cy+v*.1,z:cz+wanderZ+dz*.1,vx:dx*force,vy:1.4+v*force,vz:dz*force,rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
+    burnParticles.push({batch,slot:i,x:cx+wanderX+dx*.1,y:cy+v*.1,z:cz+wanderZ+dz*.1,vx:dx*force,vy:1.4+v*force,vz:dz*force,rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
    }
-   burnMesh.count=burnN;wanderCube.visible=false;
+   wanderCube.visible=false;
   }
  }else if(burn.phase==='burst'){
   burn.t+=dt;
@@ -1119,9 +1124,9 @@ function burnStep(dt){
     if(vn<0){p.vx-=1.38*vn*nx;p.vy-=1.38*vn*ny;p.vz-=1.38*vn*nz}
    }
   }
-  burnDummy.position.set(p.x-wanderX,p.y,p.z-wanderZ);burnDummy.updateMatrix();burnMesh.setMatrixAt(i,burnDummy.matrix);
+  burnDummy.position.set(p.x-wanderX,p.y,p.z-wanderZ);burnDummy.updateMatrix();burnMeshes[p.batch].setMatrixAt(p.slot,burnDummy.matrix);
  }
- if(burnParticles.length)burnMesh.instanceMatrix.needsUpdate=true;
+ for(const mesh of burnMeshes)mesh.instanceMatrix.needsUpdate=true;
 }
 // Four short temporal shutters, sampled from actual instanced carrier matrices/colors.
 // Retain only compact aggregate slices; no render passes, GPU reads or camera mutation.
