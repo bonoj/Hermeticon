@@ -11,15 +11,15 @@ The root `/index.html` references these same assets via `./examples/wanderer-sep
 
 The Pages workflow stamps the deployed commit SHA into `world.js` and cache-busts asset references for **both** entry points. The build number on the live page is the first eight characters of the deployed Hermeticon commit, not the original JIT source commit. The unstamped repository source is not itself a deployed build.
 
-For publication, failure recovery, and engineering contracts, see the root `README.md` and `HANDOFF.md`. Both URLs must stay functional.
+For publication, failure recovery, and engineering contracts, see the root `README.md` and local `HANDOFF.md`. Both URLs must stay functional.
 
 ## Material-world direction (2026-10-13)
 
-The rain/Crucible frame ownership rules predate the current material-world understanding. A BB should retain geological/world position and identity independent of the vessel, its contact/support state, its source provenance, and its render transform. Wanderer fire-burst BBs demonstrate geological-coordinate integration; rain BBs can rest on terrain while remaining Hermeticon-owned and move with the vessel. This is an unresolved runtime defect and planned migration, not an implemented refactor. Preserve current dynamics while changing coordinate/ownership contracts; see root `HANDOFF.md`.
+The rain/Crucible frame ownership rules predate the current material-world understanding. A BB should retain geological/world position and identity independent of the vessel, its contact/support state, its source provenance, and its render transform. Wanderer fire-burst BBs demonstrate geological-coordinate integration; rain BBs can rest on terrain while remaining Hermeticon-owned and move with the vessel. This is an unresolved runtime defect and planned migration, not an implemented refactor. Preserve current dynamics while changing coordinate/ownership contracts; see local `HANDOFF.md`.
 
 ## Simulation notes
 
-The [world-generation experiment](WORLD_GENERATION_EXPERIMENT.md) preserves the original map interpretation and historical atlas research; distinguish author-confirmed geography from provisional generation and unimplemented plans. `world.js` contains the 22 authored terrain nodes and the local Quills, Amaranthine Fields, and Mists systems. Wanderer fire temporarily takes over navigation; each burst releases a persistent 500-BB population (125 blood, 375 solid), stored for now in local particle and instancing batches. These BBs must remain dynamic under gravity and geological contact as the terrain translates; a rest flag must not freeze them. Aperture clipping affects pixels, not material state or ownership. See root `HANDOFF.md` for the current implementation contracts and unresolved validation.
+The [world-generation experiment](WORLD_GENERATION_EXPERIMENT.md) preserves the original map interpretation and historical atlas research; distinguish author-confirmed geography from provisional generation and unimplemented plans. `world.js` contains the 22 authored terrain nodes and the local Quills, Amaranthine Fields, and Mists systems. Wanderer fire temporarily takes over navigation; each burst releases a persistent 500-BB population (125 blood, 375 solid), stored for now in local particle and instancing batches. These BBs must remain dynamic under gravity and geological contact as the terrain translates; a rest flag must not freeze them. Aperture clipping affects pixels, not material state or ownership. See local `HANDOFF.md` for the current implementation contracts and unresolved validation.
 
 ## Landmark activity — original inventory, superseded by encounter prototypes (2026-10-13)
 
