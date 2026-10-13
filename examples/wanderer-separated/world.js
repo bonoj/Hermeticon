@@ -950,6 +950,38 @@ function gardenStep(dt){
   f.rotation.z=Math.sin(g.t*2+i*1.4)*.06*wave;
  }
 }
+// Hearth: six reusable spiral strands of visual carrier beads, rooted in geology.
+// Not conserved matter or a thermodynamic combustion model.
+const fireButton=document.querySelector('#fire'),FIRE_X=-1.1,FIRE_Z=6.1,FIRE_N=480;
+const fireMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.055,0),new T.MeshBasicMaterial({color:0xffffff}),FIRE_N);
+fireMesh.count=0;fireMesh.frustumCulled=false;fireMesh.userData.worldDomain=true;world.add(fireMesh);
+const fireDummy=new T.Object3D(),fireColor=new T.Color(),fireGold=new T.Color(0xffb13a),fireWhite=new T.Color(0xfff1ad),fireRed=new T.Color(0xb52716);
+const fireRoot=new T.Group();world.add(fireRoot);
+const coalMat=new T.MeshStandardMaterial({color:0x352b2b,roughness:.95});
+for(let k=0;k<9;k++){const a=k*2.39996,r=.15+.12*Math.sqrt(k);put(fireRoot,new T.DodecahedronGeometry(.13+(k%3)*.035,0),coalMat,Math.cos(a)*r,.09,Math.sin(a)*r)}
+const fire={time:0,mode:1,energy:1},fireModes=['embers','flame','conflagration'];
+fireButton.disabled=false;
+function setFireMode(mode){fire.mode=mode;fireButton.title='Hearth: '+fireModes[mode]+' · next '+fireModes[(mode+1)%3];fireButton.setAttribute('aria-label',fireButton.title);fireButton.setAttribute('aria-pressed',String(mode!==0))}
+setFireMode(1);fireButton.addEventListener('click',()=>setFireMode((fire.mode+1)%3));
+function fireStep(dt){
+ fire.time+=dt;const target=[.06,1,2.1][fire.mode];fire.energy+=(target-fire.energy)*Math.min(1,dt*(fire.mode===0?1.6:2.7));
+ const ground=walkSurface(FIRE_X,FIRE_Z),x=FIRE_X-wanderX,z=FIRE_Z-wanderZ,y=ground??1;
+ const inside=ground!==null&&x*x+z*z+(y+3)**2<(R-.4)**2;
+ fireRoot.visible=inside;fireMesh.visible=inside;if(!inside)return;
+ fireRoot.position.set(x,y,z);
+ for(let i=0;i<FIRE_N;i++){
+  const strand=i%6,slot=Math.floor(i/6),u=(slot/80+fire.time*(.17+.012*strand))%1;
+  const angle=strand*Math.PI/3+u*Math.PI*(4.1+strand*.19)+fire.time*(1.15+strand*.055);
+  const radius=(.12+.4*Math.sin(Math.PI*u))*Math.pow(1-u,.8)*Math.sqrt(fire.energy);
+  const flutter=Math.sin(fire.time*5.3+strand*3.1+u*17)*.11*u;
+  const height=.12+u*(.45+1.85*fire.energy)+Math.sin(u*13+fire.time*4+strand)*.07*u;
+  fireDummy.position.set(x+Math.cos(angle)*radius+flutter,y+height,z+Math.sin(angle)*radius+flutter*.55);
+  fireDummy.scale.setScalar((.028+.062*(1-u))*(.6+Math.min(1.3,fire.energy)*.4)/.055);fireDummy.updateMatrix();
+  fireMesh.setMatrixAt(i,fireDummy.matrix);
+  fireColor.copy(fireRed).lerp(fireGold,Math.min(1,u*2.1+.1)).lerp(fireWhite,Math.pow(u,2.7)*.8);fireMesh.setColorAt(i,fireColor);
+ }
+ fireMesh.count=FIRE_N;fireMesh.instanceMatrix.needsUpdate=true;if(fireMesh.instanceColor)fireMesh.instanceColor.needsUpdate=true;
+}
 // V82 Mists: sparse bead-lattice reedbeds. One instanced draw, rooted to authored geology.
 // Mists population gallery: 50 deterministic, distinct bead-lattice ecologies.
 // Reeds remain the first untouched silhouette; all alternatives share the same
@@ -1193,6 +1225,7 @@ function simulate(dt){
  fugitiveStep(dt);
  quillStep(dt);
  gardenStep(dt);
+ fireStep(dt);
  mistReedsStep(dt);
  if(walker.target){
   const dx=walker.target.x-walker.x,dz=walker.target.z-walker.z,d=Math.hypot(dx,dz);
