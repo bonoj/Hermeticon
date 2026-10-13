@@ -1,0 +1,1429 @@
+
+import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+// One canonical build identity: UI and inspection report share this constant.
+// Publication replaces this token with the exact Repository source commit SHA.
+const BUILD='f8fd252ca4abb91f7ca7c445197944a044df2173';
+document.querySelector('#build').textContent=BUILD.slice(0,8);
+document.querySelector('#fresh').onclick=()=>location.reload();
+
+
+try {
+const scene=new T.Scene();scene.background=new T.Color(0x06101b);scene.fog=new T.FogExp2(0x071827,.012);
+const world=new T.Group();scene.add(world);
+const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.38;document.querySelector('#stage').append(renderer.domElement);
+const camera=new T.PerspectiveCamera(42,1,.1,150);scene.add(new T.HemisphereLight(0x82c6dc,0x17202d,1.5));const sun=new T.DirectionalLight(0xffc77e,2.4);sun.position.set(-7,13,7);scene.add(sun);const blue=new T.PointLight(0x2cbed7,95,36);blue.position.set(2,-2,2);scene.add(blue);
+const M=(color,metalness=.1,roughness=.65,extra={})=>new T.MeshStandardMaterial({color,metalness,roughness,...extra});
+const brass=M(0xb78b4e,.78,.3),bright=M(0xf2cb7e,.45,.3),rock=M(0x242b33,.08,.94),basalt=M(0x3c4449,.04,.9),green=M(0x467b50,.08,.75),leaf=M(0x85a767,.04,.7),cyan=new T.MeshBasicMaterial({color:0x42d7dc}),purple=new T.MeshBasicMaterial({color:0xb06fe6}),glow=new T.MeshBasicMaterial({color:0xffc678}),glass=new T.MeshPhysicalMaterial({color:0x9dcdd7,transparent:true,opacity:.17,metalness:.05,roughness:.12,depthWrite:false,side:T.DoubleSide});
+function put(parent,geo,material,x=0,y=0,z=0){const o=new T.Mesh(geo,material);o.position.set(x,y,z);parent.add(o);return o}
+function ball(p,r,m,x,y,z){return put(p,new T.SphereGeometry(r,12,8),m,x,y,z)}
+function cyl(p,r1,r2,h,m,x,y,z,n=12){return put(p,new T.CylinderGeometry(r1,r2,h,n),m,x,y,z)}
+function ring(p,r,t,m,x,y,z){const o=put(p,new T.TorusGeometry(r,t,7,48),m,x,y,z);o.rotation.x=Math.PI/2;return o}
+function beam(a,b,r,m,p=world){const v=new T.Vector3(...a),w=new T.Vector3(...b),d=w.clone().sub(v),o=put(p,new T.CylinderGeometry(r,r,d.length(),7),m,...v.clone().add(w).multiplyScalar(.5).toArray());o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());return o}
+
+const BAUBLE_R=10.25,INNER_R=BAUBLE_R-.18;
+const envelope=new T.Mesh(new T.SphereGeometry(BAUBLE_R,72,48),new T.MeshPhysicalMaterial({color:0xa0dce2,metalness:0,roughness:.08,transparent:true,opacity:.055,depthWrite:false,side:T.FrontSide}));world.add(envelope);
+const innerGlass=new T.Mesh(new T.SphereGeometry(INNER_R,72,48),new T.MeshPhysicalMaterial({color:0x9dcdd7,metalness:0,roughness:.09,transparent:true,opacity:.035,depthWrite:false,side:T.BackSide}));world.add(innerGlass);
+const equator=put(world,new T.TorusGeometry(BAUBLE_R,.095,10,120),brass);equator.rotation.x=Math.PI/2;
+for(const y of [-.15,.15]){const trim=put(world,new T.TorusGeometry(BAUBLE_R,.021,6,120),bright,0,y,0);trim.rotation.x=Math.PI/2}
+for(let i=0;i<8;i++){const a=i*Math.PI/4;ball(world,.12,bright,Math.cos(a)*BAUBLE_R,0,Math.sin(a)*BAUBLE_R)}
+
+// Containment verifier: geometry in scene coordinates, independent of camera/gravity.
+// Shell hardware is intentionally outside the INNER radius; only explicitly marked
+// objects may exceed the vessel. Mark external designs with userData.allowOutsideBauble=true.
+// Shared JIT machinery. Register world-specific checks; never silently swallow failures.
+const STEP=.008,MAX_STEPS=7,MAX_FRAME=.05;
+const clock={time:0,steps:0,droppedSeconds:0,accumulator:0};
+// Authoritative signed volume. Positive=solid, negative=void.
+// The equator y=0 is the fixed datum; both surfaces and tunnels are extracted.
+const R=9.65, EXTRACTION_MARGIN=4.0, NX=85,NY=21,NZ=85, MINY=-3.6,MAXY=3.6; const WORLD_HALF=25.2; let wanderX=0,wanderZ=0; const WANDER_STEP=2;
+const depositedMaterial=new Map();
+const field=new Float32Array(NX*NY*NZ),id=(x,y,z)=>x+NX*(y+NY*z);
+const xp=x=>(x/(NX-1)*2-1)*WORLD_HALF,yp=y=>MINY+y/(NY-1)*(MAXY-MINY),zp=z=>(z/(NZ-1)*2-1)*WORLD_HALF;
+const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+const tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
+const apertureEyes={compileCount:0,vertexHook:false,fragmentHook:false,shaderRadius:9.72,compileFailures:[],lastCompiledAt:null};const sharedApertureOffset=new T.Vector3();let apertureUniform={value:sharedApertureOffset};const terrainMaterial=new T.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.92,metalness:.02,side:T.DoubleSide,flatShading:true,onBeforeCompile:shader=>{shader.uniforms.apertureRadius={value:9.72};shader.uniforms.apertureOffset={value:sharedApertureOffset};apertureEyes.compileCount++;apertureEyes.lastCompiledAt=performance.now();apertureEyes.vertexHook=shader.vertexShader.includes('#include <begin_vertex>');apertureEyes.fragmentHook=shader.fragmentShader.includes('#include <clipping_planes_fragment>');if(!apertureEyes.vertexHook||!apertureEyes.fragmentHook)apertureEyes.compileFailures.push('Missing shader injection anchor');shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform vec3 apertureOffset;');shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAperturePosition=position-apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform float apertureRadius;\nuniform vec3 apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vAperturePosition,vAperturePosition)>apertureRadius*apertureRadius) discard;');shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat apertureFog=smoothstep(7.1,9.70,length(vAperturePosition));\ngl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.045,0.115,0.16),apertureFog);')}});
+const solid=new T.Group();solid.name='terrain:signed-volume';solid.userData.worldDomain=true;world.add(solid);
+const CHUNK=10,CX=Math.ceil((NX-1)/CHUNK),CZ=Math.ceil((NZ-1)/CHUNK),terrainChunks=[];
+const terrainPerf={totalChunks:CX*CZ,fullRebuilds:0,localRebuilds:0,lastDirtyChunks:0,lastRebuiltCells:0,lastRebuildMs:0,lastChangedChunks:[]};
+for(let cz=0;cz<CZ;cz++)for(let cx=0;cx<CX;cx++){const geometry=new T.BufferGeometry(),mesh=new T.Mesh(geometry,terrainMaterial);mesh.receiveShadow=true;mesh.frustumCulled=false;mesh.userData.worldDomain=true;solid.add(mesh);terrainChunks.push({cx,cz,geometry,triangles:0})}
+
+const skinGeo=new T.BufferGeometry();
+const skin=new T.Mesh(skinGeo,new T.MeshStandardMaterial({color:0xc9a67e,roughness:.88,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));
+skin.name='aperture:skin';skin.frustumCulled=false;skin.visible=false;world.add(skin);
+const skinEyes={mode:'retired',segments:0,quads:0,intervals:0,inset:0};
+const scoopEyes={mode:'resident-world-gpu-aperture',radius:9.72,cutTriangles:0,geologyTriangles:0,degenerateTriangles:0};
+function fieldSample(X,Y,Z){
+ const gx=(X/WORLD_HALF+1)*(NX-1)/2,gy=(Y-MINY)/(MAXY-MINY)*(NY-1),gz=(Z/WORLD_HALF+1)*(NZ-1)/2;
+ if(gx<0||gy<0||gz<0||gx>=NX-1||gy>=NY-1||gz>=NZ-1)return -1;
+ const x=Math.floor(gx),y=Math.floor(gy),z=Math.floor(gz),a=gx-x,b=gy-y,c=gz-z;
+ const lerp=(p,q,t)=>p+(q-p)*t;
+ const layer=k=>lerp(lerp(field[id(x,y,k)],field[id(x+1,y,k)],a),lerp(field[id(x,y+1,k)],field[id(x+1,y+1,k)],a),b);
+ return lerp(layer(z),layer(z+1),c);
+}
+function rebuildSkin(){
+ const out=[],count=144,steps=40,lo=-3.5,hi=3.5;
+ const point=(angle,y)=>{const r=Math.sqrt(9.72*9.72-y*y)-skinEyes.inset;return [Math.cos(angle)*r,y,Math.sin(angle)*r]};
+ let quads=0,intervals=0;
+ for(let i=0;i<count;i++){
+  const a=i*2*Math.PI/count,b=(i+1)*2*Math.PI/count;
+  let prior=false;
+  for(let j=0;j<steps;j++){
+   const y=lo+(hi-lo)*j/steps,z=lo+(hi-lo)*(j+1)/steps,m=(y+z)/2,p=point((a+b)/2,m);
+   const solidHere=fieldSample(wanderX+p[0],m,wanderZ+p[2])>0;
+   if(solidHere&&!prior)intervals++;prior=solidHere;
+   if(!solidHere)continue;
+   const p0=point(a,y),p1=point(b,y),p2=point(a,z),p3=point(b,z);
+   out.push(...p0,...p1,...p2,...p1,...p3,...p2);quads++;
+  }
+ }
+ skinGeo.setAttribute('position',new T.Float32BufferAttribute(out,3));skinGeo.computeVertexNormals();
+ skinEyes.quads=quads;skinEyes.intervals=intervals;
+}
+let cycle=0,seed=741,triangles=0,fieldMin=0,fieldMax=0,solidCount=0,voidCount=0,buildMs=0;
+let operations=[],events=[];
+const round=(n,d=2)=>Number.isFinite(n)?+n.toFixed(d):null;
+const rand=(n)=>{let v=Math.sin(n*127.1+seed*311.7)*43758.5453;return v-Math.floor(v)};
+let terrainBuildCount=0;
+// Boot-selected terrain provider. 'empty' tests non-instantiation without authored data.
+const terrainRequested=new URLSearchParams(location.search).get('terrain');
+const terrainProvider=terrainRequested==='empty'?'empty':terrainRequested==='legacy-v31'?'legacy-v31':'authored-v1';
+// World-coordinate 2D authoring fields are independent of geology and rendering.
+// No inferred map pixels: an unpainted cell has jurisdiction 0 (unassigned).
+const atlas=terrainProvider==='authored-v1'?(()=>{
+ const width=85,height=85,halfExtent=25.2,size=width*height;
+ const fields={jurisdiction:new Uint8Array(size),gradientWeight:new Uint8Array(size),elevation:new Float32Array(size),substrate:new Uint8Array(size),hydrology:new Uint8Array(size),provenance:new Uint8Array(size),strata:new Uint8Array(size),population:new Uint8Array(size),features:new Uint8Array(size)};
+ return {version:2,origin:[0,0],halfExtent,resolution:[width,height],seed:741,fields,regions:{0:'unassigned',1:'summerlands',2:'winter-kings-realm',3:'gradient',4:'other'},compiled:false};
+})():null;
+let legacyTerrainInstantiations=0,emptyTerrainInstantiations=0,authoredTerrainInstantiations=0;
+function regenerate(){
+ if(terrainProvider==='empty')throw new Error('Empty provider must not instantiate geology');
+ if(terrainProvider==='legacy-v31')legacyTerrainInstantiations++;
+ else authoredTerrainInstantiations++;
+ terrainBuildCount++;
+ const start=performance.now();
+ operations=[];
+ // Vertical bores pierce the complete slab; raised and lowered regions act
+ // independently on upper and lower surfaces.
+ for(let k=0;k<(terrainProvider==='legacy-v31'?14:0);k++)operations.push({kind:'through-hole',x:(rand(k+2)-.5)*42,z:(rand(k+11)-.5)*42,r:1+rand(k+29)*.7});
+ for(let k=0;k<(terrainProvider==='legacy-v31'?28:0);k++)operations.push({kind:k%2?'lower':'raise',face:k%3?'top':'bottom',x:(rand(k+49)-.5)*42,z:(rand(k+61)-.5)*42,r:1.7+rand(k+73)*1.4,delta:(k%2?-1:1)*(0.65+rand(k+91)*1.25)});
+ if(terrainProvider==='authored-v1'){
+  // Sparse cartographic landmarks; no continuous noise, flat corridors between nodes.
+  const nodes=[["Summerlands",-13,12,"raise",3.2,1.5],["Winter King's Realm",12,14,"raise",3.8,2],["Ice Vale",17,20,"lower",2.7,1],["Gradient",0,12,"lower",3,0.6],["Amaranthine Fields",-7,5,"raise",2.6,0.8],["Quills",5,7,"raise",2.4,1.7],["Heart of Darkness",12,2,"through-hole",2.1,0],["Bood Lakes",-14,1,"lower",3.2,1.2],["Jade Peak",19,5,"raise",3.2,2.1],["Mists",-2,-1,"lower",3,0.7],["Downton",3,-4,"through-hole",2.5,0],["Silverpass and Gemgates",16,-5,"lower",2.5,1.2],["Cinderglade and Fell Crater",-17,-7,"lower",3.3,1.8],["Whisperwood",-9,-9,"raise",3,0.8],["Brambles",-1,-12,"raise",2.8,0.9],["Rift",8,-11,"through-hole",1.9,0],["Spill",19,-13,"lower",2.5,1],["Redwall",-16,-16,"raise",2.5,1.3],["Upton",-7,-18,"raise",2.4,0.9],["Kindle Tower",1,-19,"raise",2.3,1.8],["Violet Coast",10,-20,"lower",3.4,0.8],["Ocean of Tears",19,-20,"lower",3.2,1.1]];
+  for(const [name,x,z,kind,r,depth] of nodes)operations.push({name,kind,x,z,r,delta:kind==='raise'?depth:-depth,face:'top'});
+ }
+
+ fieldMin=Infinity;fieldMax=-Infinity;solidCount=0;voidCount=0;
+ for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
+  const X=xp(x),Y=yp(y),Z=zp(z);
+  let top=1.15,bottom=-1.15;
+  for(const op of operations){if(op.kind==='through-hole')continue;const d=Math.hypot(X-op.x,Z-op.z)/op.r;if(d<1){const w=(1-d*d)**2;if(op.face==='top')top+=op.delta*w;else bottom-=op.delta*w}}
+  let v=Math.min(top-Y,Y-bottom);
+  for(const op of operations){if(op.kind!=='through-hole')continue;const d=Math.hypot(X-op.x,Z-op.z);v=Math.min(v,d-op.r)}
+  field[id(x,y,z)]=v;fieldMin=Math.min(fieldMin,v);fieldMax=Math.max(fieldMax,v);if(v>0)solidCount++;else voidCount++;
+ }
+ extractTerrainMesh();
+ events.push({cycle,seed,triangles,buildMs:+buildMs.toFixed(1),operations:operations.map(o=>({...o}))});if(events.length>5)events.shift();
+}
+function extractTerrainMesh(bounds=null){
+ const start=performance.now(),selected=[];
+ if(!bounds)selected.push(...terrainChunks);
+ else{const x0=Math.max(0,Math.floor(Math.max(0,bounds.x0-1)/CHUNK)),x1=Math.min(CX-1,Math.floor(Math.min(NX-2,bounds.x1)/CHUNK)),z0=Math.max(0,Math.floor(Math.max(0,bounds.z0-1)/CHUNK)),z1=Math.min(CZ-1,Math.floor(Math.min(NZ-2,bounds.z1)/CHUNK));for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++)selected.push(terrainChunks[x+CX*z])}
+ const lerp=(p,q,a,b)=>{const t=Math.max(0,Math.min(1,a/(a-b)));return[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t]};
+ let rebuiltCells=0;
+ for(const c of selected){
+  const pos=[],tri=(a,b,c)=>{if(Math.min(Math.hypot(...a.map((v,i)=>v-b[i])),Math.hypot(...b.map((v,i)=>v-c[i])),Math.hypot(...c.map((v,i)=>v-a[i])))<.00001)return;pos.push(...a,...b,...c)};
+  const x0=c.cx*CHUNK,x1=Math.min(NX-1,x0+CHUNK),z0=c.cz*CHUNK,z1=Math.min(NZ-1,z0+CHUNK);rebuiltCells+=(x1-x0)*(z1-z0)*(NY-1);
+  for(let z=z0;z<z1;z++)for(let y=0;y<NY-1;y++)for(let x=x0;x<x1;x++){
+   const p=corners.map(q=>[xp(x+q[0]),yp(y+q[1]),zp(z+q[2])]),v=corners.map(q=>field[id(x+q[0],y+q[1],z+q[2])]);
+   for(const tet of tets){const inside=tet.filter(i=>v[i]>0),outside=tet.filter(i=>v[i]<=0);if(!inside.length||!outside.length)continue;
+    if(inside.length===1||outside.length===1){const inv=outside.length===1,A=(inv?outside:inside)[0],others=inv?inside:outside,q=others.map(i=>lerp(p[A],p[i],v[A],v[i]));if(inv)tri(q[0],q[2],q[1]);else tri(q[0],q[1],q[2])}
+    else{const [a,b]=inside,[c,d]=outside,q0=lerp(p[a],p[c],v[a],v[c]),q1=lerp(p[a],p[d],v[a],v[d]),q2=lerp(p[b],p[c],v[b],v[c]),q3=lerp(p[b],p[d],v[b],v[d]);tri(q0,q1,q2);tri(q2,q1,q3)}
+   }
+  }
+  c.geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));c.geometry.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(pos.length).fill(.52),3));c.geometry.computeVertexNormals();c.geometry.computeBoundingSphere();c.triangles=pos.length/9;
+ }
+ triangles=terrainChunks.reduce((n,c)=>n+c.triangles,0);buildMs=performance.now()-start;
+ terrainPerf.lastDirtyChunks=selected.length;terrainPerf.lastRebuiltCells=rebuiltCells;terrainPerf.lastRebuildMs=+buildMs.toFixed(3);terrainPerf.lastChangedChunks=selected;if(bounds)terrainPerf.localRebuilds++;else terrainPerf.fullRebuilds++;
+ solid.position.set(-wanderX,0,-wanderZ);sharedApertureOffset.set(wanderX,0,wanderZ);
+
+}
+
+if(terrainProvider!=='empty')regenerate();
+else {
+ // Explicit empty world: no legacy field construction or resident terrain triangles.
+ emptyTerrainInstantiations++;
+ field.fill(-1);fieldMin=-1;fieldMax=-1;solidCount=0;voidCount=field.length;
+ triangles=0;buildMs=0;terrainBuildCount=0;solid.visible=false;
+}
+// One mesh, one set of vertices; map lenses only recolor the existing surface.
+// Author the entire aligned atlas once. Unknown terrain remains quiet, not filled with noise.
+function compileAtlas(){
+ if(!atlas)return;
+ const {fields:f,resolution:[w,h],halfExtent:half}=atlas;
+ const nodes=operations.filter(o=>o.name);
+ for(let z=0;z<h;z++)for(let x=0;x<w;x++){
+  const X=(x/(w-1)*2-1)*half,Z=(z/(h-1)*2-1)*half,i=x+w*z;
+  let nearest=null,dist=Infinity,top=1.15;
+  for(const n of nodes){
+   const d=Math.hypot(X-n.x,Z-n.z);
+   if(d<dist){dist=d;nearest=n}
+   if(n.kind!=='through-hole'&&d<n.r){const t=1-(d/n.r)**2;top+=n.delta*t*t}
+  }
+  const active=nearest&&dist<nearest.r*1.4;
+  // Curved cartographic front, continuous and deterministic, not square tiles.
+  // Broad unpainted south remains quiet; the Gradient is an actual band.
+  const northFront=3.2+2.4*Math.sin(X*.17)+1.1*Math.sin(X*.39+1.3);
+  const divide=0.4+3.2*Math.sin(Z*.13+.5)+1.4*Math.sin(Z*.31-1.1);
+  const north=Z>northFront,gradient=north&&Math.abs(X-divide)<4.0;
+  const winter=north&&X>=divide+4,summer=north&&X<=divide-4;
+  f.jurisdiction[i]=winter?2:summer?1:gradient?3:active?4:0;
+  f.gradientWeight[i]=gradient?Math.round(Math.max(0,Math.min(1,(X-divide+4)/8))*255):0;
+  f.elevation[i]=top;
+  f.substrate[i]=active?(winter?3:nearest.kind==='lower'?2:1):0;
+  f.hydrology[i]=active&&nearest.kind==='lower'?1:0;
+  f.provenance[i]=active?1:0;
+  f.strata[i]=active&&nearest.kind==='through-hole'?2:1;
+  f.population[i]=active&&nearest.kind==='raise'?1:0;
+  f.features[i]=active?1:0;
+ }
+ atlas.compiled=true;
+}
+compileAtlas();
+// V37: provisional material columns. Material identity is independent of display color.
+// The atlas supplies surface parent material; depth selects cover, subsoil or bedrock.
+// These are generated assignments, not minerals inferred from the source drawing.
+const MATERIALS=[
+ {id:0,name:'neutral bedrock',color:0x747b7d},
+ {id:1,name:'warm soil',color:0xb29b75},
+ {id:2,name:'basin sediment',color:0x8b7869},
+ {id:3,name:'cold regolith',color:0xa9bdc2},
+ {id:4,name:'weathered subsoil',color:0x766958},
+ {id:5,name:'deep bedrock',color:0x505965}
+];
+function materialAt(X,Y,Z){
+ if(!atlas)return null;
+ const gx=Math.round((X/WORLD_HALF+1)*(NX-1)/2),gy=Math.round((Y-MINY)/(MAXY-MINY)*(NY-1)),gz=Math.round((Z/WORLD_HALF+1)*(NZ-1)/2);
+ const deposited=depositedMaterial.get(id(gx,gy,gz));
+ if(deposited&&field[id(gx,gy,gz)]>0)return {id:deposited.materialId,depth:0,sourceSubstrate:null,material:MATERIALS[deposited.materialId],lineage:deposited.lineage};
+ const {fields:f,resolution:[w,h],halfExtent:half}=atlas;
+ const ix=Math.max(0,Math.min(w-1,Math.round((X/half+1)*(w-1)/2)));
+ const iz=Math.max(0,Math.min(h-1,Math.round((Z/half+1)*(h-1)/2)));
+ const i=ix+w*iz,depth=f.elevation[i]-Y;
+ const surface=f.substrate[i]===3?3:f.substrate[i]===2?2:f.substrate[i]===1?1:0;
+ const materialId=depth<0.28?surface:depth<0.8?4:5;
+ return {id:materialId,depth,sourceSubstrate:f.substrate[i],material:MATERIALS[materialId]};
+}
+const mapModes=['COMPOSITE','ELEVATION','SUBSTRATE','BIOME','HYDROLOGY','PROVENANCE','STRATA','POPULATION','FEATURES'];
+let mapModeIndex=0;
+function paintMapLens(chunks=terrainChunks){
+ if(!atlas)return;
+ const {fields:f,resolution:[w,h],halfExtent:half}=atlas;
+ const mode=mapModes[mapModeIndex],v=new T.Color(),base=new T.Color();
+ for(const chunk of chunks){const position=chunk.geometry.getAttribute('position'),color=chunk.geometry.getAttribute('color');if(!position||!color)continue;
+ for(let i=0;i<position.count;i++){
+  const X=position.getX(i),Y=position.getY(i),Z=position.getZ(i);
+  const ix=Math.max(0,Math.min(w-1,Math.round((X/half+1)*(w-1)/2)));
+  const iz=Math.max(0,Math.min(h-1,Math.round((Z/half+1)*(h-1)/2)));
+  const j=ix+w*iz,biome=f.jurisdiction[j],wet=f.hydrology[j]>0,feature=f.features[j]>0;
+  const ice=biome===2,summer=biome===1;
+  if(mode==='ELEVATION'){const e=Math.max(0,Math.min(1,(f.elevation[j]+1.5)/5));v.setRGB(e,e,e)}
+  else if(mode==='SUBSTRATE')v.set(materialAt(X,Y,Z).material.color);
+  else if(mode==='BIOME')v.set([0x777970,0xb1aa63,0x8dbbc9,0x979385,0x9d8675][biome]);
+  else if(mode==='HYDROLOGY')v.set(wet?0x3c94bc:0x333b40);
+  else if(mode==='PROVENANCE')v.set(f.provenance[j]?0xb69a60:0x3c4244);
+  else if(mode==='STRATA')v.set(materialAt(X,Y,Z).material.color);
+  else if(mode==='POPULATION')v.set(f.population[j]?0x5b9d69:0x343c35);
+  else if(mode==='FEATURES')v.set(feature?0xe3b66a:0x33363b);
+  else v.set(ice?0xa6bdc2:summer?0xa29b69:0x927963).lerp(base.set(wet?0x63899a:f.strata[j]===2?0x564c62:f.population[j]?0xb49a72:0x927963),feature?.45:0);
+  color.setXYZ(i,v.r,v.g,v.b);
+ }
+ color.needsUpdate=true;
+ }
+ document.querySelector('#mapLens').textContent='◈ '+mode;
+}
+document.querySelector('#mapLens').onclick=()=>{mapModeIndex=(mapModeIndex+1)%mapModes.length;paintMapLens()};
+if(atlas)paintMapLens();
+else document.querySelector('#mapLens').hidden=true;
+
+let lastMeshX=0,lastMeshZ=0;
+/* Matter v2: one conserved 10k-unit cloud inventory and terrain contact. */
+const RAIN_N=10000,RAIN_DURATION=18,RAIN_R=.037;
+const rainX=new Float32Array(RAIN_N),rainY=new Float32Array(RAIN_N),rainZ=new Float32Array(RAIN_N),rainVX=new Float32Array(RAIN_N),rainVY=new Float32Array(RAIN_N),rainVZ=new Float32Array(RAIN_N),rainRest=new Uint8Array(RAIN_N);
+// Geological coordinates persist independently of the moving aperture.
+const rainOwner=new Uint8Array(RAIN_N);
+let ownerTransfers=0,toTerrain=0,toHermeticon=0,maxTransferError=0;
+function rainWorld(i){return rainOwner[i]===1?[rainX[i],rainY[i],rainZ[i]]:[rainX[i]-wanderX,rainY[i],rainZ[i]-wanderZ]}
+const rainGeo=new T.IcosahedronGeometry(RAIN_R,0),rainMat=new T.MeshBasicMaterial({color:0x8ad9f0});
+const rainMesh=new T.InstancedMesh(rainGeo,rainMat,RAIN_N);rainMesh.userData.worldDomain=true;rainMesh.userData.matterTag='micro'; // Persistent geological BBs are not subject to whole-sphere containment.
+rainMesh.frustumCulled=false;rainMesh.count=0;world.add(rainMesh);
+const cloudDimensions=[2.7,.8,2.7],cloudCenterY=5.6,cloudCenterX=3,cloudCenterZ=-4;
+// Clip cloud fragments in Hermeticon-local space, as with the terrain aperture.
+const cloudMaterial=new T.MeshStandardMaterial({color:0x929aa1,transparent:true,opacity:.72,roughness:.94,side:T.DoubleSide});
+cloudMaterial.onBeforeCompile=shader=>{
+ cloudMaterial.userData.shaderCompiled=true;
+ cloudMaterial.userData.shaderHooks={vertex:shader.vertexShader.includes('#include <worldpos_vertex>'),fragment:shader.fragmentShader.includes('#include <clipping_planes_fragment>')};
+ shader.uniforms.cloudApertureRadius={value:INNER_R};
+ shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\n varying vec3 vCloudAperturePosition;');
+ shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n vCloudAperturePosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
+ shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\n varying vec3 vCloudAperturePosition; uniform float cloudApertureRadius;');
+ shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\n if(dot(vCloudAperturePosition,vCloudAperturePosition)>cloudApertureRadius*cloudApertureRadius || vCloudAperturePosition.y<0.0) discard;');
+};
+const cloud=put(world,new T.BoxGeometry(...cloudDimensions),cloudMaterial,0,cloudCenterY,0);
+cloud.userData.worldDomain=true;
+const rainDummy=new T.Object3D();let rainTime=0,rainEmitted=0,rainBounces=0,rainSettled=0,rainEscaped=0,rainWallBounces=0,rainBudget=0;
+function rainRandom(i,s){const v=Math.sin((i+1)*127.1+(s+1)*311.7)*43758.5453;return v-Math.floor(v)}
+// Terrain is solid on every face. Only a crossing from air into rock is a
+// contact; an already embedded micro must not be repeatedly accelerated.
+const terrainContactStats={hits:0,underside:0};
+function terrainMicroContact(p,ox,oy,oz,radius){
+ const sx=ox+wanderX,sz=oz+wanderZ;
+ const start=fieldSample(sx,oy,sz),end=fieldSample(p.x+wanderX,p.y,p.z+wanderZ);
+ if(start>=-radius||end< -radius)return;
+ const [nx,ny,nz]=rainSurfaceNormal(p.x+wanderX,p.y,p.z+wanderZ);
+ const vn=p.vx*nx+p.vy*ny+p.vz*nz;
+ if(vn>=0)return;
+ // Same normal restitution as the established terrain surface; no tangential damping.
+ p.vx-=1.38*vn*nx;p.vy-=1.38*vn*ny;p.vz-=1.38*vn*nz;
+ // Resolve onto the incoming air side, avoiding a second impulse at rest.
+ let lo=0,hi=1;
+ for(let k=0;k<8;k++){
+  const t=(lo+hi)*.5;
+  if(fieldSample(sx+(p.x-ox)*t,oy+(p.y-oy)*t,sz+(p.z-oz)*t)>=-radius)hi=t;
+  else lo=t;
+ }
+ p.x=ox+(p.x-ox)*lo+nx*.004;
+ p.y=oy+(p.y-oy)*lo+ny*.004;
+ p.z=oz+(p.z-oz)*lo+nz*.004;
+ terrainContactStats.hits++;
+ if(ny<-.25)terrainContactStats.underside++;
+}
+function rainSurfaceNormal(x,y,z){
+ const h=.09;
+ // Positive signed-field values are INSIDE rock: outward normal is NEGATIVE gradient.
+ let nx=fieldSample(x-h,y,z)-fieldSample(x+h,y,z),ny=fieldSample(x,y-h,z)-fieldSample(x,y+h,z),nz=fieldSample(x,y,z-h)-fieldSample(x,y,z+h);
+ const l=Math.hypot(nx,ny,nz);
+ return l>.00001?[nx/l,ny/l,nz/l]:[0,1,0];
+}
+
+/* V67: BB-fed top sheet; edge + outward/downward signed-field air releases mobile BBs. */
+const gelSpacing=.42,gelYield=4*Math.PI*RAIN_R**3/3*12,gelArea=gelSpacing*gelSpacing;
+const gelColumns=new Map(),gelNodes=[];let gelAbsorbed=0,gelVolume=0,gelEdges=0,gelRejected=0,gelMoves=0,gelLastDraw=0,gelLastFlow=0,gelRimNodes=0,gelBeadVolume=0,gelStretch=0,gelAirEdges=0,gelReleased=0,gelReleasedVolume=0,gelPending=0,gelSegmentEmissions=0,gelEmissionSpan=0;
+const gelGroup=new T.Group();gelGroup.userData.worldDomain=true;world.add(gelGroup);
+const gelNodeMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.052,0),new T.MeshBasicMaterial({color:0xcaa66b}),2048);
+gelNodeMesh.instanceMatrix.setUsage(T.DynamicDrawUsage);gelNodeMesh.frustumCulled=false;gelGroup.add(gelNodeMesh);
+const gelLineGeo=new T.BufferGeometry(),gelLines=new T.LineSegments(gelLineGeo,new T.LineBasicMaterial({color:0xcfae77,transparent:true,opacity:.83,depthWrite:false}));
+gelLines.frustumCulled=false;gelGroup.add(gelLines);
+const gelDummy=new T.Object3D(),gelBedCache=new Map();
+function gelKey(ix,iz){return ix+','+iz}
+function gelBed(x,z){
+ const key=x.toFixed(3)+','+z.toFixed(3);
+ if(gelBedCache.has(key))return gelBedCache.get(key);
+ let prior=fieldSample(x,MAXY-.001,z),hit=NaN;
+ for(let y=MAXY-.05;y>=MINY+.05;y-=.05){const v=fieldSample(x,y,z);if(prior<=0&&v>0){hit=y;break}prior=v}
+ gelBedCache.set(key,hit);return hit;
+}
+function gelCell(ix,iz){
+ const key=gelKey(ix,iz);let c=gelColumns.get(key);
+ if(c)return c;
+ const x=ix*gelSpacing,z=iz*gelSpacing,bed=gelBed(x,z);
+ if(!Number.isFinite(bed)||x*x+bed*bed+z*z>(INNER_R-.5)**2)return null;
+ c={ix,iz,bed,volume:0,bead:0};gelColumns.set(key,c);return c;
+}
+function gelHeight(c){return c.bed+c.volume/gelArea}
+function gelCollect(i,x,y,z){
+ if(rainRest[i])return false;
+ const ix=Math.round(x/gelSpacing),iz=Math.round(z/gelSpacing),c=gelCell(ix,iz);
+ if(!c){gelRejected++;return false}
+ rainRest[i]=2;rainSettled++;gelAbsorbed++;gelVolume+=gelYield;c.volume+=gelYield;
+ return true;
+}
+const gelDirs=[[1,0],[-1,0],[0,1],[0,-1]];
+function gelAirPath(c,dx,dz){
+ const h=gelHeight(c),x=(c.ix+dx)*gelSpacing,z=(c.iz+dz)*gelSpacing;
+ // Seek past the sheet edge and then down, never simply through its supporting floor.
+ if(fieldSample(x,h-.09,z)>=-.035)return false;
+ if(fieldSample(x,h-.34,z)>=-.035)return false;
+ if(fieldSample(x,h-.62,z)>=-.035)return false;
+ return x*x+(h-.34)**2+z*z<(INNER_R-.3)**2;
+}
+function gelNoise(n){let x=Math.sin(n*127.1+78.233)*43758.5453;return x-Math.floor(x)}
+function gelRelax(){
+ // A sheet equalizes its gravitational head; rim extensions are bounded by connection stretch.
+ const cells=Array.from(gelColumns.values()).filter(c=>c.volume>1e-8);
+ gelAirEdges=0;gelPending=0;
+ let releasesThisStep=0;
+ for(const c of cells){
+  let budget=c.volume*.24;
+  const h=gelHeight(c),candidates=[];
+  for(const [dx,dz] of gelDirs){
+   const nx=c.ix+dx,nz=c.iz+dz,x=nx*gelSpacing,z=nz*gelSpacing;
+   const neighbor=gelColumns.get(gelKey(nx,nz));
+   // Only boundary nodes can spill; look outward and then down through actual 3D air.
+   if((!neighbor||neighbor.volume<gelYield*.15)&&gelAirPath(c,dx,dz)){
+    gelAirEdges++;
+    // Discharge several BBs per valid segment per relaxation, subject to actual supply.
+    const available=Math.max(0,Math.floor((c.volume-gelYield*.6)/gelYield));
+    const burst=Math.min(8,available,Math.max(0,96-releasesThisStep));
+    for(let k=0;k<burst;k++){
+     let slot=-1;
+     for(let j=0;j<rainEmitted;j++)if(rainRest[j]===2){slot=j;break}
+     if(slot<0){gelPending++;break}
+     c.volume-=gelYield;gelVolume-=gelYield;gelReleasedVolume+=gelYield;
+     const seed=gelReleased+1+c.ix*7919+c.iz*104729+dx*313+dz*619;
+     const along=(gelNoise(seed)-.5)*gelSpacing*.94;
+     const outward=.17+.17*gelNoise(seed+17);
+     const tangent=(gelNoise(seed+31)-.5)*.13;
+     const px=x-dx*gelSpacing*.40-dz*along;
+     const pz=z-dz*gelSpacing*.40+dx*along;
+     rainRest[slot]=0;rainX[slot]=px;rainY[slot]=h-.12;rainZ[slot]=pz;
+     rainVX[slot]=dx*outward-dz*tangent;rainVY[slot]=-.38-.26*gelNoise(seed+43);rainVZ[slot]=dz*outward+dx*tangent;
+     gelSegmentEmissions++;gelEmissionSpan+=Math.abs(along);
+     gelReleased++;releasesThisStep++;
+    }
+    if(burst===0)gelPending++;
+    continue;
+   }
+   const bed=gelBed(x,z);
+   if(!Number.isFinite(bed))continue;
+   const targetHeight=neighbor?gelHeight(neighbor):bed;
+   const distance=Math.hypot(gelSpacing,h-targetHeight);
+   // New links cannot span arbitrary cliffs: excess accumulates as a bead at the rim.
+   if(!neighbor&&distance>gelSpacing*1.9){c.bead=Math.min(c.volume,Math.max(c.bead,budget*.12));continue}
+   const slope=h-targetHeight;
+   if(slope>.015)candidates.push({nx,nz,slope});
+  }
+  candidates.sort((a,b)=>b.slope-a.slope);
+  for(const n of candidates){
+   if(budget<1e-8)break;
+   const to=gelCell(n.nx,n.nz);if(!to)continue;
+   const move=Math.min(budget,Math.max(0,n.slope)*gelArea*.16,gelArea*.07);
+   if(move<1e-9)continue;
+   c.volume-=move;to.volume+=move;budget-=move;gelMoves++;
+  }
+ }
+ // Prune empty control points. The mass ledger remains independent.
+ for(const [key,c] of gelColumns)if(c.volume<1e-9)gelColumns.delete(key);
+}
+function gelRebuild(){
+ gelNodes.length=0;gelRimNodes=0;gelBeadVolume=0;gelStretch=0;
+ const index=new Map(),lines=[];
+ const active=Array.from(gelColumns.values()).filter(c=>c.volume>gelYield*.15);
+ for(const c of active){
+  const h=gelHeight(c);
+  let rim=false,curvature=0;
+  for(const [dx,dz] of gelDirs){
+   const n=gelColumns.get(gelKey(c.ix+dx,c.iz+dz));
+   if(!n||n.volume<gelYield*.15){rim=true;continue}
+   curvature=Math.max(curvature,Math.abs(h-gelHeight(n)));
+  }
+  if(rim)gelRimNodes++;
+  gelBeadVolume+=c.bead;
+  // Boundary, curvature, or sparse interior anchor: no dense honeycomb.
+  if(!rim&&curvature<.14&&(Math.abs(c.ix*11+c.iz*17)%5!==0))continue;
+  if(gelNodes.length>=2048)break;
+  index.set(gelKey(c.ix,c.iz),gelNodes.length);gelNodes.push(c);
+ }
+ for(let i=0;i<gelNodes.length;i++){
+  const c=gelNodes[i],x=c.ix*gelSpacing-wanderX,y=gelHeight(c),z=c.iz*gelSpacing-wanderZ;
+  gelDummy.position.set(x,y,z);gelDummy.updateMatrix();gelNodeMesh.setMatrixAt(i,gelDummy.matrix);
+  for(const [dx,dz] of [[1,0],[0,1],[1,1],[-1,1]]){
+   const j=index.get(gelKey(c.ix+dx,c.iz+dz));if(j===undefined)continue;
+   const n=gelNodes[j],ny=gelHeight(n),d=Math.hypot(dx*gelSpacing,dz*gelSpacing,ny-y);
+   if(d>gelSpacing*2){gelStretch++;continue}
+   lines.push(x,y,z,n.ix*gelSpacing-wanderX,ny,n.iz*gelSpacing-wanderZ);
+  }
+ }
+ gelNodeMesh.count=gelNodes.length;gelNodeMesh.instanceMatrix.needsUpdate=true;
+ gelLineGeo.setAttribute('position',new T.Float32BufferAttribute(lines,3));gelEdges=lines.length/6;
+}
+function updateGel(){
+ const now=performance.now();
+ if(now-gelLastFlow>85){gelRelax();gelLastFlow=now}
+ if(now-gelLastDraw>160){gelRebuild();gelLastDraw=now}
+}
+function rainStep(dt){
+ // Hydrology sheet suspended; discrete rain BBs remain active.
+ const gravity=9.8,restitution=.38,tangentDamping=.82;
+ rainTime+=dt;
+ const fractionBefore=(RAIN_N-rainEmitted)/RAIN_N;
+ const size=Math.cbrt(Math.max(.001,fractionBefore));
+ cloud.scale.setScalar(size);
+ cloud.position.set(cloudCenterX-wanderX,cloudCenterY,cloudCenterZ-wanderZ);
+ cloud.updateMatrixWorld(true);
+ // Deterministic volumetric overlap estimate. Camera orientation is irrelevant.
+ let overlap=0;
+ for(let k=0;k<64;k++){
+  const x=(rainRandom(k,20)-.5)*cloudDimensions[0]*size+cloudCenterX-wanderX;
+  const y=(rainRandom(k,21)-.5)*cloudDimensions[1]*size+cloudCenterY;
+  const z=(rainRandom(k,22)-.5)*cloudDimensions[2]*size+cloudCenterZ-wanderZ;
+  if(y>=0&&x*x+y*y+z*z<INNER_R*INNER_R)overlap++;
+ }
+ // Cloud emission paused for material-system exploration; existing BBs remain live.
+ const rainEnabled=true;
+ cloud.visible=rainEnabled;
+ if(rainEnabled)rainBudget+=dt*RAIN_N/RAIN_DURATION*overlap/64;
+ // Failed emission candidates are retried, never silently deducted.
+ let attempts=rainEnabled?Math.min(RAIN_N-rainEmitted,Math.floor(rainBudget)):0;
+ for(let j=0;j<attempts;j++){
+  const i=rainEmitted,inset=.12;
+  const origin=new T.Vector3(
+   (rainRandom(i,0)-.5)*(cloudDimensions[0]-2*inset),
+   (rainRandom(i,2)-.5)*(cloudDimensions[1]-2*inset),
+   (rainRandom(i,1)-.5)*(cloudDimensions[2]-2*inset)
+  ).applyMatrix4(cloud.matrixWorld);
+  if(origin.y<0||origin.lengthSq()>INNER_R*INNER_R)break;
+  rainX[i]=origin.x+wanderX;rainY[i]=origin.y;rainZ[i]=origin.z+wanderZ;
+  rainVX[i]=(rainRandom(i,3)-.5)*.36;rainVY[i]=-(.2+rainRandom(i,4)*.5);rainVZ[i]=(rainRandom(i,5)-.5)*.36;
+  rainEmitted++;rainBudget--;
+ }
+ rainBudget=Math.min(rainBudget,4);
+ for(let i=0;i<rainEmitted;i++){
+  if(!rainRest[i]){
+   const [ox,oy,oz]=rainWorld(i);
+   rainVY[i]-=gravity*dt;
+   const x=ox+rainVX[i]*dt,y=oy+rainVY[i]*dt,z=oz+rainVZ[i]*dt;
+   const distance=Math.hypot(x-ox,y-oy,z-oz),steps=Math.max(1,Math.ceil(distance/.065));
+   let hit=false,hx=x,hy=y,hz=z;
+   for(let j=1;j<=steps;j++){
+    const t=j/steps,px=ox+(x-ox)*t,py=oy+(y-oy)*t,pz=oz+(z-oz)*t;
+    if(fieldSample(px+wanderX,py,pz+wanderZ)>=-RAIN_R&&fieldSample(ox+wanderX,oy,oz+wanderZ)<-RAIN_R){hit=true;hx=px;hy=py;hz=pz;break}
+   }
+   if(hit){
+    const [nx,ny,nz]=rainSurfaceNormal(hx+wanderX,hy,hz+wanderZ);
+    const vn=rainVX[i]*nx+rainVY[i]*ny+rainVZ[i]*nz;
+    if(vn<0){rainVX[i]-=(1+restitution)*vn*nx;rainVY[i]-=(1+restitution)*vn*ny;rainVZ[i]-=(1+restitution)*vn*nz;rainBounces++}
+    const normalSpeed=rainVX[i]*nx+rainVY[i]*ny+rainVZ[i]*nz;
+    rainVX[i]=(rainVX[i]-normalSpeed*nx)*tangentDamping+normalSpeed*nx;
+    rainVY[i]=(rainVY[i]-normalSpeed*ny)*tangentDamping+normalSpeed*ny;
+    rainVZ[i]=(rainVZ[i]-normalSpeed*nz)*tangentDamping+normalSpeed*nz;
+    let push=0;
+    while(fieldSample(hx+wanderX,hy,hz+wanderZ)>-RAIN_R&&push++<12){hx+=nx*.035;hy+=ny*.035;hz+=nz*.035}
+    rainX[i]=hx+(rainOwner[i]===1?0:wanderX);rainY[i]=hy;rainZ[i]=hz+(rainOwner[i]===1?0:wanderZ);
+    if(Math.hypot(rainVX[i],rainVY[i],rainVZ[i])<.42&&ny>.55){{rainRest[i]=1;rainSettled++}}
+   }else{rainX[i]=x+(rainOwner[i]===1?0:wanderX);rainY[i]=y;rainZ[i]=z+(rainOwner[i]===1?0:wanderZ)}
+   // Only the lower hemisphere is a physical bowl; upper aperture is not a wall.
+   const [dx,dy,dz]=rainWorld(i),rr=Math.hypot(dx,dy,dz),limit=INNER_R-RAIN_R-.012;
+   if(dy<0&&rr>limit&&rr<limit+.45){
+    if(rainOwner[i]!==1){rainX[i]=dx;rainY[i]=dy;rainZ[i]=dz;rainOwner[i]=1;ownerTransfers++;toHermeticon++}
+    const nx=-dx/rr,ny=-dy/rr,nz=-dz/rr;
+    rainX[i]=dx/rr*limit;rainY[i]=dy/rr*limit;rainZ[i]=dz/rr*limit;
+    const vn=rainVX[i]*nx+rainVY[i]*ny+rainVZ[i]*nz;
+    if(vn<0){rainVX[i]-=1.38*vn*nx;rainVY[i]-=1.38*vn*ny;rainVZ[i]-=1.38*vn*nz;rainWallBounces++}
+    // Material response at the bowl: dissipate tangential motion, never sleep merely on capture.
+    if(ny>.95&&Math.hypot(rainVX[i],rainVY[i],rainVZ[i])<.42){rainRest[i]=1;rainSettled++}
+   }
+  }
+  const [rx,ry,rz]=rainWorld(i);
+  rainDummy.position.set(rx,ry,rz);
+  rainDummy.scale.setScalar(rainRest[i]===2?0:(rx*rx+ry*ry+rz*rz<INNER_R*INNER_R?1:0));
+  rainDummy.updateMatrix();rainMesh.setMatrixAt(i,rainDummy.matrix);
+ }
+ rainMesh.count=rainEmitted;rainMesh.instanceMatrix.needsUpdate=true;
+ const fraction=(RAIN_N-rainEmitted)/RAIN_N;
+ cloud.visible=fraction>0;
+ cloud.scale.setScalar(Math.max(.001,Math.cbrt(fraction)));
+ cloud.position.set(cloudCenterX-wanderX,cloudCenterY,cloudCenterZ-wanderZ);
+}
+
+// Landmark markers: world-space spheres and depth-tested camera-facing tags.
+const landmarkSpecs=[["Summerlands",-13,12,"🌻","#e9b74a"],["Winter King's Realm",12,14,"👑","#b5d8f5"],["Ice Vale",17,20,"❄️","#8ce8f8"],["Gradient",0,12,"🦋","#a7d888"],["Amaranthine Fields",-7,5,"🌸","#e69dbf"],["Quills",5,7,"🪶","#d5b685"],["Heart of Darkness",12,2,"🦇","#80639e"],["Bood Lakes",-14,1,"🦟","#9c4b65"],["Jade Peak",19,5,"🐉","#51c7a4"],["Mists",-2,-1,"🫧","#a7d4e4"],["Downton",3,-4,"🏘️","#d8a575"],["Silverpass and Gemgates",16,-5,"💎","#77cfe5"],["Cinderglade and Fell Crater",-17,-7,"🌋","#f07840"],["Whisperwood",-9,-9,"🍄","#77bb80"],["Brambles",-1,-12,"🥀","#bc6d88"],["Rift",8,-11,"⚡","#ad8df0"],["Spill",19,-13,"🐟","#66b8dc"],["Redwall",-16,-16,"🧱","#bb715d"],["Upton",-7,-18,"🏰","#d7c18b"],["Kindle Tower",1,-19,"🕯️","#f7bc64"],["Violet Coast",10,-20,"🐚","#b39be5"],["Ocean of Tears",19,-20,"🐙","#4a8fba"]];
+const landmarkGroup=new T.Group();world.add(landmarkGroup);
+const landmarkGeometry=new T.SphereGeometry(.19,14,10);
+let landmarkTime=0;
+const landmarkOrbs=landmarkSpecs.map(([name,x,z,icon,color],i)=>{
+ const y=walkSurface(x,z)??1.15;
+ const sphere=new T.Mesh(landmarkGeometry,new T.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.24,metalness:.32,roughness:.28}));
+ landmarkGroup.add(sphere);
+ const canvas=document.createElement('canvas');
+ const measure=canvas.getContext('2d');measure.font='600 40px system-ui';
+ const title=icon+'  '+name.toUpperCase(),textWidth=Math.ceil(measure.measureText(title).width);
+ canvas.width=Math.max(128,textWidth+58);canvas.height=96;
+ const ctx=canvas.getContext('2d');ctx.fillStyle='#15202a';ctx.strokeStyle='#9c8556';ctx.lineWidth=3;
+ ctx.beginPath();ctx.roundRect(3,3,canvas.width-6,canvas.height-6,18);ctx.fill();ctx.stroke();
+ ctx.font='600 40px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f0d5a0';
+ ctx.fillText(title,canvas.width/2,49);
+ const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;
+ const label=new T.Mesh(new T.PlaneGeometry(canvas.width/160,.6),new T.MeshBasicMaterial({map:texture,transparent:true,depthTest:true,depthWrite:false,side:T.DoubleSide}));
+ label.visible=false;landmarkGroup.add(label);
+ return {x,z,y,sphere,label,phase:i*1.71};
+});
+function landmarkStep(dt){
+ landmarkTime+=dt;landmarkGroup.position.set(-wanderX,0,-wanderZ);
+ for(const n of landmarkOrbs){
+  const bob=Math.sin(landmarkTime*1.65+n.phase)*.11;
+  n.sphere.position.set(n.x,n.y+.75+bob,n.z);
+  n.label.position.set(n.x,n.y+1.31+bob,n.z);
+  n.label.quaternion.copy(camera.quaternion);
+  // Marker and full tag must fit inside the inner vessel, not merely the center.
+  const inside=(px,py,pz,r)=>Math.hypot(px-wanderX,py,pz-wanderZ)+r<R-.015;
+  n.sphere.visible=inside(n.x,n.y+.75+bob,n.z,.19);
+  const halfWidth=n.label.geometry.parameters.width*.5;
+  const labelRadius=Math.hypot(halfWidth,.3);
+  n.label.visible=n.sphere.visible&&inside(n.x,n.y+1.31+bob,n.z,labelRadius)&&Math.hypot(walker.x-n.x,walker.z-n.z)<2.7;
+ }
+}
+// Wanderer lives in geological coordinates; the aperture follows only beyond 25% area.
+const HANGOUT_R=9.72*.5,WALK_SPEED=1.8,WANDER_SIZE=.38;
+const wanderCube=put(world,new T.BoxGeometry(WANDER_SIZE,WANDER_SIZE,WANDER_SIZE),new T.MeshStandardMaterial({color:0xf0bf68,roughness:.75,depthTest:true,depthWrite:true}),0,0,0);
+wanderCube.renderOrder=0; // Geological terrain is opaque to the Wanderer.
+const walkRay=new T.Raycaster(),walkPointer=new T.Vector2(),walkPlane=new T.Plane(new T.Vector3(0,1,0),0),walkPoint=new T.Vector3();
+let walker={matterTag:'macro',x:0,y:0,z:0,target:null,route:[],accepted:0,rejected:0},wanderHistory=[];
+// All character-kind entities share one vegetation clearance rule.
+const populationCharacterKind=[];
+function registerPopulationCharacter(getPosition){populationCharacterKind.push(getPosition)}
+registerPopulationCharacter(()=>walker);
+// Signed-field top crossing: highest solid-to-air surface, never a lower cavern floor.
+function walkSurface(x,z){
+ let prior=fieldSample(x,MAXY-.02,z);
+ for(let y=MAXY-.08;y>=MINY+.02;y-=.07){
+  const v=fieldSample(x,y,z);
+  if(prior<=0&&v>0){
+   let lo=y,hi=y+.07;
+   for(let k=0;k<9;k++){const mid=(lo+hi)/2;if(fieldSample(x,mid,z)>0)lo=mid;else hi=mid}
+   return (lo+hi)/2;
+  }
+  prior=v;
+ }
+ return null;
+}
+function walkSupport(x,z){
+ const half=WANDER_SIZE*.5,foot=half*.8;
+ const h=walkSurface(x,z);
+ if(h===null)return null;
+ // Every bottom corner needs support: holes stop the cube at their rim.
+ for(const dx of [-foot,foot])for(const dz of [-foot,foot]){
+  const corner=walkSurface(x+dx,z+dz);
+  if(corner===null||Math.abs(corner-h)>.43)return null;
+ }
+ // Inner sphere must contain all eight cube corners, including the upper corners.
+ for(const dx of [-half,half])for(const dz of [-half,half])
+  for(const dy of [0,WANDER_SIZE])
+   if((x-wanderX+dx)**2+(z-wanderZ+dz)**2+(h+dy)**2>(R-.015)**2)return null;
+ return h;
+}
+// Bounded A* on the same support predicate used for movement. Diagonal cuts
+// require both orthogonal neighbors; line-of-sight smoothing removes grid zigzags.
+const PATH_GRID=.34,PATH_LIMIT=17000;
+function walkClear(ax,az,bx,bz){
+ const d=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(d/.11));
+ for(let i=1;i<=n;i++){const t=i/n;if(walkSupport(ax+(bx-ax)*t,az+(bz-az)*t)===null)return false}
+ return true;
+}
+function walkRoute(tx,tz){
+ const sx=walker.x,sz=walker.z;
+ if(walkClear(sx,sz,tx,tz))return [{x:tx,z:tz}];
+ const radius=Math.min(26,Math.max(8,Math.hypot(tx-sx,tz-sz)+5));
+ const minX=Math.floor((Math.min(sx,tx)-radius*.5)/PATH_GRID)*PATH_GRID;
+ const minZ=Math.floor((Math.min(sz,tz)-radius*.5)/PATH_GRID)*PATH_GRID;
+ const w=Math.ceil((Math.max(sx,tx)+radius*.5-minX)/PATH_GRID)+1;
+ const h=Math.ceil((Math.max(sz,tz)+radius*.5-minZ)/PATH_GRID)+1;
+ const key=(x,z)=>x+w*z,px=x=>minX+x*PATH_GRID,pz=z=>minZ+z*PATH_GRID;
+ const startX=Math.round((sx-minX)/PATH_GRID),startZ=Math.round((sz-minZ)/PATH_GRID);
+ const goalX=Math.round((tx-minX)/PATH_GRID),goalZ=Math.round((tz-minZ)/PATH_GRID);
+ const pass=new Map(),valid=(x,z)=>{if(x<0||z<0||x>=w||z>=h)return false;const k=key(x,z);if(!pass.has(k))pass.set(k,walkSupport(px(x),pz(z))!==null);return pass.get(k)};
+ const start=key(startX,startZ),open=[start],g=new Map([[start,0]]),parents=new Map(),closed=new Set();
+ const heuristic=(x,z)=>Math.hypot(x-goalX,z-goalZ);
+ let best=start,bestDist=heuristic(startX,startZ),iterations=0;
+ while(open.length&&iterations++<PATH_LIMIT){
+  let pick=0,score=Infinity;
+  for(let i=0;i<open.length;i++){const k=open[i],x=k%w,z=Math.floor(k/w),f=g.get(k)+heuristic(x,z);if(f<score){score=f;pick=i}}
+  const current=open.splice(pick,1)[0];if(closed.has(current))continue;closed.add(current);
+  const x=current%w,z=Math.floor(current/w),distance=heuristic(x,z);
+  if(distance<bestDist){best=current;bestDist=distance}
+  if(distance<=1&&walkClear(px(x),pz(z),tx,tz)){best=current;break}
+  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+   if(!dx&&!dz)continue;const nx=x+dx,nz=z+dz,nk=key(nx,nz);
+   if(closed.has(nk)||!valid(nx,nz))continue;
+   if(dx&&dz&&(!valid(x+dx,z)||!valid(x,z+dz)))continue;
+   if(!walkClear(px(x),pz(z),px(nx),pz(nz)))continue;
+   const ng=g.get(current)+Math.hypot(dx,dz);
+   if(ng<(g.get(nk)??Infinity)){g.set(nk,ng);parents.set(nk,current);if(!open.includes(nk))open.push(nk)}
+  }
+ }
+ if(best===start)return [];
+ const raw=[];let k=best;
+ while(k!==start&&parents.has(k)){raw.push({x:px(k%w),z:pz(Math.floor(k/w))});k=parents.get(k)}
+ raw.reverse();if(walkClear(raw[raw.length-1].x,raw[raw.length-1].z,tx,tz))raw.push({x:tx,z:tz});
+ const smooth=[],points=[{x:sx,z:sz},...raw];let i=0;
+ while(i<points.length-1){let j=points.length-1;while(j>i+1&&!walkClear(points[i].x,points[i].z,points[j].x,points[j].z))j--;smooth.push(points[j]);i=j}
+ return smooth;
+}
+// A tap establishes a destination once. Walking never queries geometry.
+function walkTarget(clientX,clientY){
+ const rect=renderer.domElement.getBoundingClientRect();
+ walkPointer.set((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);
+ camera.updateMatrixWorld();walkRay.setFromCamera(walkPointer,camera);
+ // Pick a stable walking plane, not a costly full-mesh raycast. The player's
+ // intentional tap is preserved even if no visible terrain triangle is hit.
+ walkPlane.constant=-walker.y;
+ if(!walkRay.ray.intersectPlane(walkPlane,walkPoint)){walker.rejected++;return}
+ const x=walkPoint.x,z=walkPoint.z;
+ if(!Number.isFinite(x)||!Number.isFinite(z)){walker.rejected++;return}
+ walker.route=walkRoute(x+wanderX,z+wanderZ);
+ walker.target=walker.route.shift()??null;
+ if(walker.target)walker.accepted++;else walker.rejected++;
+}
+
+// Mists inhabitant: one frightened cube, one irreversible flight and splat.
+const fugitiveSize=.32,fugitiveRadius=.23;
+const fugitiveMesh=put(world,new T.BoxGeometry(fugitiveSize,fugitiveSize,fugitiveSize),new T.MeshStandardMaterial({color:0xff8b29,emissive:0x9d3100,emissiveIntensity:.2,roughness:.68}));
+const fugitive={matterTag:'macro',x:-4.7,z:-1.1,y:1.4,vy:0,time:0,mode:'idle',owner:'geology',vx:0,vz:0,particles:[],splat:false};
+registerPopulationCharacter(()=>fugitive.owner==='geology'&&fugitive.mode!=='splat'?fugitive:null);
+// A fixed BB quantum: the authored pumpkin cube has 500 equal-volume units.
+const PUMPKIN_SOLID=375,PUMPKIN_LIQUID=125,PUMPKIN_BLOOD_IMPACT=80;
+const PUMPKIN_TOTAL=PUMPKIN_SOLID+PUMPKIN_LIQUID;
+const pumpkinBeadRadius=Math.cbrt(fugitiveSize**3/100*3/(4*Math.PI));
+const splatGeo=new T.IcosahedronGeometry(pumpkinBeadRadius,0);
+const crucibleMotion=[];let crucibleSampleTime=0,crucibleCollisions=0;
+const FUGITIVE_MATTER_COLOR=0xff8b29; // Orange entity yields orange matter; red is splat blood only.
+const splatMat=new T.MeshStandardMaterial({color:0xffffff,roughness:.8});
+const splatMesh=new T.InstancedMesh(splatGeo,splatMat,PUMPKIN_TOTAL);splatMesh.count=0;splatMesh.userData.matterTag='micro';splatMesh.frustumCulled=false;world.add(splatMesh);
+const splatDummy=new T.Object3D();
+for(let i=0;i<PUMPKIN_TOTAL;i++)splatMesh.setColorAt(i,new T.Color(i<PUMPKIN_LIQUID?0xc51e30:FUGITIVE_MATTER_COLOR));
+splatMesh.instanceColor.needsUpdate=true;
+// Crucible micro contact: bounded spatial hashing, equal-mass impulses, no per-step allocations.
+const MICRO_CELL=.42,MICRO_BUCKETS=32768,MICRO_PAIR_BUDGET=4096;
+const microHeads=new Int32Array(MICRO_BUCKETS),microNext=new Int32Array(100000);
+const microStats={pairs:0,contacts:0,energyLost:0,bowlImpacts:0,bowlContacts:0,frames:0,processed:0,meanSpeed:0,kinetic:0,angularY:0};
+function microHash(x,y,z){
+ const a=Math.floor(x/MICRO_CELL),b=Math.floor(y/MICRO_CELL),c=Math.floor(z/MICRO_CELL);
+ return ((Math.imul(a,73856093)^Math.imul(b,19349663)^Math.imul(c,83492791))>>>0)&(MICRO_BUCKETS-1);
+}
+function microContacts(particles,dt){
+ const n=particles.length;if(!n)return;
+ microHeads.fill(-1);
+ for(let i=0;i<n;i++){const p=particles[i],h=microHash(p.x,p.y,p.z);microNext[i]=microHeads[h];microHeads[h]=i}
+ const count=Math.min(n,MICRO_PAIR_BUDGET),start=(microStats.frames*count)%n;
+ const diameter=pumpkinBeadRadius*2,reach=diameter*diameter;
+ for(let k=0;k<count;k++){
+  const i=(start+k)%n,p=particles[i],cx=Math.floor(p.x/MICRO_CELL),cy=Math.floor(p.y/MICRO_CELL),cz=Math.floor(p.z/MICRO_CELL);
+  // One deterministic candidate in the 27-cell neighborhood; bounded regardless of density.
+  const offset=(microStats.frames+i)%27,ox=offset%3-1,oy=Math.floor(offset/3)%3-1,oz=Math.floor(offset/9)-1;
+  const h=microHash((cx+ox+.5)*MICRO_CELL,(cy+oy+.5)*MICRO_CELL,(cz+oz+.5)*MICRO_CELL);
+  let j=microHeads[h];while(j===i)j=microNext[j];
+  microStats.pairs++;if(j<0)continue;
+  const q=particles[j],dx=q.x-p.x,dy=q.y-p.y,dz=q.z-p.z,d2=dx*dx+dy*dy+dz*dz;
+  if(d2<=1e-12||d2>reach)continue;
+  const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,nz=dz/d;
+  const rvx=q.vx-p.vx,rvy=q.vy-p.vy,rvz=q.vz-p.vz,vn=rvx*nx+rvy*ny+rvz*nz;
+  if(vn>=0)continue;
+  const e=.98,jimp=-(1+e)*vn*.5;
+  p.vx-=jimp*nx;p.vy-=jimp*ny;p.vz-=jimp*nz;
+  q.vx+=jimp*nx;q.vy+=jimp*ny;q.vz+=jimp*nz;
+  microStats.contacts++;microStats.energyLost+=(1-e*e)*vn*vn*.25;
+ }
+ microStats.frames++;microStats.processed+=count;
+}
+let corpseDispersed=false,lowerTaps=0,lowerWoken=0;
+const thumpStats={affected:0,fractures:0,energyAdded:0};
+function thumpVelocity(p,seed){
+ const before=p.vx*p.vx+p.vy*p.vy+p.vz*p.vz;
+ const angle=rainRandom(seed,lowerTaps+31)*Math.PI*2;
+ // A single finite impulse, never a frame-by-frame damping or speed clamp.
+ const kick=1.6;
+ p.vx+=Math.cos(angle)*kick*.55;p.vy+=kick*.8;p.vz+=Math.sin(angle)*kick*.55;
+ p.rest=false;
+ const after=p.vx*p.vx+p.vy*p.vy+p.vz*p.vz;
+ thumpStats.energyAdded+=(after-before)*.5;thumpStats.affected++;
+}
+function shotgunMacroInside(){
+ const f=fugitive;
+ if(f.mode==='splat')return;
+ const cx=f.x-wanderX,cy=f.y+fugitiveSize*.5,cz=f.z-wanderZ;
+ const limit=INNER_R-fugitiveRadius;
+ if(f.owner!=='hermeticon'||cx*cx+cy*cy+cz*cz>=limit*limit)return;
+ // Convert the intact geological macro to conserved vessel-local micros.
+ f.x=cx;f.z=cz;f.mode='splat';f.vx=0;f.vy=0;f.vz=0;
+ corpseDispersed=true;fugitiveMesh.visible=false;f.particles.length=0;
+ for(let i=0;i<PUMPKIN_TOTAL;i++){
+  const angle=i*2.399963229728653,vertical=1-2*(i+.5)/PUMPKIN_TOTAL;
+  const radial=Math.sqrt(Math.max(0,1-vertical*vertical));
+  const ox=Math.cos(angle)*radial,oy=vertical,oz=Math.sin(angle)*radial;
+  const inward=Math.hypot(cx,cy,cz)||1;
+  const spread=.7,force=4.2;
+  f.particles.push({x:cx+ox*.11,y:cy+oy*.11,z:cz+oz*.11,
+   vx:-cx/inward*force+ox*spread,vy:-cy/inward*force+oy*spread,vz:-cz/inward*force+oz*spread,
+   rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
+ }
+ splatMesh.count=PUMPKIN_TOTAL;thumpStats.fractures++;
+}
+function lowerBowlTap(clientX,clientY){
+ const rect=renderer.domElement.getBoundingClientRect();
+ walkPointer.set((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);
+ camera.updateMatrixWorld();walkRay.setFromCamera(walkPointer,camera);
+ const ray=walkRay.ray,o=ray.origin,d=ray.direction;
+ const b=o.dot(d),c=o.lengthSq()-BAUBLE_R*BAUBLE_R,disc=b*b-c;
+ if(disc<0)return false;
+ const near=-b-Math.sqrt(disc),far=-b+Math.sqrt(disc);
+ const t=near>=0?near:far;
+ if(t<0)return false;
+ const hit=o.clone().addScaledVector(d,t);
+ if(hit.y>=-.16)return false;
+ lowerTaps++;
+ shotgunMacroInside();
+ // Preserve the original splat inventory; release its remainder only once.
+ const f=fugitive;
+ if(f.mode==='splat'&&!corpseDispersed&&f.owner==='hermeticon'){
+  corpseDispersed=true;fugitiveMesh.visible=false;
+  const cx=f.x,cy=f.y+fugitiveSize*.5,cz=f.z;
+  for(let i=PUMPKIN_BLOOD_IMPACT;i<PUMPKIN_TOTAL;i++){
+   const a=i*2.39996323,rad=.55+(i%7)*.13;
+   f.particles.push({x:cx,y:cy,z:cz,vx:Math.cos(a)*rad,vy:1.3+(i%5)*.34,vz:Math.sin(a)*rad,rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
+  }
+  splatMesh.count=f.particles.length;
+ }
+ // Global impulse affects moving and resting vessel-owned micros alike.
+ for(let i=0;i<rainEmitted;i++){
+  if(rainOwner[i]!==1)continue;
+  const p={vx:rainVX[i],vy:rainVY[i],vz:rainVZ[i],rest:!!rainRest[i]};
+  thumpVelocity(p,i);rainVX[i]=p.vx;rainVY[i]=p.vy;rainVZ[i]=p.vz;rainRest[i]=0;
+ }
+ if(f.mode==='splat'&&f.owner==='hermeticon')
+  for(let i=0;i<f.particles.length;i++)if(f.particles[i].owner==='hermeticon')thumpVelocity(f.particles[i],rainEmitted+i);
+ return true;
+}
+function fugitiveStep(dt){
+ const f=fugitive;
+ const fx=f.owner==='hermeticon'?f.x:f.x-wanderX,fz=f.owner==='hermeticon'?f.z:f.z-wanderZ;
+ const inside=fx*fx+fz*fz+(f.y+.2)*(f.y+.2)<(R-.3)*(R-.3);
+ fugitiveMesh.visible=inside&&!corpseDispersed;
+ if(!inside&&f.mode!=='splat')return;f.time+=dt;
+ if(f.mode==='idle'){
+  const surface=walkSurface(f.x,f.z)??1.15;
+  f.y=surface+Math.abs(Math.sin(f.time*9.2+Math.sin(f.time*4.7)*2))*(.22+.19*Math.abs(Math.sin(f.time*2.9)));
+  if(Math.hypot(walker.x-f.x,walker.z-f.z)<2.5){f.mode='flight';f.time=0}
+ }else if(f.mode==='flight'){
+  const dx=3-f.x,dz=-4-f.z,d=Math.hypot(dx,dz),step=Math.min(d,4.5*dt);
+  // Launch from the supported rim, before running into unsupported air.
+  const ux=d>.01?dx/d:1,uz=d>.01?dz/d:-1;
+  const nx=f.x+ux*step,nz=f.z+uz*step;
+  const nextSupport=walkSurface(nx,nz);
+  if(nextSupport===null||d<.28){
+   f.mode='fall';f.vy=2.9;f.vx=ux*1.65;f.vz=uz*1.65;
+   f.y=(walkSurface(f.x,f.z)??f.y)+.12;
+  }else{
+   f.x=nx;f.z=nz;
+   f.y=nextSupport+Math.abs(Math.sin(f.time*15))*.12;
+  }
+ }else if(f.mode==='fall'){
+  f.vy-=9.8*dt;f.y+=f.vy*dt;f.x+=f.vx*dt;f.z+=f.vz*dt;
+  const lx=f.x-wanderX,lz=f.z-wanderZ;
+  const floor=-Math.sqrt(Math.max(0,(R-fugitiveRadius)**2-lx*lx-lz*lz))+fugitiveRadius;
+  if(f.y<=floor){f.y=floor;f.mode='splat';f.vy=0;f.x-=wanderX;f.z-=wanderZ;f.owner='hermeticon';
+   for(let i=0;i<PUMPKIN_BLOOD_IMPACT;i++){
+    const angle=i*2.39996323,radius=1.5+((i*37)%19)/19*2.5;
+    const vx=Math.cos(angle)*radius,vz=Math.sin(angle)*radius;
+    f.particles.push({x:f.x,y:f.y,z:f.z,vx,vy:1.8+(i%13)*.38,vz,rest:false,liquid:true,owner:'geology'});
+   }
+   splatMesh.count=PUMPKIN_BLOOD_IMPACT;
+  }
+ }
+ if(f.mode==='splat'){
+  const g=9.8;
+  for(let i=0;i<f.particles.length;i++){
+   const p=f.particles[i];if(!p.rest){
+    const ox=p.x,oy=p.y,oz=p.z;
+    p.vy-=g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+    terrainMicroContact(p,ox,oy,oz,pumpkinBeadRadius);
+    const lx=p.x,lz=p.z;
+    const rr=Math.hypot(lx,p.y,lz);
+    if(p.y<0&&rr>INNER_R-.06){
+     if(p.owner!=='hermeticon')p.owner='hermeticon';
+     const limit=INNER_R-.06,k=limit/rr;p.x*=k;p.y*=k;p.z*=k;
+     const nx=-p.x/limit,ny=-p.y/limit,nz=-p.z/limit;
+     const vn=p.vx*nx+p.vy*ny+p.vz*nz;
+     if(vn<-.12){const e=.38;p.vx-=(1+e)*vn*nx;p.vy-=(1+e)*vn*ny;p.vz-=(1+e)*vn*nz;crucibleCollisions++;microStats.bowlImpacts++}else if(vn<0){p.vx-=vn*nx;p.vy-=vn*ny;p.vz-=vn*nz;microStats.bowlContacts++}const tangent=1-.035*dt;p.vx*=tangent;p.vz*=tangent;
+     // Blood remains dynamic; solid material can sleep after dissipating contact energy.
+     // Preserve tangential motion and avoid arbitrary contact sleep.
+    }
+   }
+   splatDummy.position.set(p.x,p.y,p.z);splatDummy.updateMatrix();splatMesh.setMatrixAt(i,splatDummy.matrix);
+  }
+  microContacts(f.particles,dt);
+  splatMesh.instanceMatrix.needsUpdate=true;
+  crucibleSampleTime+=dt;
+  if(crucibleSampleTime>=1){
+   crucibleSampleTime-=1;
+   let red=0,orange=0,rest=0,redSpeed=0,orangeSpeed=0,radial=0,tangential=0;
+   for(const p of f.particles){
+    const speed=Math.hypot(p.vx,p.vy,p.vz);
+    if(p.rest)rest++;
+    if(p.liquid){red++;redSpeed+=speed;
+     const r=Math.hypot(p.x,p.z)||1;
+     radial+=Math.abs((p.x*p.vx+p.z*p.vz)/r);
+     tangential+=Math.abs((p.x*p.vz-p.z*p.vx)/r);
+    }else{orange++;orangeSpeed+=speed}
+   }
+   crucibleMotion.push({t:round(f.time,2),red,orange,rest,redMeanSpeed:round(redSpeed/(red||1),3),orangeMeanSpeed:round(orangeSpeed/(orange||1),3),radial:round(radial/(red||1),3),tangential:round(tangential/(red||1),3),collisions:crucibleCollisions,instances:splatMesh.count});
+   if(crucibleMotion.length>36)crucibleMotion.shift();
+  }
+ }
+ fugitiveMesh.position.set(f.owner==='hermeticon'?f.x:f.x-wanderX,f.y+fugitiveSize*.5,f.owner==='hermeticon'?f.z:f.z-wanderZ);
+ fugitiveMesh.rotation.set(f.mode==='splat'?.7:Math.sin(f.time*7)*.18,0,f.mode==='splat'?.8:Math.sin(f.time*11)*.13);
+}
+// Quills: a bashful little peacock. Wanderer proximity unfolds its luminous quill fan.
+const quillCube=put(world,new T.BoxGeometry(.43,.43,.43),new T.MeshStandardMaterial({color:0x3abcc1,emissive:0x075b65,emissiveIntensity:.24,roughness:.56}));
+const quillFan=new T.Group();world.add(quillFan);
+const quillFeathers=[];
+for(let i=0;i<9;i++){
+ const shaft=new T.Mesh(new T.ConeGeometry(.105,1.55,5),new T.MeshStandardMaterial({color:i%2?0xf1c56c:0xe9a3ed,emissive:i%2?0x513309:0x452047,emissiveIntensity:.28,roughness:.62}));
+ shaft.position.y=.78;quillFan.add(shaft);
+ const eye=new T.Mesh(new T.SphereGeometry(.115,8,6),new T.MeshStandardMaterial({color:0x4c77ed,emissive:0x243f88,emissiveIntensity:.4}));
+ eye.position.y=1.45;shaft.add(eye);
+ quillFeathers.push(shaft);
+}
+const quillResident={matterTag:'macro',x:5.25,z:7.25,t:0,open:0,heading:0};
+registerPopulationCharacter(()=>quillResident);
+function quillStep(dt){
+ const q=quillResident;
+ const ground=walkSurface(q.x,q.z)??1.15;
+ const inside=(q.x-wanderX)**2+(q.z-wanderZ)**2+(ground+1.7)**2<(R-.2)**2;
+ quillCube.visible=inside;quillFan.visible=inside&&q.open>.015;
+ if(!inside)return;q.t+=dt;
+ const d=Math.hypot(walker.x-q.x,walker.z-q.z);
+ const target=d<3.1?1:0;
+ q.open+= (target-q.open)*Math.min(1,dt*2.5);
+ const bob=Math.sin(q.t*2.6)*.07;
+ quillCube.position.set(q.x-wanderX,ground+.28+bob,q.z-wanderZ);
+ quillCube.rotation.set(Math.sin(q.t*1.7)*.09,q.heading,Math.sin(q.t*2.1)*.12*(1-q.open));
+ if(d<4){const heading=Math.atan2(walker.x-q.x,walker.z-q.z);q.heading+=Math.atan2(Math.sin(heading-q.heading),Math.cos(heading-q.heading))*Math.min(1,dt*3)}
+ quillFan.position.set(q.x-wanderX,ground+.12+bob,q.z-wanderZ);
+ quillFan.rotation.y=q.heading;
+ quillFan.visible=inside&&q.open>.015;
+ for(let i=0;i<quillFeathers.length;i++){
+  const angle=(i-4)*.23*q.open;
+  const feather=quillFeathers[i];
+  feather.rotation.z=angle;
+  feather.position.set(Math.sin(angle)*.23, .35, -.2);
+  feather.scale.setScalar(.1+.9*q.open);
+ }
+}
+// Amaranthine Fields: a violet gardener, tending a ring of sleeping blossoms.
+const gardenCube=put(world,new T.BoxGeometry(.4,.4,.4),new T.MeshStandardMaterial({color:0xb86af0,emissive:0x4c176b,emissiveIntensity:.28,roughness:.65}));
+const gardenGroup=new T.Group();world.add(gardenGroup);
+const gardenFlowers=[];
+for(let i=0;i<7;i++){
+ const flower=new T.Group();
+ const stem=new T.Mesh(new T.CylinderGeometry(.025,.035,.55,6),new T.MeshStandardMaterial({color:0x72ba72,roughness:.8}));
+ stem.position.y=.28;flower.add(stem);
+ for(let p=0;p<5;p++){
+  const petal=new T.Mesh(new T.SphereGeometry(.115,8,6),new T.MeshStandardMaterial({color:i%2?0xf7a2ca:0xffd08c,emissive:i%2?0x6e2243:0x704015,emissiveIntensity:.25}));
+  const a=p*Math.PI*2/5;petal.position.set(Math.cos(a)*.12,.61,Math.sin(a)*.12);petal.scale.set(.85,.38,.85);flower.add(petal);
+ }
+ const center=new T.Mesh(new T.SphereGeometry(.075,8,6),new T.MeshStandardMaterial({color:0xfff1a2,emissive:0xc78a26,emissiveIntensity:.55}));
+ center.position.y=.62;flower.add(center);
+ const a=i*Math.PI*2/7;flower.position.set(Math.cos(a)*.95,0,Math.sin(a)*.95);
+ gardenGroup.add(flower);gardenFlowers.push(flower);
+}
+const gardener={matterTag:'macro',x:-7.15,z:5.15,t:0,bloom:0,attention:0};
+registerPopulationCharacter(()=>gardener);
+function gardenStep(dt){
+ const g=gardener;
+ const ground=walkSurface(g.x,g.z)??1.15;
+ const inside=(g.x-wanderX)**2+(g.z-wanderZ)**2+(ground+1.1)**2<(R-.2)**2;
+ gardenCube.visible=inside;gardenGroup.visible=inside;
+ if(!inside)return;g.t+=dt;
+ const dist=Math.hypot(walker.x-g.x,walker.z-g.z);
+ const near=dist<3.2?1:0;
+ g.bloom+=(near-g.bloom)*Math.min(1,dt*(near?1.4:1.9));
+ g.attention+=(near-g.attention)*Math.min(1,dt*3);
+ gardenCube.position.set(g.x-wanderX,ground+.23+Math.sin(g.t*2.1)*.055,g.z-wanderZ);
+ gardenCube.rotation.y=Math.sin(g.t*.8)*.22;
+ gardenCube.rotation.z=Math.sin(g.t*1.9)*.09+g.attention*.24;
+ gardenGroup.position.set(g.x-wanderX,ground,g.z-wanderZ);
+ for(let i=0;i<gardenFlowers.length;i++){
+  const f=gardenFlowers[i],wave=Math.max(0,Math.min(1,(g.bloom*1.45-i*.065)));
+  f.scale.set(.12+.88*wave,.025+.975*wave,.12+.88*wave);
+  f.rotation.z=Math.sin(g.t*2+i*1.4)*.06*wave;
+ }
+}
+// V82 Mists: sparse bead-lattice reedbeds. One instanced draw, rooted to authored geology.
+// Mists population gallery: 50 deterministic, distinct bead-lattice ecologies.
+// Reeds remain the first untouched silhouette; all alternatives share the same
+// aperture, frustum, character-clearance and soil-up growth contract.
+const populationNames=[
+ 'Mists Reeds','Coral Lanterns','Glass Anemones','Velvet Fungi','Copper Spirals',
+ 'Star Thistles','Blue Fire','Moon Orchids','Ruby Candelabra','Golden Ferns',
+ 'Sapphire Fans','Amethyst Towers','Ember Kelp','Jade Bells','Pearl Snowdrops',
+ 'Obsidian Spires','Rose Fireworks','Sunset Palms','Electric Antlers','Ivory Umbrellas',
+ 'Aurora Helices','Bloodroot','Opal Chalices','Clockwork Vines','Ghost Willows',
+ 'Prismatic Urchins','Honeycomb','Twilight Cacti','Luminous Lotus','Crimson Comets',
+ 'Silver Harps','Dragonfruit','Glacial Needles','Cobalt Medusae','Amber Wheat',
+ 'Violet Meteors','Neon Brambles','Seafoam Pagodas','Gilded Feathers','Nightshade',
+ 'Starlit Mushrooms','Frosted Chimes','Solar Fountains','Cerulean Fans','Firefly Nests',
+ 'Orchid Chandeliers','Mossy Monoliths','Candy Nebulae','Thunderbolts','Royal Crowns'
+];
+const populationGallery={index:0,next:0,phase:1,changing:false};
+const populationButton=document.querySelector('#populationNext');
+function selectNextPopulation(){
+ if(populationGallery.changing)return;
+ populationGallery.next=(populationGallery.index+1)%50;
+ populationGallery.changing=true;populationGallery.phase=1;
+}
+populationButton.addEventListener('click',selectNextPopulation);
+const mistReeds=(()=>{
+ const stems=[], seed=n=>{const v=Math.sin(n*127.1+41.7)*43758.5453;return v-Math.floor(v)};
+ for(let k=0;k<76;k++){
+  const angle=seed(k*3+1)*Math.PI*2,radius=.55+Math.sqrt(seed(k*3+2))*2.2;
+  const x=-2+Math.cos(angle)*radius,z=-1+Math.sin(angle)*radius;
+  if(x>-.8&&z<-.65)continue;
+  const ground=walkSurface(x,z);if(ground===null)continue;
+  const height=.42+seed(k*5+3)*.95,lean=(seed(k*7+4)-.5)*.18;
+  stems.push({x,z,ground,height,lean,phase:seed(k*11+5)*6.28,growth:0});
+ }
+ const geometry=new T.IcosahedronGeometry(.048,0);
+ const material=new T.MeshStandardMaterial({vertexColors:false,roughness:.88});
+ const mesh=new T.InstancedMesh(geometry,material,8000);
+ mesh.count=0;mesh.frustumCulled=false;world.add(mesh);
+ const dummy=new T.Object3D();
+ const original=[0x537f70,0x779c87,0xa7a884,0xd3b68c].map(c=>new T.Color(c));
+ const palettes=[
+  [0x18c5bc,0xff647b,0xffd270,0xfff2d1],[0x5175ed,0x80f5e5,0xf3a3ff,0xffffff],
+  [0x6d2c8f,0xe56ab5,0xffcb86,0xfff1e3],[0xa64d22,0xffac44,0xffed98,0x68d5b4],
+  [0x164e8c,0x3daaff,0x9dcbff,0xf6fbff],[0x135d44,0x7edc82,0xe9e36a,0xf4b6dc],
+  [0x941c3e,0xff3c63,0xffa756,0xffe2b7],[0x482b8d,0x9672fa,0x5bfae6,0xf8f0ff],
+  [0x5a3e28,0xe3ac58,0xffe2a3,0xfffaf0],[0x122a39,0x51e8cb,0x9af7ff,0xffa1c7]
+ ].map(p=>p.map(c=>new T.Color(c)));
+ function makeBeads(index){
+  const beads=[],shape=(index-1)%10;
+  for(let k=0;k<stems.length;k++){
+   const st=stems[k],count=index===0?5+Math.floor(st.height*6):14+Math.floor(seed(k+index*19)*7);
+   for(let j=0;j<count;j++){
+    const t=j/(count-1),angle=t*Math.PI*2*(2+shape*.15)+st.phase;
+    let side=0,depth=0,height=t,head=j>=count-2;
+    if(index===0){
+     if(k%3===0&&j>=Math.floor(count*.45)&&j<count-1)side=(j%2?1:-1)*.14;
+    }else if(shape===0){side=Math.sin(angle)*t*.45;depth=Math.cos(angle)*t*.45}
+    else if(shape===1){side=Math.sin(t*13+st.phase)*.34*t;depth=Math.cos(t*13+st.phase)*.34*t}
+    else if(shape===2){side=Math.sin(t*24)*.19*t;depth=Math.cos(t*19)*.15*t}
+    else if(shape===3){side=(t>.65?Math.sin(angle*3)*.7*(t-.65)/.35:0);depth=(t>.65?Math.cos(angle*3)*.7*(t-.65)/.35:0)}
+    else if(shape===4){side=Math.sin(angle*4)*.3*t;depth=Math.cos(angle*4)*.3*t}
+    else if(shape===5){side=Math.sin(t*6.28)*.55;depth=Math.cos(angle)*.12}
+    else if(shape===6){side=Math.sin(angle)*(.08+.55*t*t);depth=Math.cos(angle)*(.08+.55*t*t)}
+    else if(shape===7){side=Math.sin(t*10+st.phase)*.4;depth=Math.sin(t*8)*.2}
+    else if(shape===8){side=Math.sin(angle*2)*.24*(1-t);depth=Math.cos(angle*2)*.24*(1-t)}
+    else {side=Math.sin(angle)*(.15+.65*Math.pow(t,4));depth=Math.cos(angle)*(.15+.65*Math.pow(t,4))}
+    beads.push({stem:k,t,side,depth,height,head,branch:false});
+    if(index>0&&j>count*.38&&j<count*.95&&j%3===0){
+     for(let q=1;q<=4;q++){
+      const u=q/4,theta=(j*2.4+k*1.7+index);
+      const spread=(shape%3===0?.72:.38)*u*(.3+t);
+      beads.push({stem:k,t,side:side+Math.cos(theta)*spread,depth:depth+Math.sin(theta)*spread,height:Math.min(1,t+u*.13),head:q===4,branch:true});
+     }
+    }
+   }
+  }
+  return beads;
+ }
+ const variants=Array.from({length:50},(_,i)=>makeBeads(i));
+ return {mesh,stems,variants,dummy,t:0,original,palettes};
+})();
+const mistReedView=new T.Vector3();
+function mistReedsStep(dt){
+ const m=mistReeds;m.t+=dt;
+ const gallery=populationGallery;
+ if(gallery.changing){
+  gallery.phase=Math.max(0,gallery.phase-dt*3.8);
+  if(gallery.phase===0){
+   gallery.index=gallery.next;gallery.phase=0;gallery.changing=false;
+   populationButton.textContent='✦ '+(gallery.index+1)+'/50';
+   populationButton.title=populationNames[gallery.index]+' · next';
+  }
+ }
+ const characters=populationCharacterKind.map(get=>get()).filter(Boolean);
+ const beads=m.variants[gallery.index],style=gallery.index;
+ const palette=style===0?m.original:m.palettes[Math.floor((style-1)/5)%m.palettes.length];
+ const motion=style===0?1:1+((style-1)%5)*.32;
+ let visible=0;
+ for(const st of m.stems){
+  const px=st.x-wanderX,pz=st.z-wanderZ;
+  const height=st.height*(style===0?1:1.05+((style-1)%5)*.2);
+  const rimClear=R-.16-Math.sqrt(px*px+pz*pz+Math.max(0,st.ground+height)**2);
+  const threshold=.12+(Math.sin(st.x*3.7+st.z*2.9)+1)*.11;
+  const occupied=characters.some(c=>Math.hypot(st.x-c.x,st.z-c.z)<.55);
+  const target=!occupied&&!gallery.changing?T.MathUtils.smoothstep(rimClear,-.08,threshold+.42):0;
+  st.growth+=(target-st.growth)*Math.min(1,dt*(target>st.growth?3.6:7.5));
+ }
+ for(const b of beads){
+  const st=m.stems[b.stem],t=b.t;
+  if(st.growth<.025||t>st.growth)continue;
+  const wave=Math.sin(m.t*(1.15*motion)+st.phase)*(.045+.045*motion)*t*t;
+  const spin=style===0?0:Math.sin(m.t*(.5+motion*.35)+st.phase)*.23*t;
+  const x=st.x-wanderX+st.lean*t+wave+b.side*Math.cos(spin)-b.depth*Math.sin(spin);
+  const y=st.ground+st.height*(style===0?1:1.05+((style-1)%5)*.2)*b.height;
+  const z=st.z-wanderZ+Math.cos(m.t*1.3+st.phase)*.075*t*t+b.depth*Math.cos(spin)+b.side*Math.sin(spin);
+  if(x*x+y*y+z*z>(R-.08)*(R-.08))continue;
+  m.dummy.position.set(x,y,z);
+  const size=(b.head?1.38:(t<.2?.75:1))*(style===0?1:(b.branch?.8:1.2))*Math.min(1,st.growth*9);
+  m.dummy.scale.setScalar(size);m.dummy.updateMatrix();
+  m.mesh.setMatrixAt(visible,m.dummy.matrix);
+  m.mesh.setColorAt(visible,palette[b.head?3:(b.branch?2:(b.stem%2))]);
+  visible++;
+ }
+ m.mesh.count=visible;
+ m.mesh.instanceMatrix.needsUpdate=true;
+ if(m.mesh.instanceColor)m.mesh.instanceColor.needsUpdate=true;
+}
+// V38 bounded material circuit: a visibly depleted stockpile, individual transit
+// bearings and an accumulating receiver. This is a circuit witness, NOT terrain excavation.
+const quarry=atlas?(()=>{
+ const group=new T.Group();group.userData.worldDomain=true;world.add(group);
+ const origin={x:0,z:0},capacity=96,units=[],log=[],removedWitness=[],deposits=[];
+ const source=new T.Group(),receiver=new T.Group(),transit=new T.Group();
+ group.add(source,receiver,transit);
+ const stockGeo=new T.BoxGeometry(.24,.24,.24),beadGeo=new T.IcosahedronGeometry(.13,0);
+ const mat=new T.MeshStandardMaterial({color:0xb29b75,roughness:.85});
+ for(let i=0;i<capacity;i++){
+  const m=new T.Mesh(stockGeo,mat);
+  m.position.set(-2.2+(i%6)*.28,1.5+Math.floor(i/36)*.28,-.9+Math.floor(i%36/6)*.28);
+  source.add(m);units.push({state:'source',source:m,bead:null,id:i});
+ }
+ const rim=new T.Mesh(new T.TorusGeometry(1.05,.055,8,48),brass);rim.rotation.x=Math.PI/2;rim.position.set(2.1,1.36,0);group.add(rim);
+ const floor=new T.Mesh(new T.CylinderGeometry(1,.96,.09,40),basalt);floor.position.set(2.1,1.25,0);group.add(floor);
+ const receiverGlass=new T.Mesh(new T.CylinderGeometry(1,1,1.65,40,1,true),new T.MeshPhysicalMaterial({color:0x9dcdd7,transparent:true,opacity:.14,depthWrite:false,side:T.DoubleSide}));
+ receiverGlass.position.set(2.1,2.15,0);group.add(receiverGlass);
+ source.visible=false;
+ let started=false,elapsed=0,emitted=0,delivered=0,removed=0,initialSolid=solidCount,postSolid=solidCount,meshDirty=false,dirtyBounds=null;
+ function excavate(){
+  // Fixed geological grid witness: remove exactly one positive field sample per unit.
+  // Sample-count units are NOT continuous volume; meshing interpolates their boundaries.
+  const candidates=[];
+  for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+   const X=xp(x),Y=yp(y),Z=zp(z),d=Math.hypot(X+2.2,Z);
+   if(d<2.3&&Y>-.3&&Y<1.6&&field[id(x,y,z)]>0)
+    candidates.push({index:id(x,y,z),score:d*d+(Y-1.1)*(Y-1.1)*.35});
+  }
+  candidates.sort((a,b)=>a.score-b.score);
+  if(candidates.length<capacity)throw new Error('Excavation source lacks 96 solid field samples: '+candidates.length);
+  initialSolid=field.reduce((n,v)=>n+(v>0),0);
+  for(const item of candidates.slice(0,capacity)){
+   const index=item.index,x=index%NX,y=Math.floor(index/NX)%NY,z=Math.floor(index/(NX*NY));
+   const X=xp(x),Y=yp(y),Z=zp(z),prior=field[index],material=materialAt(X,Y,Z);
+   removedWitness.push({index,grid:[x,y,z],world:[round(X,3),round(Y,3),round(Z,3)],prior:round(prior,5),materialId:material?.id??null,materialName:material?.material?.name??'unknown'});
+   units[removed].matter={materialId:material.id,originIndex:index,lineage:{excavation:1,source:[X,Y,Z]}};
+   field[index]=-.3;removed++;
+  }
+  postSolid=field.reduce((n,v)=>n+(v>0),0);
+  solidCount=postSolid;voidCount=field.length-solidCount;
+  const xs=removedWitness.map(p=>p.grid[0]),zs=removedWitness.map(p=>p.grid[2]);extractTerrainMesh({x0:Math.min(...xs),x1:Math.max(...xs),z0:Math.min(...zs),z1:Math.max(...zs)});paintMapLens(terrainPerf.lastChangedChunks);source.visible=true;
+  log.push({type:'excavate',removedSamples:removed,initialSolid,postSolid});telemetryEvent('excavate',removed+' samples');
+ }
+ const depositCandidates=[];
+ for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+  const X=xp(x),Y=yp(y),Z=zp(z),d=Math.hypot(X-2.1,Z);
+  if(d<1.9&&Y>=.36&&Y<=2.52&&field[id(x,y,z)]<=0)
+   depositCandidates.push({index:id(x,y,z),score:d*d*2+(Y-.72)*(Y-.72)});
+ }
+ depositCandidates.sort((a,b)=>a.score-b.score);
+ const deposit=(u)=>{
+  const target=depositCandidates.find(p=>field[p.index]<=0);
+  if(!target)return false;
+  const matter=u.matter;
+  field[target.index]=Math.max(.18,removedWitness[u.id].prior);
+  depositedMaterial.set(target.index,{materialId:matter.materialId,lineage:matter.lineage});
+  deposits.push({index:target.index,unit:u.id,materialId:matter.materialId,originIndex:matter.originIndex});
+  solidCount++;voidCount--;if(deposits.length===1||deposits.length%24===0)telemetryEvent('deposit',deposits.length+'/96');meshDirty=true;const i=target.index,x=i%NX,z=Math.floor(i/(NX*NY));if(!dirtyBounds)dirtyBounds={x0:x,x1:x,z0:z,z1:z};else{dirtyBounds.x0=Math.min(dirtyBounds.x0,x);dirtyBounds.x1=Math.max(dirtyBounds.x1,x);dirtyBounds.z0=Math.min(dirtyBounds.z0,z);dirtyBounds.z1=Math.max(dirtyBounds.z1,z)}return true;
+ };
+ let recovery=null;
+ function recoverDeposits(){
+  if(recovery)return recovery;
+  if(delivered!==capacity||deposits.length!==capacity)return {ready:false,delivered,deposited:deposits.length};
+  const recovered=[],errors=[],seen=new Set();
+  for(const d of deposits){
+   if(seen.has(d.index)){errors.push('duplicate index '+d.index);continue}seen.add(d.index);
+   const index=d.index,x=index%NX,y=Math.floor(index/NX)%NY,z=Math.floor(index/(NX*NY));
+   const override=depositedMaterial.get(index);
+   const material=materialAt(xp(x),yp(y),zp(z));
+   const original=units[d.unit].matter;
+   if(field[index]<=0||!override||!material){errors.push('missing solid/override '+index);continue}
+   if(material.id!==original.materialId||JSON.stringify(material.lineage)!==JSON.stringify(original.lineage))errors.push('identity mismatch '+index);
+   recovered.push({index,unit:d.unit,materialId:material.id,lineage:material.lineage,originIndex:original.originIndex});
+  }
+  if(errors.length){recovery={ready:true,passed:false,count:recovered.length,errors};telemetryEvent('recovery-failed',errors.length+' mismatches');return recovery}
+  for(const d of recovered){field[d.index]=-.3;depositedMaterial.delete(d.index)}
+  solidCount-=recovered.length;voidCount+=recovered.length;
+  const xs=recovered.map(d=>d.index%NX),zs=recovered.map(d=>Math.floor(d.index/(NX*NY)));
+  extractTerrainMesh({x0:Math.min(...xs),x1:Math.max(...xs),z0:Math.min(...zs),z1:Math.max(...zs)});
+  paintMapLens(terrainPerf.lastChangedChunks);
+  const residual=recovered.filter(d=>field[d.index]>0||depositedMaterial.has(d.index)).length;
+  recovery={ready:true,passed:residual===0,count:recovered.length,materialMismatches:0,lineageMismatches:0,residual,fieldSolidSamples:solidCount,records:recovered};
+  telemetryEvent('recovery',recovery.count+'/96 '+(recovery.passed?'passed':'failed'));
+  log.push({type:'recovery',count:recovery.count,passed:recovery.passed});
+  return recovery;
+ }
+ const removalAudit=()=>{
+  const byMaterial={},axes=[0,1,2].map(axis=>{const v=removedWitness.map(p=>p.world[axis]);return v.length?[Math.min(...v),Math.max(...v)]:null});
+  for(const p of removedWitness){const k=p.materialName;byMaterial[k]=(byMaterial[k]||0)+1}
+  const cell=[2*WORLD_HALF/(NX-1),(MAXY-MINY)/(NY-1),2*WORLD_HALF/(NZ-1)],cellVolume=cell[0]*cell[1]*cell[2];
+  const observedDelta=initialSolid-postSolid;
+  return {count:removedWitness.length,byMaterial,worldBounds:axes,gridBounds:[0,1,2].map(a=>{const v=removedWitness.map(p=>p.grid[a]);return v.length?[Math.min(...v),Math.max(...v)]:null}),cellDimensions:cell.map(v=>round(v,5)),nominalRemovedVolume:round(removedWitness.length*cellVolume,5),positiveSampleDelta:observedDelta,match:removedWitness.length===removed&&removed===observedDelta,records:removedWitness,limits:'Original material classified before field mutation. Nominal cell volume is not a measurement of meshed cavity volume.'};
+ };
+ const audit=()=>{const counts={source:0,transit:0,receiver:0};for(const u of units)counts[u.state]++;const depositedByMaterial={};for(const d of deposits){const name=MATERIALS[d.materialId].name;depositedByMaterial[name]=(depositedByMaterial[name]||0)+1}
+ return {capacity,counts,emitted,delivered,deposition:{count:deposits.length,byMaterial:depositedByMaterial,fieldSolidSamples:solidCount,expectedSolidSamples:initialSolid-removed+deposits.length,balanced:solidCount===initialSolid-removed+deposits.length,records:deposits,limits:'Positive field samples deposited with material overrides. No continuous mesh volume measurement.'},removalWitness:removalAudit(),removedSamples:removed,initialSolidSamples:initialSolid,postSolidSamples:postSolid,terrainDeltaSamples:initialSolid-postSolid,geologyBalanced:!started||removed===capacity&&initialSolid-postSolid===removed,balanced:counts.source+counts.transit+counts.receiver===capacity&&counts.transit===emitted-delivered&&counts.receiver===delivered,events:log.slice(-120),limits:'Discrete positive signed-field sample removal, not continuous volume conservation. Removed 96 samples in one excavation and transferred 96 material units; sample volume and rendered mesh volume are not yet reconciled.'}};
+ return {group,origin,units,log,audit,recoverDeposits,get recoveryStatus(){return recovery},get started(){return started},start(){if(started)return;excavate();started=true;telemetryEvent('transfer-start','96 units');log.push({type:'start',time:round(clock.time,2)})},step(dt){
+  if(!started)return;elapsed+=dt;
+  if(elapsed>.11&&emitted<capacity){elapsed=0;const u=units[emitted++];u.state='transit';source.remove(u.source);const b=new T.Mesh(beadGeo,mat);b.position.copy(u.source.position);transit.add(b);u.bead=b;u.t=0;log.push({type:'emit',id:u.id,material:u.matter.materialId})}
+  for(const u of units){if(u.state!=='transit')continue;u.t+=dt;const t=Math.min(1,u.t/1.3),sx=u.source.position;
+   u.bead.position.set(sx.x+(2.1-sx.x)*t,1.5+2*Math.sin(Math.PI*t),sx.z*(1-t));
+   if(t>=1){if(!deposit(u)){u.t=1.3;continue}transit.remove(u.bead);receiver.add(u.bead);u.bead.position.set(1.4+(u.id%6)*.25,1.5+Math.floor(u.id/36)*.25,-.65+Math.floor(u.id%36/6)*.25);u.state='receiver';delivered++;if(delivered===capacity)telemetryEvent('transfer-complete',delivered+'/96');log.push({type:'deposit',id:u.id,material:u.matter.materialId,fieldIndex:deposits[deposits.length-1].index})}
+  }
+  if(meshDirty){extractTerrainMesh(dirtyBounds);paintMapLens(terrainPerf.lastChangedChunks);meshDirty=false;dirtyBounds=null}
+ },sync(){group.position.set(-wanderX,0,-wanderZ)}};
+})():null;
+// Transfer experiment dormant: retain implementation, hide geometry and controls.
+if(quarry)quarry.group.visible=false;
+function simulate(dt){
+ if(walker.accepted===0&&walker.target===null){const initial=walkSupport(walker.x,walker.z);if(initial!==null)walker.y=initial}
+ if(quarry){quarry.step(dt);quarry.sync()}
+ rainStep(dt);
+ landmarkStep(dt);
+ fugitiveStep(dt);
+ quillStep(dt);
+ gardenStep(dt);
+ mistReedsStep(dt);
+ if(walker.target){
+  const dx=walker.target.x-walker.x,dz=walker.target.z-walker.z,d=Math.hypot(dx,dz);
+  if(d<=.07)walker.target=walker.route.shift()??null;
+  else{
+   const step=Math.min(d,WALK_SPEED*dt),ux=dx/d,uz=dz/d;
+   // Sweep in short increments; no teleporting across narrow bores or the vessel rim.
+   let blocked=false;
+   for(let travelled=0;travelled<step;){
+    const stride=Math.min(.065,step-travelled),nx=walker.x+ux*stride,nz=walker.z+uz*stride;
+    const h=walkSupport(nx,nz);
+    if(h===null){blocked=true;break}
+    walker.x=nx;walker.z=nz;walker.y=h;travelled+=stride;
+   }
+   if(blocked){walker.route=walkRoute(walker.route.length?walker.route[walker.route.length-1].x:walker.target.x,walker.route.length?walker.route[walker.route.length-1].z:walker.target.z);walker.target=walker.route.shift()??null;}
+  }
+ }
+ const screenX=walker.x-wanderX,screenZ=walker.z-wanderZ,rad=Math.hypot(screenX,screenZ);
+ if(rad>HANGOUT_R){
+  const factor=(rad-HANGOUT_R)/rad;
+  wanderX=T.MathUtils.clamp(wanderX+screenX*factor,-14,14);
+  wanderZ=T.MathUtils.clamp(wanderZ+screenZ*factor,-14,14);
+  solid.position.set(-wanderX,0,-wanderZ);
+  sharedApertureOffset.set(wanderX,0,wanderZ);
+ }
+ wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5,walker.z-wanderZ);
+}
+let angle=.6,elev=.27,dist=27,targetY=0,lastX=0,lastY=0;
+const pointers=new Map(),pointerStarts=new Map();let pinch=0,multiGesture=false;
+const TAP_SLOP=12;
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(pointers.size)multiGesture=true;
+ pointerStarts.set(e.pointerId,[e.clientX,e.clientY]);
+ pointers.set(e.pointerId,[e.clientX,e.clientY]);
+ lastX=e.clientX;lastY=e.clientY;
+ renderer.domElement.setPointerCapture(e.pointerId);
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+ if(!pointers.has(e.pointerId))return;
+ const old=pointers.get(e.pointerId),start=pointerStarts.get(e.pointerId);
+ pointers.set(e.pointerId,[e.clientX,e.clientY]);
+ const ps=[...pointers.values()];
+ if(ps.length===1&&!multiGesture){
+  // Do not orbit during a tap; orbit starts only after intentional drag.
+  if(Math.hypot(e.clientX-start[0],e.clientY-start[1])>=TAP_SLOP){
+   angle+=(e.clientX-old[0])*.006;
+   elev=T.MathUtils.clamp(elev+(e.clientY-old[1])*.004,-.4,1.2);
+  }
+ }else if(ps.length===2){
+  const d=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);
+  if(pinch)dist=T.MathUtils.clamp(dist*pinch/d,2,100);
+  pinch=d;
+ }
+});
+function end(e,canceled=false){
+ const start=pointerStarts.get(e.pointerId);
+ if(!canceled&&!multiGesture&&start&&pointers.size===1&&Math.hypot(e.clientX-start[0],e.clientY-start[1])<TAP_SLOP)
+  if(!lowerBowlTap(e.clientX,e.clientY))walkTarget(e.clientX,e.clientY);
+ pointerStarts.delete(e.pointerId);pointers.delete(e.pointerId);
+ if(!pointers.size){pinch=0;multiGesture=false}
+}
+renderer.domElement.addEventListener('pointerup',e=>end(e));
+renderer.domElement.addEventListener('pointercancel',e=>end(e,true));
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();dist=T.MathUtils.clamp(dist+e.deltaY*.022,2,100)},{passive:false});
+function fitBaubleDistance(){const halfV=T.MathUtils.degToRad(camera.fov)/2;const halfH=Math.atan(Math.tan(halfV)*camera.aspect);return BAUBLE_R/Math.sin(Math.min(halfV,halfH))*1.12}let firstFit=true;function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();const fit=fitBaubleDistance();if(firstFit){dist=fit;firstFit=false}else dist=T.MathUtils.clamp(dist,2,100)}addEventListener('resize',resize);resize();
+
+const probeButton=document.querySelector('#probe'),probePanel=document.querySelector('#probePanel'),probeText=document.querySelector('#probeText');
+let probeReport='',probeLast=0,probeFrames=0,probeFrameMs=0,displayFps=null,fpsMeasuring=true;
+// On-demand diagnostic snapshot: no per-frame readbacks or additional rendering.
+function inspectWeather(){
+ const size=cloud.scale.x,half=cloudDimensions.map(d=>d*size/2);
+ let inside=0,above=0;const samples=512;
+ for(let i=0;i<samples;i++){
+  const x=(rainRandom(i,30)-.5)*half[0]*2+cloud.position.x;
+  const y=(rainRandom(i,31)-.5)*half[1]*2+cloud.position.y;
+  const z=(rainRandom(i,32)-.5)*half[2]*2+cloud.position.z;
+  if(y>=0){above++;if(x*x+y*y+z*z<=INNER_R*INNER_R)inside++}
+ }
+ let visible=0,outside=0,resting=0,nonfinite=0,belowBowl=0;
+ let minDistance=Infinity,maxDistance=0;
+ for(let i=0;i<rainEmitted;i++){
+  const x=rainX[i]-wanderX,y=rainY[i],z=rainZ[i]-wanderZ;
+  if(!Number.isFinite(x+y+z)){nonfinite++;continue}
+  const r=Math.hypot(x,y,z);minDistance=Math.min(minDistance,r);maxDistance=Math.max(maxDistance,r);
+  if(r<INNER_R)visible++;else outside++;
+  if(rainRest[i])resting++;
+  if(y<0&&r>INNER_R+RAIN_R)belowBowl++;
+ }
+ const c=cloud.position;
+ return {coordinateSystem:'Hermeticon-local render; cloud and BB positions persist in geological world',
+  cloud:{worldCenter:{x:round(c.x+wanderX),y:round(c.y),z:round(c.z+wanderZ)},localCenter:{x:round(c.x),y:round(c.y),z:round(c.z)},dimensions:cloudDimensions.map(d=>round(d*size)),remaining:RAIN_N-rainEmitted,visible:cloud.visible,materialDoubleSided:cloud.material.side===T.DoubleSide,shaderCompiled:!!cloud.material.userData.shaderCompiled,shaderHooks:cloud.material.userData.shaderHooks||null,clipRadius:INNER_R,clipHemisphere:'upper',sampleCount:samples,insideWeatherDome:inside,aboveEquator:above,overlapFraction:round(inside/samples,4),boundsOutsideDome:Math.hypot(c.x,c.y,c.z)+Math.hypot(...half)>INNER_R},
+  bbs:{emitted:rainEmitted,visible,offscreenPersisting:outside,resting,nonfinite,belowBowl,nearest:round(minDistance===Infinity?0:minDistance),farthest:round(maxDistance),conserved:rainEmitted+(RAIN_N-rainEmitted)===RAIN_N},
+  emission:{enabled:false,time:round(rainTime,3),budget:round(rainBudget,4),nominalRate:round(RAIN_N/RAIN_DURATION,3),currentOverlapEstimate:round(inside/samples,4),actualEmitted:rainEmitted},
+  movement:{wanderX:round(wanderX),wanderZ:round(wanderZ)},warnings:[...(!cloud.material.userData.shaderCompiled?['CLOUD_SHADER_NOT_COMPILED']:[]),...(nonfinite?['NONFINITE_BBS']:[])]};
+}
+globalThis.BaubleInspectWeather=inspectWeather;
+// Read-only visual witnesses: screen projections and geology, never simulation authority.
+function inspectVisualWitness(){
+ camera.updateMatrixWorld(true);world.updateMatrixWorld(true);
+ const W=renderer.domElement.width,H=renderer.domElement.height;
+ const project=(x,y,z)=>{
+  const p=new T.Vector3(x-wanderX,y,z-wanderZ).project(camera);
+  return {x:round((p.x+1)*.5,4),y:round((1-p.y)*.5,4),depth:round(p.z,4),inFrustum:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1,insideAperture:Math.hypot(x-wanderX,y,z-wanderZ)<9.72};
+ };
+ const bounds=points=>{
+  const visible=points.filter(p=>p.inFrustum&&p.insideAperture);
+  if(!visible.length)return {visiblePoints:0,totalPoints:points.length};
+  const xs=visible.map(p=>p.x),ys=visible.map(p=>p.y);
+  return {visiblePoints:visible.length,totalPoints:points.length,rect:[round(Math.min(...xs),3),round(Math.min(...ys),3),round(Math.max(...xs),3),round(Math.max(...ys),3)],screenFraction:round((Math.max(...xs)-Math.min(...xs))*(Math.max(...ys)-Math.min(...ys)),4)};
+ };
+ const result={coordinateSystem:'normalized canvas top-left origin; camera projections are not occlusion tests',resolution:[W,H],geology:null,material:null,screen:null,limits:'Projected bounds are sparse geometric witnesses, not segmentation or proof of pixel visibility. No new GPU readback; sceneEyes provides 32x32 terrain occupancy.'};
+ if(quarry){
+  const units=quarry.units,states={source:[],transit:[],receiver:[]};
+  for(const u of units){
+   const p=u.state==='transit'&&u.bead?u.bead.position:u.state==='receiver'&&u.bead?u.bead.position:u.source.position;
+   states[u.state].push(project(p.x,p.y,p.z));
+  }
+  const excavation=project(-2.2,1.1,0),destination=project(2.1,1.5,0);
+  result.screen={excavation,destination,source:bounds(states.source),transit:bounds(states.transit),receiver:bounds(states.receiver),centerDistance:round(Math.hypot(excavation.x-destination.x,excavation.y-destination.y),4)};
+  result.material={states:Object.fromEntries(Object.entries(states).map(([k,v])=>[k,{count:v.length,projected:bounds(v)}])),destinationGeologyMutated:quarry.audit().deposition.count>0,accountingUnit:'one positive field sample per transported unit; rendered volume not reconciled'};
+  // A compact signed-field cross-section, centered on the actual excavation.
+  const grid=[],materialBands={};let positives=0,voids=0;
+  for(let yi=0;yi<13;yi++){
+   const y=round(2-yi*.25,3);let row='';
+   for(let xi=0;xi<17;xi++){
+    const x=-4.2+xi*.25,solidHere=fieldSample(x,y,0)>0;
+    row+=solidHere?'#':'.';if(solidHere){positives++;const m=materialAt(x,y,0);const key=m?.material?.name||'unknown';materialBands[key]=(materialBands[key]||0)+1}else voids++;
+   }grid.push(row);
+  }
+  const audit=quarry.audit();
+  result.geology={crossSection:{plane:'z=0',xRange:[-4.2,-.2],yRange:[-1,2],step:.25,rowsTopToBottom:grid,solidProbeCells:positives,voidProbeCells:voids,solidMaterialSamples:materialBands},removedSamples:audit.removedSamples,solidSampleDelta:audit.terrainDeltaSamples,fieldCellDimensions:[round(2*WORLD_HALF/(NX-1),4),round((MAXY-MINY)/(NY-1),4),round(2*WORLD_HALF/(NZ-1),4)],sampleCellVolumeEstimate:round(4*WORLD_HALF*WORLD_HALF*(MAXY-MINY)/((NX-1)*(NY-1)*(NZ-1)),6),limits:'Cross-section probes interpolated field; cell-volume estimate is not meshed excavation volume.'};
+ }
+ return result;
+}
+// V46: cheap bounded telemetry. Inspection never traverses the scene or touches GPU.
+const telemetryEvents=[],telemetryErrors=[],TELEMETRY_LIMIT=48;
+addEventListener('error',e=>{telemetryErrors.push(String(e.message).slice(0,240));if(telemetryErrors.length>4)telemetryErrors.shift()});
+addEventListener('unhandledrejection',e=>{telemetryErrors.push(String(e.reason).slice(0,240));if(telemetryErrors.length>4)telemetryErrors.shift()});
+function telemetryEvent(type,detail=''){telemetryEvents.push({t:Math.round(performance.now()),type,detail:String(detail).slice(0,160)});if(telemetryEvents.length>TELEMETRY_LIMIT)telemetryEvents.shift()}
+// On-demand, read-only spherical occupancy and camera projection witnesses.
+function inspectSpatialEyes(){
+ const elevations=12,azimuths=24,screenSize=32;
+ const makeGrid=()=>Array.from({length:elevations},()=>Array(azimuths).fill(0));
+ const makeScreen=()=>Array.from({length:screenSize},()=>Array(screenSize).fill(0));
+ const names=['rain','blood','solids'],grids=names.map(makeGrid),screens=names.map(makeScreen);
+ const totals=[0,0,0],wall=[0,0,0],interior=[0,0,0],projected=[0,0,0],moving=[0,0,0],velocity=[0,0,0],angular=[0,0,0];
+ const W=renderer.domElement.width,H=renderer.domElement.height;
+ camera.updateMatrixWorld(true);
+ const v=new T.Vector3();
+ const record=(kind,x,y,z,vx,vy,vz)=>{
+  const radius=Math.hypot(x,y,z);if(y>=0||radius>=INNER_R||radius<.00001)return;
+  const el=Math.min(elevations-1,Math.floor(Math.acos(Math.max(-1,Math.min(0,y/radius)))/(Math.PI/2)*elevations));
+  const az=Math.min(azimuths-1,Math.floor(((Math.atan2(z,x)+Math.PI)/(2*Math.PI))*azimuths));
+  grids[kind][el][az]++;totals[kind]++;
+  if(INNER_R-radius<.55)wall[kind]++;else interior[kind]++;
+  const speed=Math.hypot(vx,vy,vz);velocity[kind]+=speed;moving[kind]+=speed>.42?1:0;
+  angular[kind]+=x*vz-z*vx;
+  v.set(x,y,z).project(camera);
+  if(v.z>=-1&&v.z<=1&&Math.abs(v.x)<=1&&Math.abs(v.y)<=1){
+   const sx=Math.min(screenSize-1,Math.floor((v.x+1)*.5*screenSize));
+   const sy=Math.min(screenSize-1,Math.floor((1-v.y)*.5*screenSize));
+   screens[kind][sy][sx]++;projected[kind]++;
+  }
+ };
+ for(let i=0;i<rainEmitted;i++){
+  if(rainRest[i]===2)continue;
+  const [x,y,z]=rainWorld(i);record(0,x,y,z,rainVX[i],rainVY[i],rainVZ[i]);
+ }
+ for(const p of fugitive.particles)record(p.liquid?1:2,p.x,p.y,p.z,p.vx,p.vy,p.vz);
+ const summarize=(kind)=>{
+  let peak={count:0,elevation:0,azimuth:0};
+  for(let e=0;e<elevations;e++)for(let a=0;a<azimuths;a++)if(grids[kind][e][a]>peak.count)peak={count:grids[kind][e][a],elevation:e,azimuth:a};
+  return {count:totals[kind],nearWall:wall[kind],interior:interior[kind],moving:moving[kind],meanSpeed:round(velocity[kind]/(totals[kind]||1),3),angularY:round(angular[kind],2),peakSector:peak,occupancy:grids[kind],projectedCount:projected[kind],screenOccupancy:screens[kind]};
+ };
+ return {frame:'Crucible-centered; elevation 0 is bottom pole, 11 near equator; azimuth 0..23 around vertical axis',shape:[elevations,azimuths],screen:{shape:[screenSize,screenSize],resolution:[W,H],origin:'top-left',cameraPosition:camera.position.toArray().map(n=>round(n,3)),cameraTarget:[0,round(targetY,3),0]},materials:Object.fromEntries(names.map((name,i)=>[name,summarize(i)])),limits:'Projected samples are not pixels: no occlusion, lighting, or depth visibility test; counts cover bowl-contained emitted rain and pumpkin micros; sampled on Inspect only'};
+}
+function inspectWorld(){
+ const blood=fugitive.particles.filter(p=>p.liquid).length,solid=fugitive.particles.length-blood;
+ const report={
+  identity:{build:BUILD,fps:displayFps===null?null:round(displayFps,1),errors:telemetryErrors.slice(-4)},
+  matter:{crucibleMode:fugitive.mode,owner:fugitive.owner,rendered:splatMesh.count,rainEmitted,rainActive:rainEmitted-Array.from(rainRest.subarray(0,rainEmitted)).filter(v=>v===2).length,blood:{total:PUMPKIN_LIQUID,released:blood,unreleased:PUMPKIN_LIQUID-blood},solids:{total:PUMPKIN_SOLID,released:solid,unreleased:PUMPKIN_SOLID-solid}},
+  spatialEyes:inspectSpatialEyes(),
+  interactions:{thump:{count:lowerTaps,...thumpStats},terrain:{...terrainContactStats},micro:{contacts:microStats.contacts,energyLost:round(microStats.energyLost,3),bowlImpacts:microStats.bowlImpacts},motionRecent:crucibleMotion.slice(-3)},
+  events:telemetryEvents.slice(-12)
+ };
+ probeReport=JSON.stringify(report,null,2);probeText.value=probeReport;return report;
+}
+probeButton.onclick=()=>{probePanel.classList.toggle('open');if(probePanel.classList.contains('open'))inspectWorld()};
+document.querySelector('#closeProbe').onclick=()=>probePanel.classList.remove('open');
+const copyButton=document.querySelector('#copyProbe');
+copyButton.textContent='COPY REPORT';
+// Transfer recovery action dormant with the hidden experiment.
+copyButton.onclick=()=>{
+ // Call clipboard API synchronously within the tap gesture, not after async inspection.
+ const snapshot=probeReport||probeText.value;
+ if(!snapshot){copyButton.textContent='NO REPORT';return}
+ const fallback=()=>{
+  // V43's legacy copy mechanism, retained for Android WebViews.
+  probeText.value=snapshot;probeText.focus();probeText.select();probeText.setSelectionRange(0,snapshot.length);
+  let ok=false;try{ok=document.execCommand('copy')===true}catch(error){telemetryEvent('copy-error',error)}
+  copyButton.textContent=ok?'COPIED (LEGACY)':'SELECTED — COPY';
+ };
+ if(!navigator.clipboard?.writeText){fallback();return}
+ try{
+  const attempt=navigator.clipboard.writeText(snapshot);
+  attempt.then(()=>{copyButton.textContent='COPIED'},error=>{telemetryEvent('clipboard-error',error);fallback()});
+ }catch(error){telemetryEvent('clipboard-error',error);fallback()}
+};
+
+globalThis.BaubleInspect=inspectWorld;
+// Bounded, privacy-minimal interaction trace: canvas gestures and instrument controls only.
+const interactionLog=[],interactionLimit=240;let interactionSeq=0,interactionStart=performance.now(),gesture=null;
+function recordInteraction(type,data={}){interactionLog.push({seq:++interactionSeq,ms:Math.round(performance.now()-interactionStart),type,...data});if(interactionLog.length>interactionLimit)interactionLog.shift()}
+function screenPoint(e){const rect=renderer.domElement.getBoundingClientRect();return{x:round((e.clientX-rect.left)/rect.width,3),y:round((e.clientY-rect.top)/rect.height,3)}}
+renderer.domElement.addEventListener('pointerdown',e=>{const p=screenPoint(e);if(!gesture)gesture={start:performance.now(),x:p.x,y:p.y,maxPointers:0,moves:0,travel:0};gesture.maxPointers=Math.max(gesture.maxPointers,renderer.domElement.hasPointerCapture(e.pointerId)?1:1);recordInteraction('pointer-down',{pointerType:e.pointerType,button:e.button,...p,camera:{azimuth:round(angle),elevation:round(elev),distance:round(dist)}})},{capture:true});
+renderer.domElement.addEventListener('pointermove',e=>{if(!gesture)return;const p=screenPoint(e);gesture.moves++;gesture.travel=Math.max(gesture.travel,Math.hypot(p.x-gesture.x,p.y-gesture.y));gesture.maxPointers=Math.max(gesture.maxPointers,pointers.size)},{capture:false});
+function endGesture(e,cancelled=false){const p=screenPoint(e);recordInteraction(cancelled?'pointer-cancel':gesture?.travel<.025?'tap':'gesture-end',{pointerType:e.pointerType,...p,durationMs:gesture?Math.round(performance.now()-gesture.start):null,travel:round(gesture?.travel??0,3),maxPointers:gesture?.maxPointers??1,camera:{azimuth:round(angle),elevation:round(elev),distance:round(dist)}});if(pointers.size<=1)gesture=null}
+renderer.domElement.addEventListener('pointerup',e=>endGesture(e),{capture:false});
+renderer.domElement.addEventListener('pointercancel',e=>endGesture(e,true),{capture:false});
+renderer.domElement.addEventListener('wheel',e=>recordInteraction('wheel',{deltaY:round(e.deltaY),cameraDistance:round(dist)}),{passive:true});
+probeButton.addEventListener('click',()=>recordInteraction('inspect-toggle',{open:probePanel.classList.contains('open')}));
+document.querySelector('#copyProbe').addEventListener('click',()=>recordInteraction('copy-report'));
+document.querySelector('#closeProbe').addEventListener('click',()=>recordInteraction('inspect-close'));
+
+
+const mainRenderStats={calls:0,triangles:0};let last=performance.now();
+const fpsLabel=document.querySelector('#fps');
+function resetFpsWindow(now){probeFrames=0;probeFrameMs=0;probeLast=now;displayFps=null;fpsMeasuring=true;fpsLabel.textContent='◌ fps'}
+document.addEventListener('visibilitychange',()=>{last=performance.now();resetFpsWindow(last)});
+window.addEventListener('pageshow',()=>{last=performance.now();resetFpsWindow(last)});
+function frame(now){requestAnimationFrame(frame);
+ const elapsed=Math.max(0,(now-last)/1000);last=now;
+ const validFrame=!document.hidden&&elapsed>0&&elapsed<0.25;
+ if(!validFrame){resetFpsWindow(now)}
+ else{probeFrames++;probeFrameMs+=elapsed*1000}
+ clock.accumulator+=Math.min(MAX_FRAME,validFrame?elapsed:0);
+ if(validFrame)clock.droppedSeconds+=Math.max(0,elapsed-MAX_FRAME);
+ let steps=0;while(clock.accumulator>=STEP&&steps<MAX_STEPS){simulate(STEP);clock.time+=STEP;clock.steps++;clock.accumulator-=STEP;steps++}
+ if(clock.accumulator>=STEP){clock.droppedSeconds+=clock.accumulator;clock.accumulator=0}
+ if(validFrame&&now-probeLast>2500){probeLast=now;
+  if(probeFrames>=20&&probeFrameMs>0){displayFps=1000*probeFrames/probeFrameMs;fpsMeasuring=false;fpsLabel.textContent=displayFps.toFixed(1)+' fps'}
+  probeFrames=0;probeFrameMs=0}
+
+camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);renderer.render(scene,camera);mainRenderStats.calls=renderer.info.render.calls;mainRenderStats.triangles=renderer.info.render.triangles}
+requestAnimationFrame(frame);
+}catch(e){window.BaubleFatal(e);console.error(e)}
