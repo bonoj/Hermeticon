@@ -30,3 +30,7 @@ A successful source commit alone does not establish publication. Inspect the lat
 4. New commits should supersede older queued/in-progress builds. Do not stack speculative workflow rewrites, invent release URLs, or ask the user to repeatedly refresh.
 5. If verification remains unavailable, say so; do not claim `live` until actual public evidence exists. Continue retrying by diagnosing the next concrete failure, not by waiting indefinitely.
 
+
+## Athanor world contract (2026-10-13)
+
+The empty runtime now exposes `globalThis.Athanor` with `mount(id,source,{parent,visible,active})`, `unmount(id)`, `setState(id,{active,visible})`, and `inspect()`. A source supplies an existing Three.js `group` and may supply `update(deltaSeconds,timeSeconds)` and `inspect()`. IDs are unique; a parent must already be mounted. Child mounts detach recursively with their parent. Athanor owns the single requestAnimationFrame, camera, lights, renderer, UI and 👁 clipboard contract. A failing world update is isolated and recorded in the composed inspection report. Visibility and active updates are independent; nested worlds share the render scene but need not each run an independent animation loop. This is an initial single-scene mounting seam, **not** a claim of million-world performance, virtualization or world-specific simulation-clock policy. No world is mounted by default. Do not add demo geometry or migrate Wanderer's physics into Athanor. Publication, Gate and regression fixture remain outside the runtime.

@@ -18,6 +18,43 @@ document.querySelector('#fresh').onclick=()=>location.reload();
 try {
 const scene=new T.Scene();scene.background=new T.Color(0x06101b);scene.fog=new T.FogExp2(0x071827,.012);
 const world=new T.Group();scene.add(world);
+// A world supplies its reality; Athanor supplies mounting, scheduling and observation.
+// Parentage, visibility and update participation are deliberately independent.
+const mounts=new Map();
+function mountWorld(id,source,{parent=null,visible=true,active=true}={}){
+ if(typeof id!=='string'||!id||mounts.has(id))throw Error('Invalid or duplicate world id: '+id);
+ if(parent!==null&&!mounts.has(parent))throw Error('Unknown parent world: '+parent);
+ if(!source||!(source.group instanceof T.Object3D))throw Error('World requires a THREE.Object3D group');
+ if(source.group.parent)throw Error('World group is already attached');
+ const host=parent===null?world:mounts.get(parent).source.group;
+ if(source.group===host||source.group===world)throw Error('Invalid world group');
+ host.add(source.group);source.group.visible=visible;
+ const entry={id,parent,source,active,visible,error:null};
+ mounts.set(id,entry);
+ return id;
+}
+function unmountWorld(id){
+ const entry=mounts.get(id);if(!entry)return false;
+ for(const child of [...mounts.values()])if(child.parent===id)unmountWorld(child.id);
+ entry.source.group.removeFromParent();mounts.delete(id);return true;
+}
+function setWorldState(id,{active,visible}={}){
+ const entry=mounts.get(id);if(!entry)throw Error('Unknown world: '+id);
+ if(active!==undefined)entry.active=!!active;
+ if(visible!==undefined){entry.visible=!!visible;entry.source.group.visible=entry.visible}
+}
+function inspectMount(entry){
+ const ancestry=[];let parent=entry.parent;
+ while(parent!==null){ancestry.unshift(parent);parent=mounts.get(parent)?.parent??null}
+ const report={id:entry.id,parent:entry.parent,ancestry:ancestry,active:entry.active,visible:entry.visible,children:entry.source.group.children.length,error:entry.error};
+ if(typeof entry.source.inspect==='function'){
+  try{report.world=entry.source.inspect()}catch(error){report.inspectionError=String(error)}
+ }
+ return report;
+}
+const Athanor=Object.freeze({mount:mountWorld,unmount:unmountWorld,setState:setWorldState,inspect:()=>inspectWorld()});
+globalThis.Athanor=Athanor;
+
 const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.38;document.querySelector('#stage').append(renderer.domElement);
 const camera=new T.PerspectiveCamera(42,1,.1,150);scene.add(new T.HemisphereLight(0x82c6dc,0x17202d,1.5));const sun=new T.DirectionalLight(0xffc77e,2.4);sun.position.set(-7,13,7);scene.add(sun);const blue=new T.PointLight(0x2cbed7,95,36);blue.position.set(2,-2,2);scene.add(blue);
 let angle=.6,elev=.27,dist=27,targetY=0,lastX=0,lastY=0;
@@ -65,7 +102,7 @@ const detailsButton=document.querySelector('#detailsProbe'),copyButton=document.
 let probeFrames=0,probeFrameMs=0,probeLast=performance.now(),displayFps=null;
 const fpsLabel=document.querySelector('#fps');
 function inspectWorld(){
- const report={identity:{build:BUILD,fps:displayFps},mount:{name:'empty',children:world.children.length},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()}};
+ const report={identity:{build:BUILD,fps:displayFps},mount:{name:mounts.size?'worlds':'empty',children:world.children.length,count:mounts.size,worlds:[...mounts.values()].map(inspectMount)},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()}};
  probeText.value=JSON.stringify(report,null,2);return report;
 }
 probeButton.onclick=()=>{
@@ -102,6 +139,10 @@ function frame(now){requestAnimationFrame(frame);
   if(probeFrames>=20&&probeFrameMs>0){displayFps=1000*probeFrames/probeFrameMs;fpsLabel.textContent=displayFps.toFixed(1)+' fps'}
   probeLast=now;probeFrames=0;probeFrameMs=0;
  }
+for(const entry of mounts.values()){
+ if(!entry.active||entry.error||typeof entry.source.update!=='function')continue;
+ try{entry.source.update(elapsed/1000,now/1000)}catch(error){entry.error=String(error&&error.stack||error);console.error('World update failed: '+entry.id,error)}
+}
 camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);renderer.render(scene,camera);}
 requestAnimationFrame(frame);
 }catch(e){window.BaubleFatal(e);console.error(e)}
