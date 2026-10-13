@@ -568,6 +568,22 @@ const landmarkOrbs=landmarkSpecs.map(([name,x,z,icon,color],i)=>{
  label.visible=false;landmarkGroup.add(label);
  return {x,z,y,sphere,label,phase:i*1.71};
 });
+// Eighteen proposed encounters: inspectable, deterministic dormant registry.
+// Presence in this registry is NOT implementation or acceptance of an encounter.
+const activeLandmarkNames=new Set(['Quills','Amaranthine Fields','Mists','Downton']);
+const encounterRegistry=landmarkSpecs.filter(spec=>!activeLandmarkNames.has(spec[0])).map(([id,x,z],i)=>({
+ id,x,z,seed:(741+i*7919)>>>0,phase:'unimplemented',visits:0,transitions:[],materialTransactions:[],
+ visibleCount:0,clippedCount:0,errors:[]
+}));
+function inspectEncounters(){
+ const nearest=encounterRegistry.map(e=>({e,d:Math.hypot(walker.x-e.x,walker.z-e.z)})).sort((a,b)=>a.d-b.d)[0];
+ return {status:'specification-only',implemented:0,planned:encounterRegistry.length,
+  nearest:nearest?{id:nearest.e.id,distance:round(nearest.d,2)}:null,
+  encounters:encounterRegistry.map(e=>({id:e.id,seed:e.seed,anchor:[e.x,e.z],phase:e.phase,
+   visits:e.visits,transitions:e.transitions,materialTransactions:e.materialTransactions,
+   visibleCount:e.visibleCount,clippedCount:e.clippedCount,errors:e.errors})),
+  limits:'No new encounter rendering, geology mutation, or physical BB transactions have been implemented yet.'};
+}
 function landmarkStep(dt){
  landmarkTime+=dt;landmarkGroup.position.set(-wanderX,0,-wanderZ);
  for(const n of landmarkOrbs){
@@ -1601,6 +1617,7 @@ function inspectWorld(){
  const report={
   identity:{build:BUILD,fps:displayFps===null?null:round(displayFps,1),errors:telemetryErrors.slice(-4)},
   matter:{crucibleMode:fugitive.mode,owner:fugitive.owner,rendered:splatMesh.count,rainEmitted,rainActive:rainEmitted-Array.from(rainRest.subarray(0,rainEmitted)).filter(v=>v===2).length,blood:{total:PUMPKIN_LIQUID,released:blood,unreleased:PUMPKIN_LIQUID-blood},solids:{total:PUMPKIN_SOLID,released:solid,unreleased:PUMPKIN_SOLID-solid}},
+  encounters:inspectEncounters(),
   spatialEyes:inspectSpatialEyes(),
   hearth:inspectFire(),
   fireShutters:inspectFireShutters(),
