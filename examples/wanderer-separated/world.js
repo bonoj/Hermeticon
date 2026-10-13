@@ -293,7 +293,7 @@ function microContactDissipation(p,nx,ny,nz,vn){
  p.vx-=(1+e)*vn*nx;p.vy-=(1+e)*vn*ny;p.vz-=(1+e)*vn*nz;
  const normal=p.vx*nx+p.vy*ny+p.vz*nz;
  p.vx-=(p.vx-normal*nx)*friction;p.vy-=(p.vy-normal*ny)*friction;p.vz-=(p.vz-normal*nz)*friction;
- if(Math.hypot(p.vx,p.vy,p.vz)<MICRO_SETTLE_SPEED&&ny>.55){p.vx=0;p.vy=0;p.vz=0;p.rest=true}
+ // No permanent rest flag: gravity and terrain support are reevaluated every step.
 }
 function terrainMicroContact(p,ox,oy,oz,radius,dissipative=false){
  const sx=ox+wanderX,sz=oz+wanderZ;
@@ -671,6 +671,7 @@ function walkRoute(tx,tz){
 }
 // A tap establishes a destination once. Walking never queries geometry.
 function walkTarget(clientX,clientY){
+ if(burn.phase!=='ready')return;
  const rect=renderer.domElement.getBoundingClientRect();
  walkPointer.set((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);
  camera.updateMatrixWorld();walkRay.setFromCamera(walkPointer,camera);
@@ -692,6 +693,7 @@ function walkTarget(clientX,clientY){
 // On the first 🔥 tap, request a supported vantage; subsequent taps retain fire modes.
 const wanderEye={state:'idle',goal:null,forward:[0,0,1],distance:null,clear:null,terrainSamples:0};
 function sendWandererToHearth(){
+ if(burn.phase!=='ready')return;
  const candidates=[];
  for(let a=0;a<16;a++){const theta=a*Math.PI/8;for(const radius of [2.6,3.3,4.1]){
   const x=FIRE_X+Math.cos(theta)*radius,z=FIRE_Z+Math.sin(theta)*radius;
@@ -1064,7 +1066,7 @@ function burnStep(dt){
  burn.cooldown=Math.max(0,burn.cooldown-dt);
  if(burn.phase==='ready'&&burn.cooldown===0&&fire.energy>.22){
   const dx=walker.x-FIRE_X,dz=walker.z-FIRE_Z,d=Math.hypot(dx,dz);
-  if(d<.7){burn.phase='recoil';burn.t=0;burn.ux=dx/(d||1);burn.uz=dz/(d||1);burn.headingX=burn.ux;burn.headingZ=burn.uz;walker.target=null;walker.route=[];burn.impacts++}
+  if(d<.7){burn.phase='recoil';wanderEye.state='idle';wanderEye.goal=null;burn.t=0;burn.ux=dx/(d||1);burn.uz=dz/(d||1);burn.headingX=burn.ux;burn.headingZ=burn.uz;walker.target=null;walker.route=[];burn.impacts++}
  }
  if(burn.phase==='recoil'){
   burn.t+=dt;const nx=walker.x+burn.ux*4.8*dt,nz=walker.z+burn.uz*4.8*dt,h=walkSupport(nx,nz);
@@ -1089,7 +1091,7 @@ function burnStep(dt){
     const v=(rainRandom(i,72)-.35)*1.4,rad=Math.sqrt(Math.max(.03,1-v*v));
     const dx=Math.cos(a)*rad,dz=Math.sin(a)*rad;
     const force=(1.5+rainRandom(i,73)*3.7)*(lobe===2?1.8:lobe===5?.5:1)*(i%31===0?1.9:1);
-    burnParticles.push({x:cx+dx*.1,y:cy+v*.1,z:cz+dz*.1,vx:dx*force,vy:1.4+v*force,vz:dz*force,rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
+    burnParticles.push({x:cx+wanderX+dx*.1,y:cy+v*.1,z:cz+wanderZ+dz*.1,vx:dx*force,vy:1.4+v*force,vz:dz*force,rest:false,liquid:i<PUMPKIN_LIQUID,owner:'geology'});
    }
    burnMesh.count=burnN;wanderCube.visible=false;
   }
@@ -1103,16 +1105,21 @@ function burnStep(dt){
  for(let i=0;i<burnParticles.length;i++){
   const p=burnParticles[i];
   if(!p.rest){
-   const ox=p.x,oy=p.y,oz=p.z;p.vy-=9.8*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
-   terrainMicroContact(p,ox,oy,oz,burnRadius,true);
-   const rr=Math.hypot(p.x,p.y,p.z);
+   // Geological coordinates track terrain translation, but never freeze the particle.
+   const ox=p.x-wanderX,oy=p.y,oz=p.z-wanderZ;
+   p.vy-=9.8*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+   const contact={x:p.x-wanderX,y:p.y,z:p.z-wanderZ,vx:p.vx,vy:p.vy,vz:p.vz,rest:false};
+   terrainMicroContact(contact,ox,oy,oz,burnRadius,true);
+   p.x=contact.x+wanderX;p.y=contact.y;p.z=contact.z+wanderZ;
+   p.vx=contact.vx;p.vy=contact.vy;p.vz=contact.vz;
+   const sx=p.x-wanderX,sz=p.z-wanderZ,rr=Math.hypot(sx,p.y,sz);
    if(p.y<0&&rr>INNER_R-.06){
-    p.owner='hermeticon';const limit=INNER_R-.06,k=limit/rr;p.x*=k;p.y*=k;p.z*=k;
-    const nx=-p.x/limit,ny=-p.y/limit,nz=-p.z/limit,vn=p.vx*nx+p.vy*ny+p.vz*nz;
+    p.owner='hermeticon';const limit=INNER_R-.06,k=limit/rr;p.x=sx*k+wanderX;p.y*=k;p.z=sz*k+wanderZ;
+    const nx=-sx/rr,ny=-p.y/limit,nz=-sz/rr,vn=p.vx*nx+p.vy*ny+p.vz*nz;
     if(vn<0){p.vx-=1.38*vn*nx;p.vy-=1.38*vn*ny;p.vz-=1.38*vn*nz}
    }
   }
-  burnDummy.position.set(p.x,p.y,p.z);burnDummy.updateMatrix();burnMesh.setMatrixAt(i,burnDummy.matrix);
+  burnDummy.position.set(p.x-wanderX,p.y,p.z-wanderZ);burnDummy.updateMatrix();burnMesh.setMatrixAt(i,burnDummy.matrix);
  }
  if(burnParticles.length)burnMesh.instanceMatrix.needsUpdate=true;
 }
