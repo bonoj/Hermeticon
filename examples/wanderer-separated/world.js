@@ -792,6 +792,43 @@ function encounterVisualStep(e){
  if(e.phase==='performing'&&t>11)encounterTransition(e,'settled','visual-cycle-complete');
 }
 
+// First geological transaction: Summerlands moves positive signed-field samples
+// from a shallow annulus into a central obelisk. Units are GRID SAMPLES, not volume.
+function summerlandsGeology(e){
+ const scene=encounterScenes.get(e.id);if(!scene)return;
+ const removed=[],placed=[];
+ const source=[],destination=[];
+ for(let z=1;z<NZ-1;z++)for(let y=1;y<NY-1;y++)for(let x=1;x<NX-1;x++){
+  const X=xp(x),Y=yp(y),Z=zp(z),rad=Math.hypot(X-e.x,Z-e.z);
+  if(rad<1.35&&rad>.68&&Y>scene.ground-.28&&Y<scene.ground+.28&&field[id(x,y,z)]>0)
+   source.push({index:id(x,y,z),x,z,score:Math.abs(rad-1.05)+Math.abs(Y-scene.ground)*.4});
+  if(rad<.42&&Y>scene.ground+.25&&Y<scene.ground+1.9&&field[id(x,y,z)]<=0)
+   destination.push({index:id(x,y,z),x,z,score:Y+rad});
+ }
+ source.sort((a,b)=>a.score-b.score);destination.sort((a,b)=>a.score-b.score);
+ const count=Math.min(12,source.length,destination.length);
+ if(!count){e.errors.push('Summerlands geological sample transfer unavailable at authored terrain resolution');return;}
+ let initial=solidCount;
+ for(let i=0;i<count;i++){
+  const from=source[i],to=destination[i],value=field[from.index];
+  if(!(value>0&&field[to.index]<=0))throw new Error('Encounter geology transaction precondition failed');
+  const material=materialAt(xp(from.x),scene.ground,zp(from.z));
+  field[from.index]=-.3;field[to.index]=Math.max(.18,value);
+  if(material?.id!=null)depositedMaterial.set(to.index,{materialId:material.id,originIndex:from.index});
+  removed.push(from.index);placed.push(to.index);
+ }
+ // A paired transaction cannot change the number of positive field samples.
+ const post=field.reduce((n,v)=>n+(v>0),0);
+ if(post!==initial)throw new Error('Summerlands solid sample balance '+initial+' -> '+post);
+ solidCount=post;voidCount=field.length-post;
+ const changed=source.slice(0,count).concat(destination.slice(0,count));
+ extractTerrainMesh({x0:Math.min(...changed.map(p=>p.x)),x1:Math.max(...changed.map(p=>p.x)),z0:Math.min(...changed.map(p=>p.z)),z1:Math.max(...changed.map(p=>p.z))});
+ paintMapLens(terrainPerf.lastChangedChunks);
+ e.materialTransactions.push({kind:'paired-signed-field-sample-transfer',units:'grid-samples',
+  removed:removed.length,deposited:placed.length,balance:placed.length-removed.length,
+  solidBefore:initial,solidAfter:post,sourceIndices:removed,destinationIndices:placed});
+ e.implementation='visual-prototype+geological-sample-transfer';
+}
 function encounterTransition(e,next,reason){
  if(e.phase===next)return;
  e.transitions.push({from:e.phase,to:next,reason,time:round(clock.time,3)});
@@ -813,13 +850,14 @@ function encounterStep(dt){
   if(e.phase==='primed'&&walkerDistance<=ENCOUNTER_START_RADIUS){
    e.activationReason='wanderer-near';
    encounterTransition(e,'performing','wanderer-near');
+   if(e.id==='Summerlands'&&!e.materialTransactions.length)summerlandsGeology(e);
   }
   encounterVisualStep(e);
  }
 }
 function inspectEncounters(){
  const nearest=encounterRegistry.map(e=>({e,d:Math.hypot(walker.x-e.x,walker.z-e.z)})).sort((a,b)=>a.d-b.d)[0];
- return {status:'eighteen-visual-prototypes',implemented:0,visualPrototypes:encounterScenes.size,planned:encounterRegistry.length,
+ return {status:'eighteen-visual-prototypes-one-geological-transaction',implemented:0,visualPrototypes:encounterScenes.size,planned:encounterRegistry.length,
   primeRadius:ENCOUNTER_PRIME_RADIUS,startRadius:ENCOUNTER_START_RADIUS,
   nearest:nearest?{id:nearest.e.id,distance:round(nearest.d,2)}:null,
   encounters:encounterRegistry.map(e=>({id:e.id,seed:e.seed,anchor:[e.x,e.z],phase:e.phase,
@@ -827,7 +865,7 @@ function inspectEncounters(){
    timeInPhase:round(clock.time-e.phaseStartedAt,2),near:e.near,performanceSteps:e.performanceSteps,
    transitions:e.transitions,materialTransactions:e.materialTransactions,
    visibleCount:e.visibleCount,clippedCount:e.clippedCount,errors:e.errors})),
-  limits:'Eighteen clipped macro visual prototypes; none excavates geology or transacts authoritative material. Not complete encounters.'};
+  limits:'Eighteen visual prototypes. Summerlands alone has paired authoritative signed-field sample transfers, NOT continuous-volume conservation or physical BBs. Other seventeen lack geological transactions. Not complete encounters.'};
 }
 function landmarkStep(dt){
  landmarkTime+=dt;landmarkGroup.position.set(-wanderX,0,-wanderZ);
