@@ -49,7 +49,8 @@ const field=new Float32Array(NX*NY*NZ),id=(x,y,z)=>x+NX*(y+NY*z);
 const xp=x=>(x/(NX-1)*2-1)*WORLD_HALF,yp=y=>MINY+y/(NY-1)*(MAXY-MINY),zp=z=>(z/(NZ-1)*2-1)*WORLD_HALF;
 const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
 const tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];
-const apertureEyes={compileCount:0,vertexHook:false,fragmentHook:false,shaderRadius:9.72,compileFailures:[],lastCompiledAt:null};const sharedApertureOffset=new T.Vector3();let apertureUniform={value:sharedApertureOffset};const terrainMaterial=new T.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.92,metalness:.02,side:T.DoubleSide,flatShading:true,onBeforeCompile:shader=>{shader.uniforms.apertureRadius={value:9.72};shader.uniforms.apertureOffset={value:sharedApertureOffset};apertureEyes.compileCount++;apertureEyes.lastCompiledAt=performance.now();apertureEyes.vertexHook=shader.vertexShader.includes('#include <begin_vertex>');apertureEyes.fragmentHook=shader.fragmentShader.includes('#include <clipping_planes_fragment>');if(!apertureEyes.vertexHook||!apertureEyes.fragmentHook)apertureEyes.compileFailures.push('Missing shader injection anchor');shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform vec3 apertureOffset;');shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAperturePosition=position-apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform float apertureRadius;\nuniform vec3 apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vAperturePosition,vAperturePosition)>apertureRadius*apertureRadius) discard;');shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat apertureFog=smoothstep(7.1,9.70,length(vAperturePosition));\ngl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.045,0.115,0.16),apertureFog);')}});
+const apertureEyes={compileCount:0,vertexHook:false,fragmentHook:false,shaderRadius:APERTURE_RADIUS,compileFailures:[],lastCompiledAt:null};const sharedApertureOffset=new T.Vector3();let apertureUniform={value:sharedApertureOffset};const APERTURE_RADIUS=9.72;
+const terrainMaterial=new T.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.92,metalness:.02,side:T.DoubleSide,flatShading:true,onBeforeCompile:shader=>{shader.uniforms.apertureRadius={value:APERTURE_RADIUS};shader.uniforms.apertureOffset={value:sharedApertureOffset};apertureEyes.compileCount++;apertureEyes.lastCompiledAt=performance.now();apertureEyes.vertexHook=shader.vertexShader.includes('#include <begin_vertex>');apertureEyes.fragmentHook=shader.fragmentShader.includes('#include <clipping_planes_fragment>');if(!apertureEyes.vertexHook||!apertureEyes.fragmentHook)apertureEyes.compileFailures.push('Missing shader injection anchor');shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform vec3 apertureOffset;');shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAperturePosition=position-apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform float apertureRadius;\nuniform vec3 apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vAperturePosition,vAperturePosition)>apertureRadius*apertureRadius) discard;');shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat apertureFog=smoothstep(7.1,9.70,length(vAperturePosition));\ngl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.045,0.115,0.16),apertureFog);')}});
 const solid=new T.Group();solid.name='terrain:signed-volume';solid.userData.worldDomain=true;world.add(solid);
 const CHUNK=10,CX=Math.ceil((NX-1)/CHUNK),CZ=Math.ceil((NZ-1)/CHUNK),terrainChunks=[];
 const terrainPerf={totalChunks:CX*CZ,fullRebuilds:0,localRebuilds:0,lastDirtyChunks:0,lastRebuiltCells:0,lastRebuildMs:0,lastChangedChunks:[]};
@@ -285,15 +286,25 @@ function rainRandom(i,s){const v=Math.sin((i+1)*127.1+(s+1)*311.7)*43758.5453;re
 // Terrain is solid on every face. Only a crossing from air into rock is a
 // contact; an already embedded micro must not be repeatedly accelerated.
 const terrainContactStats={hits:0,underside:0};
-function terrainMicroContact(p,ox,oy,oz,radius){
+// Optional material contact: dissipate normal and tangential energy at impact.
+const MICRO_SETTLE_SPEED=.42;
+function microContactDissipation(p,nx,ny,nz,vn){
+ const e=.24,friction=.86;
+ p.vx-=(1+e)*vn*nx;p.vy-=(1+e)*vn*ny;p.vz-=(1+e)*vn*nz;
+ const normal=p.vx*nx+p.vy*ny+p.vz*nz;
+ p.vx-=(p.vx-normal*nx)*friction;p.vy-=(p.vy-normal*ny)*friction;p.vz-=(p.vz-normal*nz)*friction;
+ if(Math.hypot(p.vx,p.vy,p.vz)<MICRO_SETTLE_SPEED&&ny>.55){p.vx=0;p.vy=0;p.vz=0;p.rest=true}
+}
+function terrainMicroContact(p,ox,oy,oz,radius,dissipative=false){
  const sx=ox+wanderX,sz=oz+wanderZ;
  const start=fieldSample(sx,oy,sz),end=fieldSample(p.x+wanderX,p.y,p.z+wanderZ);
  if(start>=-radius||end< -radius)return;
  const [nx,ny,nz]=rainSurfaceNormal(p.x+wanderX,p.y,p.z+wanderZ);
  const vn=p.vx*nx+p.vy*ny+p.vz*nz;
  if(vn>=0)return;
- // Same normal restitution as the established terrain surface; no tangential damping.
- p.vx-=1.38*vn*nx;p.vy-=1.38*vn*ny;p.vz-=1.38*vn*nz;
+ // Keep established restitution for other populations; dissipate on authored material contact.
+ if(dissipative)microContactDissipation(p,nx,ny,nz,vn);
+ else {p.vx-=1.38*vn*nx;p.vy-=1.38*vn*ny;p.vz-=1.38*vn*nz;}
  // Resolve onto the incoming air side, avoiding a second impulse at rest.
  let lo=0,hi=1;
  for(let k=0;k<8;k++){
@@ -996,18 +1007,22 @@ function gardenStep(dt){
 // Hearth: six reusable spiral strands of visual carrier beads, rooted in geology.
 // Not conserved matter or a thermodynamic combustion model.
 const fireButton=document.querySelector('#fire'),FIRE_X=-1.1,FIRE_Z=6.1,FIRE_N=480;
-// Share the geological aperture's 9.72-unit spherical boundary per fragment.
-// A hearth crossing the shell loses only the fragments outside it, never the whole population.
-function hearthAperture(material){
+// Shared fragment aperture for geological world-space geometry and instanced BBs.
+// A render boundary only: never changes particle state, provenance or ownership.
+function apertureClip(material){
  material.onBeforeCompile=shader=>{
-  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vHearthAperture;');
-  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvHearthAperture=(modelMatrix * vec4(transformed,1.0)).xyz;\n#ifdef USE_INSTANCING\nvHearthAperture=(modelMatrix * instanceMatrix * vec4(transformed,1.0)).xyz;\n#endif');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHearthAperture;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vHearthAperture,vHearthAperture)>9.72*9.72) discard;');
+  shader.uniforms.apertureRadius={value:APERTURE_RADIUS};
+  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vSharedAperture;');
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvSharedAperture=(modelMatrix*vec4(transformed,1.0)).xyz;\n#ifdef USE_INSTANCING\nvSharedAperture=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz;\n#endif');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vSharedAperture;uniform float apertureRadius;');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vSharedAperture,vSharedAperture)>apertureRadius*apertureRadius) discard;');
  };
- material.customProgramCacheKey=()=> 'hearth-aperture-v2';
+ material.customProgramCacheKey=()=> 'shared-aperture-v1';
  return material;
 }
+// Share the geological aperture's 9.72-unit spherical boundary per fragment.
+// A hearth crossing the shell loses only the fragments outside it, never the whole population.
+const hearthAperture=apertureClip;
 const fireMesh=new T.InstancedMesh(new T.IcosahedronGeometry(.055,0),hearthAperture(new T.MeshBasicMaterial({color:0xffffff})),FIRE_N);
 fireMesh.count=0;fireMesh.frustumCulled=false;fireMesh.userData.worldDomain=true;world.add(fireMesh);
 const fireDummy=new T.Object3D(),fireColor=new T.Color(),fireGold=new T.Color(0xffb13a),fireWhite=new T.Color(0xfff1ad),fireRed=new T.Color(0xb52716);
@@ -1040,7 +1055,7 @@ function fireStep(dt){
 }
 // Wanderer fire consequence: same 125 blood / 375 solid units as Pumpkin.
 const burnN=PUMPKIN_TOTAL,burnRadius=pumpkinBeadRadius;
-const burnMesh=new T.InstancedMesh(splatGeo,splatMat.clone(),burnN);burnMesh.count=0;burnMesh.frustumCulled=false;burnMesh.userData.matterTag='micro';world.add(burnMesh);
+const burnMesh=new T.InstancedMesh(splatGeo,apertureClip(splatMat.clone()),burnN);burnMesh.count=0;burnMesh.frustumCulled=false;burnMesh.userData.matterTag='micro';world.add(burnMesh);
 const burnDummy=new T.Object3D(),burnParticles=[],burn={phase:'ready',t:0,cooldown:0,impacts:0,respawns:0,hop:0,headingX:1,headingZ:0};
 const burnMaterial=wanderCube.material.clone();burnMaterial.emissive=new T.Color(0xff3100);wanderCube.material=burnMaterial;
 for(let i=0;i<burnN;i++)burnMesh.setColorAt(i,new T.Color(i<PUMPKIN_LIQUID?0xc51e30:0xffd23b));
@@ -1089,17 +1104,7 @@ function burnStep(dt){
   const p=burnParticles[i];
   if(!p.rest){
    const ox=p.x,oy=p.y,oz=p.z;p.vy-=9.8*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
-   terrainMicroContact(p,ox,oy,oz,burnRadius);
-   // Contact friction is separate from normal restitution: damp only the
-   // tangential component while a bead is resting against geological rock.
-   const density=fieldSample(p.x+wanderX,p.y,p.z+wanderZ);
-   if(density>-burnRadius*.95&&density<burnRadius*.3){
-    const [nx,ny,nz]=rainSurfaceNormal(p.x+wanderX,p.y,p.z+wanderZ);
-    const vn=p.vx*nx+p.vy*ny+p.vz*nz;
-    const tx=p.vx-vn*nx,ty=p.vy-vn*ny,tz=p.vz-vn*nz;
-    const friction=Math.min(1,7*dt);
-    p.vx-=tx*friction;p.vy-=ty*friction;p.vz-=tz*friction;
-   }
+   terrainMicroContact(p,ox,oy,oz,burnRadius,true);
    const rr=Math.hypot(p.x,p.y,p.z);
    if(p.y<0&&rr>INNER_R-.06){
     p.owner='hermeticon';const limit=INNER_R-.06,k=limit/rr;p.x*=k;p.y*=k;p.z*=k;
