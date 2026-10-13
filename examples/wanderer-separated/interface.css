@@ -17,7 +17,7 @@
 #buttons #populationNext{order:2}
 #buttons #mapLens{order:3;gap:8px;color:#d9b879;font:600 11px system-ui;letter-spacing:.04em;padding:0 11px}
 #buttons #probe{order:4;font-size:23px}
-#buttons #fresh{order:5;border:1px solid #66543a;background:#172333;color:#d9b879;width:46px;height:46px}
+#buttons #fresh{order:5;width:46px;height:46px;color:#d9b879}
 #buttons svg{display:block;flex:none}
 
 /* Anchor the rightmost controls on the bottom line; overflow to the upper left. */
@@ -28,3 +28,8 @@
 #buttons #populationNext{order:3}
 #buttons #rainToggle{order:4}
 #buttons #fire{order:5}
+
+/* One visual contract for every bottom-bar control, regardless of legacy IDs. */
+#buttons > button{background:#172333;border:1px solid #66543a;border-radius:9px;color:#d9b879;opacity:1;box-shadow:none}
+#buttons > button:disabled{opacity:.65}
+#buttons > #rainToggle.active{background:#263b46;border-color:#82b8d4}
