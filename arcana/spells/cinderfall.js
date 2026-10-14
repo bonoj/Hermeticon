@@ -26,7 +26,7 @@ export function createCinderfall(T,{surface,targets=()=>[],offset=()=>({x:0,z:0}
    impacts.push({at:+elapsed.toFixed(2),target:a.target,point:{...a.end},kind:'visual-only'});if(impacts.length>12)impacts.shift();
   }
   if(a.phase==='burst')a.impactAge+=dt;
-  const t=Math.min(1,a.age/a.duration),smooth=t*t*(3-2*t),p={x:a.start.x+(a.end.x-a.start.x)*smooth,y:a.start.y+(a.end.y-a.start.y)*smooth,z:a.start.z+(a.end.z-a.start.z)*smooth};
+  const t=Math.min(1,a.age/a.duration),smooth=t*t,p={x:a.start.x+(a.end.x-a.start.x)*smooth,y:a.start.y+(a.end.y-a.start.y)*smooth,z:a.start.z+(a.end.z-a.start.z)*smooth};
   const {x:ox=0,z:oz=0}=offset();
   function place(x,y,z,r,color){const px=x-ox,pz=z-oz;if(px*px+y*y+pz*pz>(radius+.8)**2)return;
    dummy.position.set(px,y,pz);dummy.scale.setScalar(r);dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,colors[color]);visible++}
