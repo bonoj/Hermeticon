@@ -44,3 +44,11 @@ Wanderer tracks terrain/world X,Z. When the player moves beyond the hangout radi
 The Hermeticon boundary stays fixed in rendered coordinates. After rebase, if the eye's full radius would intersect the wall, correct inward along the radial normal. The wall, not player motion, is the physical cause of displacement. Diagnostics: `worldPosition`, `frameRebases`, `wallCorrections`.
 
 A boundary correction is not a navigation goal. If the terrain or other obstacles also block the corrected position, further collision resolution is needed; do not silently make the eye follow the Wanderer.
+
+## 2026-10-14 — PAUSED: containment versus autonomy
+
+**Do not resume implementation automatically.** The user observed that after traveling beyond the visible frame, the eye disappeared and did not reappear on returning. A recovery-state change was committed (`4f173a5e`), but it has **not** been browser-verified and does not solve the underlying moving-boundary constraint. The scroll solver may preserve the eye's terrain/world position outside the vessel; no complete no-clipping guarantee exists.
+
+**Design reconsideration, not an approved new behavior:** We may have over-authored the eye to force containment in the fixed Hermeticon. Preserve the separation: the eye owns its autonomous intentions, shared physics owns collisions, and the Hermeticon owns its boundary. Player travel must not cause behavioral following. Whether the eye must remain inside the *visible* vessel at all is **open**, not decided. It may be appropriate for him to leave the viewport while continuing to exist in persistent terrain coordinates and be encountered later. Do not add teleportation, leash, catch-up, despawn, or extra pursuit rules without revisiting this design with the user.
+
+**When resumed:** first agree on world persistence and visibility versus physical containment; then simplify or replace the moving-wall system accordingly. Do not interpret the last recovery commit as a tested solution. Current work is intentionally paused.
