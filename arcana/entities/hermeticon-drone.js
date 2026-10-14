@@ -250,14 +250,62 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  // Wanderer scrolls the terrain under a fixed Hermeticon boundary.
  // Preserve the eye's terrain/world coordinates across that rebase. Only
  // boundary encroachment may subsequently displace the eye physically.
+ let scrollConstraintContacts=0,scrollUnresolved=0;
  const rebase=()=>{
   const next=offset(),dx=next.x-lastOffset.x,dz=next.z-lastOffset.z;
   if(!dx&&!dz)return;
-  root.position.x-=dx;root.position.z-=dz;
-  destination.x-=dx;destination.z-=dz;
-  stationAnchor.x-=dx;stationAnchor.z-=dz;
-  stationTarget.x-=dx;stationTarget.z-=dz;
-  crossingPoint.x-=dx;crossingPoint.z-=dz;
+  const old=root.position.clone(),base={...lastOffset};
+  const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.04));
+  const radius=EYE_RADIUS+.13;
+  // Follow the stationary terrain-frame location as the viewport moves.
+  // Only contact with the glass wall may add actual world displacement.
+  let physical=new T.Vector3();
+  for(let i=1;i<=steps;i++){
+   const alpha=i/steps;
+   const frame={x:base.x+dx*alpha,z:base.z+dz*alpha};
+   const desired=new T.Vector3(old.x-dx*alpha+physical.x,old.y+physical.y,old.z-dz*alpha+physical.z);
+   if(desired.length()<=FREE_RADIUS&&terrain?.sphereClearance(desired,radius,frame)>=0)continue;
+   const radial=desired.clone().normalize();
+   const penetration=Math.max(0,desired.length()-FREE_RADIUS);
+   if(penetration<=0)continue; // Terrain invalidation is not a wall contact.
+   const axis=Math.abs(radial.y)<.85?new T.Vector3(0,1,0):new T.Vector3(1,0,0);
+   const tangent=new T.Vector3().crossVectors(radial,axis).normalize();
+   const bitangent=new T.Vector3().crossVectors(radial,tangent).normalize();
+   let found=false;
+   // Search a contact cone for the smallest wall-resolving displacement.
+   // Each physical displacement is checked in terrain/world coordinates,
+   // where the geometry does not move during the scroll.
+   for(const side of [0,.025,.05,.1,.2,.4]){
+    for(let j=0;j<(side?16:1);j++){
+     const angle=j*Math.PI*2/16;
+     const correction=radial.clone().multiplyScalar(-penetration-.0001)
+      .addScaledVector(tangent,side*Math.cos(angle))
+      .addScaledVector(bitangent,side*Math.sin(angle));
+     const candidate=desired.clone().add(correction);
+     if(candidate.length()>FREE_RADIUS)continue;
+     const worldStart=old.clone().add(physical).add(new T.Vector3(base.x,0,base.z));
+     const worldEnd=candidate.clone().add(new T.Vector3(frame.x,0,frame.z));
+     const delta=worldEnd.clone().sub(worldStart);
+     // Conservative advancement against stationary terrain in world space.
+     const distance=delta.length();let traveled=0,safe=true;
+     for(let k=0;k<128&&traveled<distance;k++){
+      const p=worldStart.clone().addScaledVector(delta,traveled/distance);
+      const clearance=terrain?.sphereClearance(p,radius,{x:0,z:0})??Infinity;
+      if(clearance<0){safe=false;break}
+      if(distance-traveled<=clearance*.8){traveled=distance;break}
+      if(clearance<=1e-6){safe=false;break}
+      traveled+=Math.min(distance-traveled,clearance*.8);
+     }
+     if(!safe||traveled<distance||terrain?.sphereClearance(worldEnd,radius,{x:0,z:0})<0)continue;
+     physical.add(worldEnd.sub(worldStart));found=true;scrollConstraintContacts++;break;
+    }
+    if(found)break;
+   }
+   if(!found){scrollUnresolved++;break}
+  }
+  root.position.copy(old).add(new T.Vector3(-dx,0,-dz)).add(physical);
+  const rebaseDelta=new T.Vector3(-dx,0,-dz);
+  destination.add(rebaseDelta);stationAnchor.add(rebaseDelta);stationTarget.add(rebaseDelta);crossingPoint.add(rebaseDelta);
   if(focus)focus={...focus,position:[focus.position[0]-dx,focus.position[1],focus.position[2]-dz]};
   lastOffset={x:next.x,z:next.z};frameRebases++;
  };
@@ -346,5 +394,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,scrollConstraintContacts,scrollUnresolved,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
 }
