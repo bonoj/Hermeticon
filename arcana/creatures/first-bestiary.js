@@ -1,3 +1,4 @@
+import {stepGrounded} from '../locomotion/grounding.js';
 // First Bestiary foundation: deterministic, terrain-supported BB Pebblebacks.
 // No independent mesh per bead; all anatomy is composed in one InstancedMesh.
 export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
@@ -36,15 +37,10 @@ export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=(
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.05;
    p.state=near?'curl':'explore';
    p.curl+=( (near?1:0)-p.curl)*Math.min(1,dt*(near?5:2.2));
-   if(near)continue;
+   if(near){stepGrounded(p,dt,{surface,radius:radius-1.1,homeRadius:2.2,stepHeight:.18,footprint:.20,speed:0});continue;}
    p.timer-=dt;if(p.timer<=0){p.timer=1.3+rnd(p.id*31+p.steps++)*2.3;p.heading+=(rnd(p.id*13+p.steps*3)-.5)*1.8}
-   const nx=p.x+Math.cos(p.heading)*p.speed*dt,nz=p.z+Math.sin(p.heading)*p.speed*dt;
-   const ny=surface(nx,nz);
-   if(ny!=null&&Math.abs(ny-p.y)<.18&&Math.hypot(nx,nz)<radius-1.1&&Math.hypot(nx-p.homeX,nz-p.homeZ)<2.2){
-    const left=surface(nx+Math.sin(p.heading)*.20,nz-Math.cos(p.heading)*.20);
-    const right=surface(nx-Math.sin(p.heading)*.20,nz+Math.cos(p.heading)*.20);
-    if(left!=null&&right!=null&&Math.abs(left-ny)<.22&&Math.abs(right-ny)<.22){p.x=nx;p.z=nz;p.y=ny}else p.heading+=1.9;
-   }else p.heading+=1.9;
+  stepGrounded(p,dt,{surface,speed:p.speed,radius:radius-1.1,homeRadius:2.2,stepHeight:.18,footprint:.20});
+
   }
   visible=0;
   for(const b of beads){const p=creatures[b.id];const co=Math.cos(p.heading),si=Math.sin(p.heading),curl=p.curl;
