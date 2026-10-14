@@ -30,13 +30,29 @@ export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=(
  }
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.83,metalness:.02});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
+ const visibleOwners=[];const blastMatrix=new T.Matrix4(),blastPosition=new T.Vector3(),blastScale=new T.Vector3(),blastRotation=new T.Quaternion(),blastColor=new T.Color();
  const dummy=new T.Object3D();let elapsed=0,visible=0;
- function receiveImpulse(point,options){let hits=0;for(const p of creatures){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
+ function blast(point,options,debris){
+  let hits=0;const destroyed=new Set();
+  for(const p of creatures){
+   if(p.destroyed)continue;
+   if(Math.hypot(p.x-point.x,p.y+.2-point.y,p.z-point.z)<options.radius){p.destroyed=true;destroyed.add(p.id);hits++;}
+  }
+  if(!hits)return 0;
+  const {x:ox=0,z:oz=0}=offset(),items=[];
+  for(let i=0;i<mesh.count;i++){
+   if(!destroyed.has(visibleOwners[i]))continue;
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
+   items.push({x:blastPosition.x+ox,y:blastPosition.y,z:blastPosition.z+oz,r:blastScale.x,color:blastColor.clone()});
+  }
+  debris.emit(items,point,options.impulse);
+  return hits;
+ }
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;
   const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of creatures){
-   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
+   if(p.destroyed)continue;
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.05;
    p.state=near?'curl':'explore';
    p.curl+=( (near?1:0)-p.curl)*Math.min(1,dt*(near?5:2.2));
@@ -46,16 +62,16 @@ export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=(
 
   }
   visible=0;
-  for(const b of beads){const p=creatures[b.id];const co=Math.cos(p.heading),si=Math.sin(p.heading),curl=p.curl;
+  for(const b of beads){const p=creatures[b.id];if(p.destroyed)continue;const co=Math.cos(p.heading),si=Math.sin(p.heading),curl=p.curl;
    let x=b.x,y=b.y,z=b.z;
    if(b.part===1){const gait=Math.sin(elapsed*9+p.phase+b.phase)*.055*(1-curl);x+=gait;y+=Math.max(0,gait)*.6}
    if(b.part===2){y+=Math.sin(elapsed*3+p.phase+b.phase)*.016}
    x=x*(1-.5*curl);y=.17+(y-.17)*(1-.65*curl);z=z*(1-.35*curl);
    const xx=p.x-ox+x*co-z*si,zz=p.z-oz+x*si+z*co,yy=p.y+y+Math.sin(elapsed*8+p.phase)*.008*(1-curl);
    if(xx*xx+yy*yy+zz*zz>(radius-.1)**2)continue;
-   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,palette[b.c]);visible++;
+   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();visibleOwners[visible]=b.id;mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,palette[b.c]);visible++;
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,receiveImpulse,inspect:()=>({name:'First Bestiary — Pebbleback trial',creatures:creatures.map(p=>({species:'pebbleback',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,curl:+p.curl.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'First Bestiary — Pebbleback trial',creatures:creatures.map(p=>({species:'pebbleback',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,curl:+p.curl.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
