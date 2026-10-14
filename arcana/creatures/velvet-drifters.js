@@ -1,3 +1,4 @@
+import {stepGrounded} from '../locomotion/grounding.js';
 // BB-only Velvet Drifters: peristaltic bodies, tendrils and bounded geological locomotion.
 export function createVelvetDrifters(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
  const group=new T.Group();group.name='Velvet Drifters';parent?.add(group);
@@ -27,11 +28,8 @@ export function createVelvetDrifters(T,{surface,offset=()=>({x:0,z:0}),wanderer=
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.4;p.state=near?'avoid':'forage';
    if(near){p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);p.speed=.16}else p.speed=.105;
    p.timer-=dt;if(p.timer<=0&&!near){p.timer=1.8+hash(p.id*29+p.step++)*2.4;p.heading+=(hash(p.id*41+p.step*3)-.5)*1.6}
-   const nx=p.x+Math.cos(p.heading)*p.speed*dt,nz=p.z+Math.sin(p.heading)*p.speed*dt,ny=surface(nx,nz);
-   if(ny!=null&&Math.abs(ny-p.y)<.12&&Math.hypot(nx,nz)<radius-1.2&&Math.hypot(nx-p.homeX,nz-p.homeZ)<2.4){
-    const left=surface(nx+Math.sin(p.heading)*.24,nz-Math.cos(p.heading)*.24),right=surface(nx-Math.sin(p.heading)*.24,nz+Math.cos(p.heading)*.24);
-    if(left!=null&&right!=null&&Math.abs(left-ny)<.16&&Math.abs(right-ny)<.16){p.x=nx;p.z=nz;p.y=ny}else p.heading+=1.7;
-   }else p.heading+=1.7;
+  stepGrounded(p,dt,{surface,speed:p.speed,radius:radius-1.2,homeRadius:2.4,stepHeight:.12,footprint:.24});
+
   }
   visible=0;
   for(const b of beads){const p=agents[b.id],wave=Math.sin(time*6+p.phase-b.segment*.65),twist=Math.sin(time*2.2+p.phase-b.segment*.25),co=Math.cos(p.heading),si=Math.sin(p.heading);
