@@ -5,10 +5,8 @@ export function createWanderer({terrain}){
  const fieldSample=terrain.sample;
  const group=new T.Group();group.name='wanderer';
  const wanderCube=new T.Mesh(new T.BoxGeometry(WANDER_SIZE,WANDER_SIZE,WANDER_SIZE),new T.MeshStandardMaterial({color:0xf0bf68,roughness:.75,depthTest:true,depthWrite:true}));group.add(wanderCube);
- const walkRay=new T.Raycaster(),walkPointer=new T.Vector2(),walkPlane=new T.Plane(new T.Vector3(0,1,0),0),walkPoint=new T.Vector3();
  let wanderX=0,wanderZ=0;
  let walker={matterTag:'macro',x:0,y:1.15,z:0,target:null,route:[],accepted:0,rejected:0};
- let renderer,camera;
  function walkSurface(x,z){
  let prior=fieldSample(x,MAXY-.02,z);
  for(let y=MAXY-.08;y>=MINY+.02;y-=.07){
@@ -84,24 +82,11 @@ function walkRoute(tx,tz){
  while(i<points.length-1){let j=points.length-1;while(j>i+1&&!walkClear(points[i].x,points[i].z,points[j].x,points[j].z))j--;smooth.push(points[j]);i=j}
  return smooth;
 }
-// A tap establishes a destination once. Walking never queries geometry.
-function walkTarget(clientX,clientY){
-
- const rect=renderer.domElement.getBoundingClientRect();
- walkPointer.set((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);
- camera.updateMatrixWorld();walkRay.setFromCamera(walkPointer,camera);
- // Pick a stable walking plane, not a costly full-mesh raycast. The player's
- // intentional tap is preserved even if no visible terrain triangle is hit.
- walkPlane.constant=-walker.y;
- if(!walkRay.ray.intersectPlane(walkPlane,walkPoint)){walker.rejected++;return}
- const x=walkPoint.x,z=walkPoint.z;
- if(!Number.isFinite(x)||!Number.isFinite(z)){walker.rejected++;return}
- // Reject non-walkable picks before synchronous pathfinding. A miss is not a route.
- const tx=x+wanderX,tz=z+wanderZ;
- if(walkSupport(tx,tz)===null){walker.rejected++;return}
- walker.route=walkRoute(tx,tz);
- walker.target=walker.route.shift()??null;
- if(walker.target)walker.accepted++;else walker.rejected++;
+// Movement consumes terrain-space destinations, never pointer events.
+function moveTo(tx,tz){
+ if(!Number.isFinite(tx)||!Number.isFinite(tz)||walkSupport(tx,tz)===null){walker.rejected++;return false}
+ walker.route=walkRoute(tx,tz);walker.target=walker.route.shift()??null;
+ if(walker.target){walker.accepted++;return true}walker.rejected++;return false;
 }
 
 
@@ -112,6 +97,5 @@ function walkTarget(clientX,clientY){
  if(rad>HANGOUT_R){const factor=(rad-HANGOUT_R)/rad;wanderX=T.MathUtils.clamp(wanderX+screenX*factor,-14,14);wanderZ=T.MathUtils.clamp(wanderZ+screenZ*factor,-14,14);terrain.setOffset(wanderX,wanderZ)}
  wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5,walker.z-wanderZ);
  }
- function attachView(view){renderer=view.renderer;camera=view.camera}
- return {group,update,attachView,tap:(x,y)=>{if(renderer&&camera)walkTarget(x,y)},inspect:()=>({x:walker.x,y:walker.y,z:walker.z,offset:[wanderX,wanderZ],accepted:walker.accepted,rejected:walker.rejected,target:walker.target,route:walker.route.length,support:walkSupport(walker.x,walker.z)})};
+ return {group,update,moveTo,getWalkingHeight:()=>walker.y,inspect:()=>({x:walker.x,y:walker.y,z:walker.z,offset:[wanderX,wanderZ],accepted:walker.accepted,rejected:walker.rejected,target:walker.target,route:walker.route.length,support:walkSupport(walker.x,walker.z)})};
 }
