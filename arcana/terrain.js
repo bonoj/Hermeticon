@@ -111,6 +111,31 @@ export function createTerrain(){
   const tx=navigationPoint.x+wanderX,tz=navigationPoint.z+wanderZ;
   return {owner:'navigation',normalY,point,hit:!!hit,target:Number.isFinite(tx)&&Number.isFinite(tz)?{x:tx,z:tz}:null};
  }
+ // Betwixt Crucible impact model, adapted to this signed field's positive-solid convention.
+ // Modify only a local 3D volume; re-extract only affected x/z chunks.
+ function impact(center,{magnitude=1}={}){
+  if(!center||![center.x,center.y,center.z].every(Number.isFinite))return null;
+  const e=Math.max(.02,magnitude),radius=.72+.62*Math.sqrt(e),depth=.16+.72*Math.pow(e,.82),rim=.035+.16*Math.pow(e,.72);
+  const stepX=2*WORLD_HALF/(NX-1),stepZ=2*WORLD_HALF/(NZ-1),stepY=(MAXY-MINY)/(NY-1);
+  const x0=Math.max(1,Math.floor((center.x-radius+WORLD_HALF)/stepX)-1),x1=Math.min(NX-2,Math.ceil((center.x+radius+WORLD_HALF)/stepX)+1);
+  const z0=Math.max(1,Math.floor((center.z-radius+WORLD_HALF)/stepZ)-1),z1=Math.min(NZ-2,Math.ceil((center.z+radius+WORLD_HALF)/stepZ)+1);
+  const yr=radius*.72,y0=Math.max(1,Math.floor((center.y-yr-MINY)/stepY)-1),y1=Math.min(NY-2,Math.ceil((center.y+yr-MINY)/stepY)+1);
+  if(x0>x1||z0>z1||y0>y1)return null;
+  let changed=0;
+  for(let z=z0;z<=z1;z++)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+   const dx=xp(x)-center.x,dy=yp(y)-center.y,dz=zp(z)-center.z;
+   const bowl=Math.hypot(dx,dy*.82,dz),radial=Math.hypot(dx,dz),i=id(x,y,z),old=field[i];
+   if(bowl<radius*.72){const w=1-bowl/(radius*.72);field[i]-=depth*w*w;}
+   if(radial>radius*.62&&radial<radius&&Math.abs(dy)<radius*.48){
+    const ring=Math.sin(Math.PI*(radial-radius*.62)/(radius*.38));
+    const vertical=Math.max(0,1-Math.abs(dy-radius*.08)/(radius*.48));
+    field[i]+=rim*ring*vertical;
+   }
+   if(field[i]!==old)changed++;
+  }
+  if(changed)extractTerrainMesh({x0,x1,z0,z1});
+  return {magnitude:e,radius,depth,rim,changed,dirtyChunks:terrainPerf.lastDirtyChunks};
+ }
  regenerate();
- return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
 }
