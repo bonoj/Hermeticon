@@ -100,7 +100,6 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
   if(camera?.position){
    cameraRef=camera;
    camera.getWorldPosition(gaze);
-   desired.copy(gaze).sub(root.position);
    // Orient the eye's own +Z axis toward the viewer; brass remains upright.
    root.lookAt(gaze);
   }
