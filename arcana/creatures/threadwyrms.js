@@ -1,3 +1,4 @@
+import {applyRadialImpulse} from '../physics/impulse.js';
 import {stepGrounded} from '../locomotion/grounding.js';
 // Threadwyrms: BB-only articulated chains, terrain-supported undulation and existing-hole avoidance.
 export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
@@ -22,9 +23,11 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.84});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
  const dummy=new T.Object3D();let elapsed=0,visible=0;
+ function receiveImpulse(point,options){let hits=0;for(const p of agents){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of agents){
+   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.1;p.state=near?'avoid':'explore';
    if(near)p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);
    p.timer-=dt;if(p.timer<=0&&!near){p.timer=1.4+rnd(p.id*37+p.step++)*2.1;p.heading+=(rnd(p.id*53+p.step*7)-.5)*1.5}
@@ -43,5 +46,5 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,inspect:()=>({name:'Threadwyrms',creatures:agents.map(p=>({species:'threadwyrm',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,trail:p.trail.length})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,receiveImpulse,inspect:()=>({name:'Threadwyrms',creatures:agents.map(p=>({species:'threadwyrm',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,trail:p.trail.length})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
