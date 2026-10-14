@@ -52,7 +52,7 @@ function inspectMount(entry){
  }
  return report;
 }
-const Athanor=Object.freeze({mount:mountWorld,unmount:unmountWorld,setState:setWorldState,inspect:()=>inspectWorld()});
+const Athanor=Object.freeze({mount:mountWorld,unmount:unmountWorld,setState:setWorldState,inspect:()=>inspectWorld(),view:()=>({renderer,camera})});
 globalThis.Athanor=Athanor;
 
 const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.38;document.querySelector('#stage').append(renderer.domElement);
@@ -87,7 +87,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
 function end(e,canceled=false){
  const start=pointerStarts.get(e.pointerId);
  if(!canceled&&!multiGesture&&start&&pointers.size===1&&Math.hypot(e.clientX-start[0],e.clientY-start[1])<TAP_SLOP)
-  void start;
+  {for(const entry of mounts.values())if(entry.active&&typeof entry.source.tap==='function')entry.source.tap(e.clientX,e.clientY)}
  pointerStarts.delete(e.pointerId);pointers.delete(e.pointerId);
  if(!pointers.size){pinch=0;multiGesture=false}
 }
