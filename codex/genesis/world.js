@@ -14,6 +14,7 @@ import {createGlasswings} from '../../arcana/creatures/glasswings.js';
 import {createBellwraiths} from '../../arcana/creatures/bellwraiths.js';
 import {createLanternHermits} from '../../arcana/creatures/lantern-hermits.js';
 import {createBeadDebris} from '../../arcana/physics/bead-debris.js';
+import {createImpactDispatcher} from '../../arcana/physics/impact-dispatcher.js';
 import {createCinderfall} from '../../arcana/spells/cinderfall.js';
 import {createEquatorialTreatment} from '../../arcana/equatorial-treatment.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
@@ -68,11 +69,11 @@ export function createGenesis(){
   wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
  const debris=createBeadDebris(T,{terrain,offset:botanicalOffset,innerRadius:world.inspect().vessel.innerRadius,parent:world.content});
  const creatureSystems=[bestiary,velvetDrifters,threadwyrms,glasswings,bellwraiths,lanternHermits];
- let lastMeteorImpact=null;
+ const impactDispatcher=createImpactDispatcher({debris,creatures:creatureSystems,plants:[reeds,garden,secondGarden],terrain,surface:terrainSurface});
  const cinderfall=createCinderfall(T,{surface:terrainSurface,offset:botanicalOffset,
   targets:()=>creatureSystems.flatMap(s=>s.inspect().creatures||[]),
   parent:world.content,radius:terrain.getAperture(),seed:741,
-  onImpact:({point,magnitude})=>{const t0=performance.now();const force={radius:3.2*magnitude,impulse:18*magnitude};const loose=debris.receiveImpulse(point,force);const t1=performance.now();const creatures=creatureSystems.reduce((n,s)=>n+(s.blast?.(point,force,debris)||0),0);const t2=performance.now();const plants=[reeds,garden,secondGarden].reduce((n,s)=>n+(s.blast?.(point,force,debris)||0),0);const t3=performance.now();const received=loose+creatures+plants;const ground=terrainSurface(point.x,point.z);const crater=ground==null?null:terrain.impact({...point,y:ground+.12},{magnitude});const t4=performance.now();lastMeteorImpact={point,magnitude,crater,force:{...force,receivers:received,loose,creatures,plants},timingMs:{loose:t1-t0,creatures:t2-t1,plants:t3-t2,craterAndSurface:t4-t3,total:t4-t0}};}});
+  onImpact:impactDispatcher.dispatch});
  world.castMeteor=()=>cinderfall.cast();
  let view=null;
  const tapReport={total:0,underside:0,navigation:0,rayMiss:0,last:null,recent:[]};
@@ -100,6 +101,6 @@ export function createGenesis(){
   return {authored,detached:loose.count,total:authored+loose.count,visible:visibleAuthored+loose.visible,visibleAuthored,visibleDetached:loose.visible,ownership:loose.ownership,allocated:loose.allocated,populations:populations.map(s=>({name:s.name,inventory:s.activeBeads??s.beads??s.descriptors??0,visible:s.visible??0}))};
  };
  world.materialSurvey=materialSurvey;
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:lastMeteorImpact,edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
