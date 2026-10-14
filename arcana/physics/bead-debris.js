@@ -1,14 +1,13 @@
 import {WANDERER_PHYSICS as P,reflectContact,signedFieldNormal,catchVesselUnderside} from './wanderer-contacts.js';
-export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9000}){
+export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.8,metalness:.04});
- const mesh=new T.InstancedMesh(geo,mat,capacity);mesh.frustumCulled=false;mesh.count=0;parent.add(mesh);
+ let mesh=null,allocated=0;const batches=[];
+ function ensureMesh(required){if(required<=allocated)return;const next=Math.max(required,allocated?allocated*2:256);const replacement=new T.InstancedMesh(geo,mat,next);replacement.frustumCulled=false;replacement.count=0;parent.add(replacement);if(mesh)parent.remove(mesh);mesh=replacement;allocated=next;}
+ ensureMesh(256);
  const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0};let terrainHits=0,vesselHits=0,emitted=0;
- function canAccept(count){return count<=capacity-beads.length;}
  function emit(items,point,impulse=18){
-  if(!canAccept(items.length))return 0;
   const o=offset();
   for(const item of items){
-   if(beads.length>=capacity)break;
    const x=item.x,y=item.y,z=item.z,dx=x-point.x,dy=y-point.y,dz=z-point.z;
    const dist=Math.hypot(dx,dy,dz)||.001,fall=Math.max(.25,1-Math.min(1,dist/3.2));
    const power=impulse*fall*(.65+.35*Math.sin(emitted*12.9898)**2),inv=1/dist;
@@ -58,6 +57,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9
     b.ax*=.999;b.ay*=.999;b.az*=.999;
    }
   }
+  ensureMesh(beads.length);
   let n=0,terrainOwned=0,vesselOwned=0;
   for(const b of beads){
    if(b.owner==='terrain')terrainOwned++;else vesselOwned++;
@@ -70,5 +70,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;
  }
 
- return {emit,canAccept,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,capacity,remaining:capacity-beads.length,ownership:{...ownership}})};
+ return {emit,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,ownership:{...ownership}})};
 }
