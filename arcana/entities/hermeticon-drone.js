@@ -10,6 +10,7 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  vessel.group.scale.setScalar(.125);
  vessel.group.rotation.x=Math.PI/2; // upright brass meridian, unchanged hardware
  root.add(vessel.group);
+ if(parent)parent.add(root);
  vessel.group.add(vessel.content);
  const interior=new T.Group();interior.name='BB eye interior '+id;
  vessel.content.add(interior);
