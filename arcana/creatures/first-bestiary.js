@@ -1,3 +1,4 @@
+import {applyRadialImpulse} from '../physics/impulse.js';
 import {stepGrounded} from '../locomotion/grounding.js';
 // First Bestiary foundation: deterministic, terrain-supported BB Pebblebacks.
 // No independent mesh per bead; all anatomy is composed in one InstancedMesh.
@@ -30,10 +31,12 @@ export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=(
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.83,metalness:.02});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
  const dummy=new T.Object3D();let elapsed=0,visible=0;
+ function receiveImpulse(point,options){let hits=0;for(const p of creatures){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;
   const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of creatures){
+   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.05;
    p.state=near?'curl':'explore';
    p.curl+=( (near?1:0)-p.curl)*Math.min(1,dt*(near?5:2.2));
@@ -54,5 +57,5 @@ export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=(
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,inspect:()=>({name:'First Bestiary — Pebbleback trial',creatures:creatures.map(p=>({species:'pebbleback',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,curl:+p.curl.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,receiveImpulse,inspect:()=>({name:'First Bestiary — Pebbleback trial',creatures:creatures.map(p=>({species:'pebbleback',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,curl:+p.curl.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
