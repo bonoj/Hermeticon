@@ -81,6 +81,31 @@ export function createTerrain(){
 }
 
  function fieldSample(X,Y,Z){const gx=(X/WORLD_HALF+1)*(NX-1)/2,gy=(Y-MINY)/(MAXY-MINY)*(NY-1),gz=(Z/WORLD_HALF+1)*(NZ-1)/2;if(gx<0||gy<0||gz<0||gx>=NX-1||gy>=NY-1||gz>=NZ-1)return -1;const x=Math.floor(gx),y=Math.floor(gy),z=Math.floor(gz),a=gx-x,b=gy-y,c=gz-z,lerp=(p,q,t)=>p+(q-p)*t;const layer=k=>lerp(lerp(field[id(x,y,k)],field[id(x+1,y,k)],a),lerp(field[id(x,y+1,k)],field[id(x+1,y+1,k)],a),b);return lerp(layer(z),layer(z+1),c)}
+ // Exact unsigned distance to the extracted triangle surface (world/render frame).
+ // The positive-solid field marks the interior; zero distance is a contact.
+ function sphereClearance(center,radius){
+  collisionPoint.set(center.x+wanderX,center.y,center.z+wanderZ);
+  if(fieldSample(collisionPoint.x,collisionPoint.y,collisionPoint.z)>0)return -radius;
+  let best=Infinity;
+  for(const chunk of terrainChunks){
+   const g=chunk.geometry,bb=g.boundingBox;if(!bb)continue;
+   const dx=Math.max(bb.min.x-collisionPoint.x,0,collisionPoint.x-bb.max.x);
+   const dy=Math.max(bb.min.y-collisionPoint.y,0,collisionPoint.y-bb.max.y);
+   const dz=Math.max(bb.min.z-collisionPoint.z,0,collisionPoint.z-bb.max.z);
+   if(dx*dx+dy*dy+dz*dz>=best)continue;
+   const attr=g.getAttribute('position');if(!attr)continue;
+   for(let i=0;i<attr.count;i+=3){
+    collisionA.fromBufferAttribute(attr,i);collisionB.fromBufferAttribute(attr,i+1);collisionC.fromBufferAttribute(attr,i+2);
+    const tx=Math.max(Math.min(collisionA.x,collisionB.x,collisionC.x)-collisionPoint.x,0,collisionPoint.x-Math.max(collisionA.x,collisionB.x,collisionC.x));
+    const ty=Math.max(Math.min(collisionA.y,collisionB.y,collisionC.y)-collisionPoint.y,0,collisionPoint.y-Math.max(collisionA.y,collisionB.y,collisionC.y));
+    const tz=Math.max(Math.min(collisionA.z,collisionB.z,collisionC.z)-collisionPoint.z,0,collisionPoint.z-Math.max(collisionA.z,collisionB.z,collisionC.z));
+    if(tx*tx+ty*ty+tz*tz>=best)continue;
+    collisionTriangle.set(collisionA,collisionB,collisionC).closestPointToPoint(collisionPoint,collisionClosest);
+    best=Math.min(best,collisionClosest.distanceToSquared(collisionPoint));
+   }
+  }
+  return Math.sqrt(best)-radius;
+ }
  // Authoritative intersection against the very triangles extracted for rendering.
  // Mesh coordinates are terrain-space; compensate the Wanderer scroll here.
  function intersectsSphere(center,radius){
@@ -169,5 +194,5 @@ export function createTerrain(){
   return {magnitude:e,radius,depth,rim,changed,dirtyChunks:terrainPerf.lastDirtyChunks};
  }
  regenerate();
- return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,sphereClearance,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
 }
