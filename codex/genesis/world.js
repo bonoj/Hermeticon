@@ -85,7 +85,7 @@ export function createGenesis(){
  const cinderfall=createCinderfall(T,{surface:reedSurface,offset:botanicalOffset,
   targets:()=>creatureSystems.flatMap(s=>s.inspect().creatures||[]),
   parent:world.content,radius:terrain.getAperture(),seed:741,
-  onImpact:({point,magnitude})=>{const crater=terrain.impact(point,{magnitude});lastMeteorImpact={point,magnitude,crater,force:{radius:3.2*magnitude,impulse:18*magnitude,receivers:0}};}});
+  onImpact:({point,magnitude})=>{const force={radius:3.2*magnitude,impulse:18*magnitude};const received=bbTrial.receiveImpulse(point,force);const crater=terrain.impact(point,{magnitude});lastMeteorImpact={point,magnitude,crater,force:{...force,receivers:received>0?1:0,trialDeltaV:received}};}});
  world.castMeteor=()=>cinderfall.cast();
  let meteorClock=0;
  let view=null;
