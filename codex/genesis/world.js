@@ -92,6 +92,8 @@ export function createGenesis(){
  // This maker owns only instances, colors, and honest instrumentation.
  const nodeMaker=createNodeMaker(T,world.content);
  world.setWitnessNodes=nodes=>nodeMaker.set(nodes);
+ // Reversible inspection seam for the first aperture interior occlusion trial.
+ world.setInteriorOcclusion=enabled=>terrain.setInteriorOcclusion(enabled);
  const wanderer=createWanderer({terrain});
  world.content.add(wanderer.group);
  const raycaster=new T.Raycaster(),pointer=new T.Vector2();
