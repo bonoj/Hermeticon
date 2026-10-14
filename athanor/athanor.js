@@ -141,7 +141,7 @@ edgeTarget.depthTexture.format=T.DepthFormat;
 const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
 const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
 const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:edgeUniforms,
- vertexShader:`varying vec2 uv;void main(){uv=uv*0.0+position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
+ vertexShader:`varying vec2 uv;void main(){uv=position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 uv;
  float luminance(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
  float linearDepth(float d){float z=d*2.-1.;return (2.*nearPlane*farPlane)/(farPlane+nearPlane-z*(farPlane-nearPlane));}
