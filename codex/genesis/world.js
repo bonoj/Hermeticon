@@ -71,7 +71,7 @@ export function createGenesis(){
  const lanternHermits=createLanternHermits(T,{surface:terrainSurface,offset:botanicalOffset,
   wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
  const debris=createBeadDebris(T,{terrain,offset:botanicalOffset,innerRadius:world.inspect().vessel.innerRadius,parent:world.content});
- const drone=createHermeticonDrone({parent:world.content,id:'genesis-drone-1'});
+ const drone=createHermeticonDrone({parent:world.content,terrain,offset:botanicalOffset,id:'genesis-drone-1'});
  world.childWorlds=[drone.childWorld];
  const creatureSystems=[bestiary,velvetDrifters,threadwyrms,glasswings,bellwraiths,lanternHermits];
  const impactDispatcher=createImpactDispatcher({debris,creatures:creatureSystems,plants:[reeds,garden,secondGarden],terrain,surface:terrainSurface});
@@ -85,7 +85,7 @@ export function createGenesis(){
  world.attachView=view=>{navigation.attachView(view);droneCamera=view?.camera??null};
  world.tap=navigation.tap;
 
- world.update=dt=>{drone.update(dt,droneCamera);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt)};
+ world.update=dt=>{drone.update(dt,droneCamera);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt);debris.collideSphere(drone.group.position,.77,drone.contactBead)};
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
