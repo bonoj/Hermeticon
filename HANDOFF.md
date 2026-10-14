@@ -85,3 +85,8 @@ Six new BB-only species are mounted in Genesis via `arcana/populations/second-ga
 ## First Bestiary — Bellwraiths added (2026-10-14)
 
 `arcana/creatures/bellwraiths.js` is mounted in Genesis: up to five BB-only bell-shaped floaters with delayed bead tentacles, pulsation, autonomous drift and actor-triggered rise. Candidate awaiting visual inspection. Five of six planned species implemented; Lantern Hermits remain. No changes to accepted Hybrid terrain or twelve botanical populations.
+
+
+## First Bestiary — six-species implementation complete (2026-10-14)
+
+`arcana/creatures/lantern-hermits.js` is mounted in Genesis. All six planned BB-only creature species now have trial implementations: Pebblebacks, Velvet Drifters, Threadwyrms, Glasswings, Bellwraiths, Lantern Hermits. Lantern Hermits carry hollow BB shells, use four animated bead-chain legs, and perform collection gestures without material transfer. **All six remain candidates awaiting author visual acceptance and mobile FPS inspection.** No changes to accepted Hybrid terrain or twelve canonical botanical populations. Creature details and limitations: `arcana/creatures/README.md`.
