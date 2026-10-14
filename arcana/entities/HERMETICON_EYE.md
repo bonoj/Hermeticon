@@ -37,3 +37,10 @@ The 2026-10-14 redesign (commits `31eae924`, `1e2d5c91`) separates glass rotatio
 
 ## Future extensions
 Surprise, habituation, curiosity about meteor impacts, terrain changes, populations, other inhabitants, and the external observer can emerge from shared observation events and bounded memory. Favor legible systems over bespoke hardcoded scripts.
+
+## Coordinate-frame invariant (2026-10-14)
+Wanderer tracks terrain/world X,Z. When the player moves beyond the hangout radius, `terrain.setOffset` shifts the terrain mesh inside the fixed Hermeticon. The eye's local scene coordinates must be **rebased by the negative offset delta** so its terrain/world position is unchanged. Rebase all ongoing local intentions (destination, station anchor, bore target) as well as the body. Do not interpret this bookkeeping as voluntary movement.
+
+The Hermeticon boundary stays fixed in rendered coordinates. After rebase, if the eye's full radius would intersect the wall, correct inward along the radial normal. The wall, not player motion, is the physical cause of displacement. Diagnostics: `worldPosition`, `frameRebases`, `wallCorrections`.
+
+A boundary correction is not a navigation goal. If the terrain or other obstacles also block the corrected position, further collision resolution is needed; do not silently make the eye follow the Wanderer.
