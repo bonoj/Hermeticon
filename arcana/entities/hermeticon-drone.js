@@ -195,6 +195,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
    if(focus&&bestScore<focusScore+1.2)return;
    if(focus)memories.set(focus.id,(memories.get(focus.id)||0)+1);
    focus=best;focusSince=time;attentionChanges++;attentionReason='novelty-or-motion';
+   // New attention may justify a better vantage; it does not require one.
+   const target=new T.Vector3(...best.position),distance=root.position.distanceTo(target);
+   if(distance>10){
+    const candidate=root.position.clone().addScaledVector(target.clone().sub(root.position).normalize(),Math.min(4,distance-7));
+    if(clearAt(candidate)&&clearSegment(root.position,candidate)){
+     destination.copy(candidate);mode='investigate';investigations++;lastDecision='improve-vantage';
+    }
+   }
   }else focus=best;
   focusScore=bestScore;lastInterest=time;
  };
