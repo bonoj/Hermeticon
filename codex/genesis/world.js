@@ -89,7 +89,8 @@ export function createGenesis(){
   }
   return targets;
  };
- try{eye=createHermeticonDrone({parent:world.content,id:'genesis-eye',terrain,offset:botanicalOffset,observe:observeEyeWorld});}catch(error){eyeError=String(error);console.error('Eye construction failed',error)}
+ // Eye preserved in Arcana but deliberately not instantiated in Genesis.
+ // Re-enable only by an explicit future composition decision.
  const impactDispatcher=createImpactDispatcher({debris,creatures:creatureSystems,plants:[reeds,garden,secondGarden],terrain,surface:terrainSurface});
  const cinderfall=createCinderfall(T,{surface:terrainSurface,offset:botanicalOffset,
   targets:()=>creatureSystems.flatMap(s=>s.inspect().creatures||[]),
@@ -104,6 +105,6 @@ export function createGenesis(){
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'eye',...(eye?eye.inspect():{}),error:eyeError},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'eye',enabled:false,instantiated:false,error:null},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
  return world;
 }
