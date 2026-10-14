@@ -17,7 +17,7 @@ export function createCinderfall(T,{surface,targets=()=>[],offset=()=>({x:0,z:0}
   if(!choices.length)return false;
   const target=choices[Math.floor(rand()*choices.length)],ground=surface(target.x,target.z);
   const start={x:target.x+(rand()-.5)*2.4,y:ground+10+rand()*3.2,z:target.z+(rand()-.5)*2.4};
-  active={start,target:{x:target.x,y:ground+.12,z:target.z},species:target.species||'creature',age:0,life:.35,lastEmit:0};
+  active={start,target:{x:target.x,y:Number.isFinite(target.altitude)?target.altitude:ground+.12,z:target.z},species:target.species||'creature',age:0,life:.35,lastEmit:0};
   particles.length=0;return true;
  }
  function update(dt){
