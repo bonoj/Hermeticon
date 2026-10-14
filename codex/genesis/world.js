@@ -127,7 +127,7 @@ export function createGenesis(){
   tapReport.last=record;tapReport.recent.push(record);
   if(tapReport.recent.length>16)tapReport.recent.shift();
  };
- world.update=dt=>{wanderer.update(dt)};
+ world.update=dt=>{wanderer.update(dt);terrain.updateAtmosphere(dt)};
  const inspectShell=world.inspect.bind(world);
  world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
