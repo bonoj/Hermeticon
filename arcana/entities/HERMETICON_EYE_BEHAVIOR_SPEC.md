@@ -86,3 +86,25 @@ Do **not** inherit arbitrary three-to-ten-second pauses, hardcoded probabilities
 
 ## Implementation status
 This is a **future restart specification**, not a completed implementation. The previous eye code and moving-wall experiments remain historical references. The live behavior, exact visibility handling, and autonomy acceptance scenarios have not been verified.
+
+## 2026-10-14 implementation pass — evidence and gaps
+
+Commits `1cc4d750`, `1b8dccfa`, `c855949d`, `dd4537a` replace the previous random waypoint selection with attention scoring from novelty, movement, salience and retention; observations from Genesis; occasional vantage improvement upon acquiring a distant interest; boredom-driven exploration; a local whole-sphere-clear bore candidate route; faster locomotion; and an independent render visibility flag. The Wanderer no longer receives privileged salience.
+
+**Do not mark complete yet.** This is a code-level pass. JavaScript syntax was checked via parsing the retrieved module with its imports removed; no live browser behavioral regression was executed. The bore candidate search is a bounded local probe, **not general pathfinding**. The observation feed remains positional rather than a rich event stream. No reload persistence or exact per-pixel glass clipping is implemented.
+
+### Capture report from `Genesis.inspect().systems` eye entry
+
+Collect at least two snapshots while viewing the eye, one after traveling out of view, and one after returning. Include the whole eye inspection object, particularly: `mode`, `worldPosition`, `visible`, `focus`, `attentionChanges`, `observedChanges`, `decisions`, `investigations`, `explorationAttempts`, `successfulBoreRoutes`, `belowVisits`, `belowSeconds`, `lastDecision`, `attentionReason`, `blocked`, `terrainClearance`, `frameRebases`, and `physics`. These counters describe intent and attempted routes, **not proof** of successful navigation. Record actual observed behavior alongside the counters. If the eye is missing, check `attached`, `visible`, `space`, and any Genesis eye error before changing behavior.
+
+### Acceptance checklist status
+1. Watch without approach — **unverified**
+2. Retain interest amid distractions — **unverified**
+3. Purposeful acceleration and vantage travel — **unverified**
+4. Real underground traversal and sustained exploration — **unverified**
+5. Invisible out of view, persistent world position, visible on return — **unverified**
+6. Independent brass/iris articulation — **unverified**
+7. Continuous whole-body collision — **unverified in integration**
+8. Meaningful observable attention and memory — **instrumented, unverified**
+
+Use this checklist to evaluate the captured report before further design changes.
