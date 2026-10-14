@@ -1,3 +1,4 @@
+import {applyRadialImpulse} from '../physics/impulse.js';
 import {stepGrounded} from '../locomotion/grounding.js';
 // BB-only Velvet Drifters: peristaltic bodies, tendrils and bounded geological locomotion.
 export function createVelvetDrifters(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
@@ -23,8 +24,10 @@ export function createVelvetDrifters(T,{surface,offset=()=>({x:0,z:0}),wanderer=
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.85});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
  const d=new T.Object3D();let time=0,visible=0;
+ function receiveImpulse(point,options){let hits=0;for(const p of agents){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
  function update(dt){dt=Math.max(0,Math.min(.1,dt));time+=dt;const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of agents){
+   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.4;p.state=near?'avoid':'forage';
    if(near){p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);p.speed=.16}else p.speed=.105;
    p.timer-=dt;if(p.timer<=0&&!near){p.timer=1.8+hash(p.id*29+p.step++)*2.4;p.heading+=(hash(p.id*41+p.step*3)-.5)*1.6}
@@ -42,5 +45,5 @@ export function createVelvetDrifters(T,{surface,offset=()=>({x:0,z:0}),wanderer=
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,inspect:()=>({name:'Velvet Drifters',creatures:agents.map(p=>({species:'velvet-drifter',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,receiveImpulse,inspect:()=>({name:'Velvet Drifters',creatures:agents.map(p=>({species:'velvet-drifter',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
