@@ -80,5 +80,5 @@ export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;
   if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,mesh,update,blast,inspect:()=>({name:'Mists Reeds',stems:stems.length,beads:beads.length,visible}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
+ return {group,mesh,update,blast,inspect:()=>({name:'Mists Reeds',stems:stems.length,beads:beads.length,activeBeads:beads.reduce((n,b)=>n+(stems[b.stem].destroyed?0:1),0),visible}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
 }
