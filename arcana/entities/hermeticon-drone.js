@@ -10,8 +10,8 @@ import {inspectObjectSpace} from '../observation/world-space.js';
  * vessel.group.add(vessel.content) are required (the missing first link
  * caused the entire eye orb to vanish on 2026-10-14).
  * Eye anatomy faces local +Z; cancel vessel's X rotation for the interior.
- * World coordinates: stationary upper dome, scaled shell radius 1.28125;
- * full parent vessel inner radius 10.07. Gaze follows camera; BBs pulse.
+ * World coordinates: mobile inside inner radius 10.07, scaled shell radius 1.28125;
+ * Uses terrain.sample for collision; gaze follows interest, not camera lock.
  * Exposes {group,childWorld,update,contactBead,inspect}. This factory
  * does not own Genesis updates; caller must isolate experimental failures.
  * If invisible: inspect attachment and world-space diagnostics FIRST,
@@ -109,11 +109,11 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  let time=0,beadContacts=0,arrivals=0,blocked=0,glassVisits=0;
  const EYE_RADIUS=1.30,FREE_RADIUS=10.07-EYE_RADIUS-.13;
  const gaze=new T.Vector3(),velocity=new T.Vector3(),destination=new T.Vector3(0,5.2,5.1);
- const eyeForward=new T.Vector3(0,0,1),lookPoint=new T.Vector3();
+ const lookPoint=new T.Vector3();
  const cameraPosition=new T.Vector3(),trial=new T.Vector3(),direction=new T.Vector3();
  const targetQuat=new T.Quaternion(),lookMatrix=new T.Matrix4();
  const UP=new T.Vector3(0,1,0);
- let cameraRef=null,mode='wander',pause=0,routeAge=0,interest=0,routeDuration=0;
+ let cameraRef=null,mode='wander',pause=0,routeAge=25;
  let rng=741;
  const random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296};
  const ease=t=>{const u=Math.max(0,Math.min(1,t));return u*u*(3-2*u)};
@@ -151,14 +151,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   }else{
    mode='wander';
    const angle=random()*Math.PI*2,rad=Math.sqrt(random())*7.2;
-   destination.set(Math.cos(angle)*rad,(random()<.46?-1:1)*(4.6+random()*2.3),Math.sin(angle)*rad);
+   destination.set(Math.cos(angle)*rad,(random()<.16?-Math.sign(current.y||1):Math.sign(current.y||1))*(4.6+random()*2.3),Math.sin(angle)*rad);
   }
   if(!clearAt(destination))return false;
   waypoint=null;finalTarget=null;
   if(clearSegment(current,destination))return true;
   // Prefer the authored through-holes when crossing upper/lower terrain.
-  const holes=[[ -3.6,1.8,1.25],[4.4,-2.5,1.45],[7.9,3,1.15],[0,9.55,1.25],[-4.8,8.1,.82],[4.8,8.1,.82]];
-  // Most holes are narrower than the 2.6-diameter eye: no cheating.
+  const holes=[[-3.6,1.8,1.25],[4.4,-2.5,1.45],[7.9,3,1.15],[0,9.55,1.25],[-4.8,8.1,.82],[4.8,8.1,.82]];
+  // All current holes are narrower than the 2.6-diameter eye: no cheating.
   // Try a safe two-leg detour around the slab's open radial edge instead.
   for(let i=0;i<24;i++){
    const a=random()*Math.PI*2,r=7.1+random()*.9;
