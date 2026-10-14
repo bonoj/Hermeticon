@@ -294,9 +294,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
      for(let k=0;k<128&&traveled<distance;k++){
       const p=worldStart.clone().addScaledVector(delta,traveled/distance);
       const clearance=terrain?.sphereClearance(p,radius,{x:0,z:0})??Infinity;
-      const intermediateFrame={x:base.x+dx*(i-1+k/128)/steps,z:base.z+dz*(i-1+k/128)/steps};
-      const renderPoint=p.clone().sub(new T.Vector3(intermediateFrame.x,0,intermediateFrame.z));
-      if(clearance<0||renderPoint.length()>FREE_RADIUS+.001){safe=false;break}
+      if(clearance<0){safe=false;break}
       if(distance-traveled<=clearance*.8){traveled=distance;break}
       if(clearance<=1e-6){safe=false;break}
       traveled+=Math.min(distance-traveled,clearance*.8);
