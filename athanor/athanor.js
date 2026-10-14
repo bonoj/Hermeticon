@@ -140,6 +140,11 @@ edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedShortType);
 edgeTarget.depthTexture.format=T.DepthFormat;
 const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
 const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
+const edgeShaderErrors=[];
+renderer.debug.onShaderError=(gl,program,vertexShader,fragmentShader)=>{
+ const report={at:performance.now(),program:gl.getProgramInfoLog(program)||'',vertex:gl.getShaderInfoLog(vertexShader)||'',fragment:gl.getShaderInfoLog(fragmentShader)||''};
+ edgeShaderErrors.push(report);if(edgeShaderErrors.length>5)edgeShaderErrors.shift();console.error('Hermeticon shader compilation',report);
+};
 const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:edgeUniforms,
  vertexShader:`varying vec2 uv;void main(){uv=position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 uv;
@@ -173,7 +178,7 @@ const edgeButton=document.createElement('button');edgeButton.textContent='EDGES:
 edgeButton.style.cssText='position:fixed;right:12px;bottom:108px;z-index:30;padding:11px 13px;border-radius:9px;border:1px solid #aa986e;background:#101b29;color:#f2d9a2;font:700 12px monospace;touch-action:manipulation';
 edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='EDGES: '+edgeNames[edgeMode]};
 document.body.append(edgeButton);
-const edgeInspect=()=>({mode:edgeNames[edgeMode],source:'full-scene color + depth',terrainOnly:false,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
+const edgeInspect=()=>({shaderErrors:[...edgeShaderErrors],shaderProgramCount:renderer.info.programs?.length??null,mode:edgeNames[edgeMode],source:'full-scene color + depth',terrainOnly:false,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
 let last=performance.now();
 document.addEventListener('visibilitychange',()=>{last=performance.now();probeLast=last;probeFrames=0;probeFrameMs=0});
 function frame(now){requestAnimationFrame(frame);
