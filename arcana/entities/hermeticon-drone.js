@@ -259,7 +259,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   const radius=EYE_RADIUS+.13;
   // Follow the stationary terrain-frame location as the viewport moves.
   // Only contact with the glass wall may add actual world displacement.
-  let physical=new T.Vector3();
+  let physical=new T.Vector3(),failed=false;
   for(let i=1;i<=steps;i++){
    const alpha=i/steps;
    const frame={x:base.x+dx*alpha,z:base.z+dz*alpha};
@@ -301,9 +301,10 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
     }
     if(found)break;
    }
-   if(!found){scrollUnresolved++;break}
+   if(!found){scrollUnresolved++;failed=true;break}
   }
   root.position.copy(old).add(new T.Vector3(-dx,0,-dz)).add(physical);
+  if(failed){mode='collision-unresolved';velocity.set(0,0,0);stationVelocity.set(0,0,0)}
   const rebaseDelta=new T.Vector3(-dx,0,-dz);
   destination.add(rebaseDelta);stationAnchor.add(rebaseDelta);stationTarget.add(rebaseDelta);crossingPoint.add(rebaseDelta);
   if(focus)focus={...focus,position:[focus.position[0]-dx,focus.position[1],focus.position[2]-dz]};
@@ -323,6 +324,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const update=(dt,camera)=>{
   const step=Math.max(0,Math.min(dt,.06));time+=step;
   rebase();enforceWall();
+  if(mode==='collision-unresolved'&&!body.valid(root.position)){render();return}
   if(camera?.position)cameraRef=camera;
   sense();
   if(root.position.y< -1.4)belowSeconds+=step;
