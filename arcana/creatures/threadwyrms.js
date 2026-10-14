@@ -29,7 +29,8 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
    if(near)p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);
    p.timer-=dt;if(p.timer<=0&&!near){p.timer=1.4+rnd(p.id*37+p.step++)*2.1;p.heading+=(rnd(p.id*53+p.step*7)-.5)*1.5}
    stepGrounded(p,dt,{surface,speed:p.speed*(near?1.5:1),radius:radius-1,homeRadius:2.5,stepHeight:.13,footprint:.12});
-
+   p.trail.unshift({x:p.x,z:p.z,y:p.y,heading:p.heading});
+   if(p.trail.length>240)p.trail.pop();
   }
   visible=0;
   for(const b of beads){
