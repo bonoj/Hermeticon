@@ -14,7 +14,7 @@ try {
 } catch(error){console.warn('Hermeticon build identity unavailable',error)}
 document.querySelector('#build').textContent=BUILD==='unverified'?'--------':BUILD.slice(0,8);
 document.querySelector('#fresh').onclick=()=>location.reload();
-document.querySelector('#meteor')?.addEventListener('click',()=>{for(const entry of mounts.values())if(entry.active&&typeof entry.source.castMeteor==='function')entry.source.castMeteor()});
+
 
 
 try {
@@ -23,6 +23,7 @@ const world=new T.Group();scene.add(world);
 // A world supplies its reality; Athanor supplies mounting, scheduling and observation.
 // Parentage, visibility and update participation are deliberately independent.
 const mounts=new Map();
+document.querySelector('#meteor')?.addEventListener('click',()=>{for(const entry of mounts.values())if(entry.active&&typeof entry.source.castMeteor==='function')entry.source.castMeteor()});
 function mountWorld(id,source,{parent=null,visible=true,active=true}={}){
  if(typeof id!=='string'||!id||mounts.has(id))throw Error('Invalid or duplicate world id: '+id);
  if(parent!==null&&!mounts.has(parent))throw Error('Unknown parent world: '+parent);
