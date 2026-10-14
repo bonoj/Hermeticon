@@ -17,7 +17,7 @@ import {inspectObjectSpace} from '../observation/world-space.js';
  * If invisible: inspect attachment and world-space diagnostics FIRST,
  * then deployed runtime; do not randomly move the eye or alter terrain.
  */
-export function createHermeticonDrone({parent,id='drone-1'}={}){
+export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=()=>({x:0,z:0})}={}){
  const root=new T.Group();root.name='Hermeticon eye '+id;
  const vessel=createHermeticon();
  vessel.group.scale.setScalar(.125);
@@ -106,9 +106,69 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  for(let i=0;i<points.length;i++)beads.setColorAt(i,colors[i]);
  if(beads.instanceColor)beads.instanceColor.needsUpdate=true;
  interior.add(beads);
- let time=0,beadContacts=0;
- const gaze=new T.Vector3(),velocity=new T.Vector3();
- let cameraRef=null;
+ let time=0,beadContacts=0,arrivals=0,blocked=0,glassVisits=0;
+ const EYE_RADIUS=1.30,FREE_RADIUS=10.07-EYE_RADIUS-.13;
+ const gaze=new T.Vector3(),velocity=new T.Vector3(),destination=new T.Vector3(0,5.2,5.1);
+ const eyeForward=new T.Vector3(0,0,1),lookPoint=new T.Vector3();
+ const cameraPosition=new T.Vector3(),trial=new T.Vector3(),direction=new T.Vector3();
+ const targetQuat=new T.Quaternion(),lookMatrix=new T.Matrix4();
+ const UP=new T.Vector3(0,1,0);
+ let cameraRef=null,mode='wander',pause=0,routeAge=0,interest=0,routeDuration=0;
+ let rng=741;
+ const random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296};
+ const ease=t=>{const u=Math.max(0,Math.min(1,t));return u*u*(3-2*u)};
+ // Terrain.sample is the authoritative signed field: positive is solid.
+ // The geometry's local X/Z is shifted by Wanderer's offset, so undo that
+ // shift for collision sampling. Above/below +/-3.6 is always clear.
+ const solidAt=(x,y,z)=>{
+  if(!terrain||y>3.6||y< -3.6)return false;
+  const o=offset();return terrain.sample(x+o.x,y,z+o.z)>0;
+ };
+ const clearAt=p=>{
+  if(p.length()>FREE_RADIUS)return false;
+  // Sphere probes against the signed field, including underside and walls.
+  if(solidAt(p.x,p.y,p.z))return false;
+  for(const [x,y,z] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
+   if(solidAt(p.x+x*EYE_RADIUS,p.y+y*EYE_RADIUS,p.z+z*EYE_RADIUS))return false;
+  }
+  return true;
+ };
+ const clearSegment=(a,b)=>{
+  const length=a.distanceTo(b),steps=Math.max(1,Math.ceil(length/.38));
+  for(let i=1;i<=steps;i++)if(!clearAt(trial.copy(a).lerp(b,i/steps)))return false;
+  return true;
+ };
+ // Crossing the slab is only legal where a whole eye fits through a bore.
+ // The waypoint at the slab's midplane forces a real aperture crossing.
+ let waypoint=null,finalTarget=null;
+ const chooseDestination=()=>{
+  const current=root.position;
+  const cameraVisit=cameraRef&&random()<.22;
+  if(cameraVisit){
+   cameraRef.getWorldPosition(cameraPosition);
+   destination.copy(cameraPosition).normalize().multiplyScalar(FREE_RADIUS-.12);
+   mode='inspect-glass';glassVisits++;
+  }else{
+   mode='wander';
+   const angle=random()*Math.PI*2,rad=Math.sqrt(random())*7.2;
+   destination.set(Math.cos(angle)*rad,(random()<.46?-1:1)*(4.6+random()*2.3),Math.sin(angle)*rad);
+  }
+  if(!clearAt(destination))return false;
+  waypoint=null;finalTarget=null;
+  if(clearSegment(current,destination))return true;
+  // Prefer the authored through-holes when crossing upper/lower terrain.
+  const holes=[[ -3.6,1.8,1.25],[4.4,-2.5,1.45],[7.9,3,1.15],[0,9.55,1.25],[-4.8,8.1,.82],[4.8,8.1,.82]];
+  // Most holes are narrower than the 2.6-diameter eye: no cheating.
+  // Try a safe two-leg detour around the slab's open radial edge instead.
+  for(let i=0;i<24;i++){
+   const a=random()*Math.PI*2,r=7.1+random()*.9;
+   const mid=new T.Vector3(Math.cos(a)*r,0,Math.sin(a)*r);
+   if(clearAt(mid)&&clearSegment(current,mid)&&clearSegment(mid,destination)){
+    waypoint=mid;finalTarget=destination.clone();destination.copy(mid);return true;
+   }
+  }
+  return false;
+ };
  const render=()=>{
   for(let i=0;i<points.length;i++){
    const [x,y,z,r,kind,phase]=points[i];
@@ -121,17 +181,39 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  };
  root.position.set(0,5.2,5.1);
  const update=(dt,camera)=>{
-  const step=Math.max(0,Math.min(dt,.1));time+=step;
-  if(camera?.position){
-   cameraRef=camera;
-   camera.getWorldPosition(gaze);
-   // Orient the eye's own +Z axis toward the viewer; brass remains upright.
-   root.lookAt(gaze);
+  const step=Math.max(0,Math.min(dt,.06));time+=step;
+  if(camera?.position)cameraRef=camera;
+  if(pause>0){pause-=step;velocity.multiplyScalar(Math.exp(-step*6));}
+  else{
+   routeAge+=step;
+   if(routeAge>20||root.position.distanceTo(destination)<.28){
+    if(waypoint&&finalTarget){destination.copy(finalTarget);waypoint=null;finalTarget=null;routeAge=0;}
+    else{arrivals++;pause=.4+random()*1.4;routeAge=0;
+     for(let attempt=0;attempt<22;attempt++)if(chooseDestination())break;
+    }
+   }
+   direction.copy(destination).sub(root.position);
+   const distance=direction.length();
+   if(distance>.001){
+    direction.divideScalar(distance);
+    // Acceleration and braking: slow at start/end, cruise in between.
+    const desiredSpeed=Math.min(2.1,Math.sqrt(2*2.2*distance));
+    const blend=Math.min(1,step*1.9);
+    velocity.lerp(direction.multiplyScalar(desiredSpeed),blend);
+    trial.copy(root.position).addScaledVector(velocity,step);
+    if(clearSegment(root.position,trial))root.position.copy(trial);
+    else{blocked++;velocity.set(0,0,0);routeAge=25;}
+   }
   }
-  // BB impacts may jostle the vessel, but it returns gently to its perch.
-  root.position.addScaledVector(velocity,step);
-  root.position.lerp(new T.Vector3(0,5.2,5.1),Math.min(1,step*2));
-  velocity.multiplyScalar(Math.exp(-step*4));
+  // The vessel keeps its meridian upright; only the eye anatomy looks around.
+  if(mode==='inspect-glass'&&cameraRef)cameraRef.getWorldPosition(lookPoint);
+  else if(velocity.lengthSq()>.025)lookPoint.copy(root.position).add(velocity);
+  else lookPoint.copy(destination);
+  lookMatrix.lookAt(lookPoint,root.position,UP);
+  targetQuat.setFromRotationMatrix(lookMatrix);
+  // Interior's compensating -X rotation means this orientation belongs to
+  // its parent content, not the outer brass shell.
+  vessel.content.quaternion.slerp(targetQuat,Math.min(1,step*2.1));
   render();
  };
  const contactBead=(x,y,z,r,vx,vy,vz)=>{
@@ -143,5 +225,5 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode:'high-dome-observer',visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
 }
