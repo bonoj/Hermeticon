@@ -37,8 +37,8 @@ export function createTerrain(){
  operations=[];
  // Vertical bores pierce the complete slab; raised and lowered regions act
  // independently on upper and lower surfaces.
- for(let k=0;k<0;k++)operations.push({kind:'through-hole',x:(rand(k+2)-.5)*42,z:(rand(k+11)-.5)*42,r:1+rand(k+29)*.7});
- for(let k=0;k<0;k++)operations.push({kind:k%2?'lower':'raise',face:k%3?'top':'bottom',x:(rand(k+49)-.5)*42,z:(rand(k+61)-.5)*42,r:1.7+rand(k+73)*1.4,delta:(k%2?-1:1)*(0.65+rand(k+91)*1.25)});
+ for(let k=0;k<3;k++)operations.push({kind:'through-hole',x:(rand(k+2)-.5)*42,z:(rand(k+11)-.5)*42,r:1+rand(k+29)*.7});
+ for(let k=0;k<8;k++)operations.push({kind:k%2?'lower':'raise',face:k%3?'top':'bottom',x:(rand(k+49)-.5)*42,z:(rand(k+61)-.5)*42,r:1.7+rand(k+73)*1.4,delta:(k%2?-1:1)*(0.65+rand(k+91)*1.25)});
 
  fieldMin=Infinity;fieldMax=-Infinity;solidCount=0;voidCount=0;
  for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
