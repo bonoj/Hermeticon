@@ -4,6 +4,11 @@ import {createTerrain} from '../../arcana/terrain.js?v=stable-20bd541b-restore';
 import {createNodeMaker} from '../../arcana/node-maker.js?v=1';
 import {createWanderer} from '../../arcana/wanderer.js';
 import {createMistsReeds} from '../../arcana/populations/mists-reeds.js';
+import {createAmethystParasols} from '../../arcana/populations/amethyst-parasols.js';
+import {createAmberGourds} from '../../arcana/populations/amber-gourds.js';
+import {createCrownLanterns} from '../../arcana/populations/crown-lanterns.js';
+import {createChaliceSucculents} from '../../arcana/populations/chalice-succulents.js';
+import {createRubyPendants} from '../../arcana/populations/ruby-pendants.js';
 import {createEquatorialTreatment} from '../../arcana/equatorial-treatment.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
@@ -47,6 +52,16 @@ export function createGenesis(){
   characters:()=>{const {x,z}=wanderer.inspect();return [{x,z}]},
   parent:world.content
  });
+ // Authored planting arrangement; reusable species stay in Arcana.
+ const botanicalOffset=()=>{const [x,z]=wanderer.inspect().offset;return {x,z}};
+ const botanicalBase={surface:reedSurface,offset:botanicalOffset,radius:terrain.getAperture(),parent:world.content,seed:741};
+ const garden=[
+  createAmethystParasols(T,{...botanicalBase,center:{x:-3.1,z:3.4},count:8}),
+  createAmberGourds(T,{...botanicalBase,center:{x:-3.6,z:-1.6},count:7}),
+  createCrownLanterns(T,{...botanicalBase,center:{x:4.3,z:3.4},count:7}),
+  createChaliceSucculents(T,{...botanicalBase,center:{x:3.3,z:-.5},count:9}),
+  createRubyPendants(T,{...botanicalBase,center:{x:4.0,z:-3.0},count:8})
+ ];
  let view=null;
  const tapReport={total:0,underside:0,navigation:0,rayMiss:0,last:null,recent:[]};
  world.attachView=next=>{view=next};
@@ -62,8 +77,8 @@ export function createGenesis(){
   if(tapReport.recent.length>16)tapReport.recent.shift();
  };
 
- world.update=dt=>{wanderer.update(dt);reeds.update(dt)};
+ world.update=dt=>{wanderer.update(dt);reeds.update(dt);for(const population of garden)population.update(dt)};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()}],edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},...garden.map(population=>population.inspect())],edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
