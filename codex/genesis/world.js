@@ -1,6 +1,7 @@
 // Genesis is an authored composition, not a reusable Arcana definition.
 import {createHermeticon} from '../../arcana/hermeticon.js';
-import {createTerrain} from '../../arcana/terrain.js?v=a3d31996';
+import {createTerrain} from '../../arcana/terrain.js?v=5ae26273';
+import {extractIntervals} from '../../arcana/boundary.js';
 import {createWanderer} from '../../arcana/wanderer.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
@@ -97,36 +98,34 @@ export function createGenesis(){
  beads.frustumCulled=false;latticeGroup.add(beads);
  const dummy=new T.Object3D(),nodeColor=new T.Color();
  let beadCount=0,upper=0,lower=0,bore=0,other=0,scans=0,buildMs=0,offsetX=0,offsetZ=0,lastX=Infinity,lastZ=Infinity;
- const crossingSamples=[];
+ const crossingSamples=[];let intervalCount=0,entireSolid=0,entireVoid=0,multipleIntervals=0,unmatched=0,maxIntervals=0;
  function rebuildRim(){
-  const t0=performance.now();beadCount=upper=lower=bore=other=0;crossingSamples.length=0;
+  const t0=performance.now();beadCount=upper=lower=bore=other=0;intervalCount=entireSolid=entireVoid=multipleIntervals=unmatched=maxIntervals=0;crossingSamples.length=0;
   const radius=terrain.getAperture();
   for(let i=0;i<rimAngles;i++){
    const angle=2*Math.PI*i/rimAngles,c=Math.cos(angle),sn=Math.sin(angle);
    const point=y=>{const r=Math.sqrt(Math.max(0,radius*radius-y*y));return [r*c,r*sn]};
-   let py=rimMinY,p=point(py),pv=terrain.sample(p[0]+offsetX,py,p[1]+offsetZ);
-   for(let j=1;j<=rimSteps;j++){
-    const y=rimMinY+(rimMaxY-rimMinY)*j/rimSteps,q=point(y);
-    const v=terrain.sample(q[0]+offsetX,y,q[1]+offsetZ);
-    if((pv>0)!==(v>0)){
-     let lo=py,hi=y,sign=pv>0;
-     for(let k=0;k<6;k++){const mid=(lo+hi)/2,m=point(mid),mv=terrain.sample(m[0]+offsetX,mid,m[1]+offsetZ);if((mv>0)===sign)lo=mid;else hi=mid}
-     const hitY=(lo+hi)/2,h=point(hitY);
-     const eps=.09;
-     const inX=h[0]+offsetX,inZ=h[1]+offsetZ;
-     const horizontalVoid=terrain.sample(inX+eps,hitY,inZ)<0||terrain.sample(inX-eps,hitY,inZ)<0||terrain.sample(inX,hitY,inZ+eps)<0||terrain.sample(inX,hitY,inZ-eps)<0;
-     const kind=horizontalVoid?'bore':(pv>0?'upper':'lower');
-     if(kind==='bore')bore++;else if(kind==='upper')upper++;else lower++;
-     if(beadCount<maxBeads){
-      dummy.position.set(h[0]*1.003,hitY,h[1]*1.003);dummy.scale.setScalar(1);dummy.updateMatrix();
-      beads.setMatrixAt(beadCount,dummy.matrix);
-      nodeColor.setHex(kind==='bore'?0x69d2de:kind==='upper'?0xffd37c:0xc18a41);
-      beads.setColorAt(beadCount,nodeColor);
-      if(crossingSamples.length<24)crossingSamples.push({angle:+angle.toFixed(3),y:+hitY.toFixed(3),kind});
-      beadCount++;
-     }
+   const result=extractIntervals(terrain.sample,point,rimMinY,rimMaxY,rimSteps);
+   intervalCount+=result.intervals.length;
+   if(result.intervals.length>1)multipleIntervals++;
+   maxIntervals=Math.max(maxIntervals,result.intervals.length);
+   if(!result.crossings.length){if(result.startsSolid)entireSolid++;else entireVoid++}
+   const expected=result.crossings.length+(result.startsSolid?1:0)-(result.endsSolid?1:0);
+   if(expected%2!==0)unmatched++;
+   for(const crossing of result.crossings){
+    const hitY=crossing.y,h=point(hitY),eps=.09;
+    const inX=h[0]+offsetX,inZ=h[1]+offsetZ;
+    const horizontalVoid=terrain.sample(inX+eps,hitY,inZ)<0||terrain.sample(inX-eps,hitY,inZ)<0||terrain.sample(inX,hitY,inZ+eps)<0||terrain.sample(inX,hitY,inZ-eps)<0;
+    const kind=horizontalVoid?'bore':(crossing.fromSolid?'upper':'lower');
+    if(kind==='bore')bore++;else if(kind==='upper')upper++;else lower++;
+    if(beadCount<maxBeads){
+     dummy.position.set(h[0]*1.003,hitY,h[1]*1.003);dummy.scale.setScalar(1);dummy.updateMatrix();
+     beads.setMatrixAt(beadCount,dummy.matrix);
+     nodeColor.setHex(kind==='bore'?0x69d2de:kind==='upper'?0xffd37c:0xc18a41);
+     beads.setColorAt(beadCount,nodeColor);
+     if(crossingSamples.length<24)crossingSamples.push({angle:+angle.toFixed(3),y:+hitY.toFixed(3),kind,fromSolid:crossing.fromSolid});
+     beadCount++;
     }
-    py=y;pv=v;
    }
   }
   beads.count=beadCount;beads.instanceMatrix.needsUpdate=true;
@@ -136,7 +135,7 @@ export function createGenesis(){
  const previousSetOffset=terrain.setOffset;
  terrain.setOffset=(x,z)=>{previousSetOffset(x,z);offsetX=x;offsetZ=z;if(Math.hypot(x-lastX,z-lastZ)>.24)rebuildRim()};
  rebuildRim();
- const inspectLattice=()=>({kind:'visible-rim-zero-crossings',beads:beadCount,upper,lower,bore,other,angularSamples:rimAngles,verticalSamples:rimSteps,rimRadius:terrain.getAperture(),offset:[offsetX,offsetZ],resampleDistance:.24,rebuilds:scans,buildMs,drawCalls:1,links:0,examples:crossingSamples,method:'signed-field zero crossings interpolated on spherical aperture'});
+ const inspectLattice=()=>({kind:'visible-rim-zero-crossings',beads:beadCount,upper,lower,bore,other,intervalCount,entireSolid,entireVoid,multipleIntervals,unmatched,maxIntervals,angularSamples:rimAngles,verticalSamples:rimSteps,rimRadius:terrain.getAperture(),offset:[offsetX,offsetZ],resampleDistance:.24,rebuilds:scans,buildMs,drawCalls:1,links:0,examples:crossingSamples,method:'renderer-independent signed-field interval extraction along spherical rim',fixture:'three rim-adjacent through bores plus upper and lower relief; no Wanderer movement required'});
  const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
 
  const wanderer=createWanderer({terrain});
