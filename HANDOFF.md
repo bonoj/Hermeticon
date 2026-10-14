@@ -11,6 +11,10 @@
 
 ## Accepted current state
 
+**2026-10-14: BB Botanical Garden promoted to canon by the author.** The five-species, all-spherical-BB alien garden in `arcana/populations/bb-garden.js` is mounted in Genesis alongside the original Mists Reeds. Small BBs make up stalks, textured clusters, canopies and fruit; species have asynchronous idle sway and actor-triggered retraction/regrowth. This is an **accepted creative direction and composition**, not a claim of independent automated FPS verification. The prior geometric species and their pleasant sway are preserved intact under `arcana/populations/potential/`. Do not replace the canonical BB garden with those prototypes or reintroduce non-BB plant geometry without instruction. Working nickname: **Hermeticoneer**.
+
+
+
 **2026-10-14: Terrain-only HYBRID observation visually accepted by the author.** Accepted code checkpoint `7c74e324`. The terrain is readable, lit and beautiful in Hybrid. The lens changes **only terrain edges**; glass/brass vessel, Wanderer, and outside world remain unaffected. **This investigation is done. Do not reopen or retune it without an explicit request.**
 
 Two regressions were resolved:
@@ -37,7 +41,7 @@ The equatorial comparison system is extracted to `arcana/equatorial-treatment.js
 
 ## User-visible contract
 
-Current Genesis composition mounts a vessel, signed terrain, equatorial treatment, empty witness nodes, Wanderer, and the original Mists Reeds population near spawn (geological center 1.4, 1.5). The reeds use signed-field surface roots, Wanderer's geological actor position, and Wanderer's geological offset for panning; Genesis updates them after Wanderer. This integration is committed but not yet visually verified in the public runtime. The UI has a globe observation control, eye inspection and refresh, build SHA and FPS; `athanor/compose.js` also adds the `RIM PUNCH · crossings / solid intervals` label. Do not invent controls from old screenshots or historical handoffs. Preserve large, reliable mobile tap targets and the visual hierarchy.
+Current Genesis mounts the vessel, signed terrain, equatorial treatment, empty witness nodes, Wanderer, original Mists Reeds near spawn (geological center 1.4, 1.5), and the **canonical BB Botanical Garden**. Both populations root on the signed terrain and use Wanderer's geological offset; Genesis updates them after Wanderer. The UI includes observation, inspection, refresh, build SHA and FPS. The unsolicited `RIM PUNCH · crossings / solid intervals` label was **removed** in commit `1ed147b7`; do not restore it. Do not invent controls from old screenshots or historical handoffs. Preserve large, reliable mobile tap targets and the visual hierarchy.
 
 The observation modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID. HYBRID is accepted. The lens captures the terrain on layer 29 and checks full-scene depth before overlaying edge ink. It must never overwrite normally shaded terrain or clear the already rendered scene during the overlay. See the [observation contract](arcana/observation/README.md).
 
