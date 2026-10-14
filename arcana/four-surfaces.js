@@ -1,26 +1,32 @@
 // Height-ranked mesh witnesses. Sorting is disposable and independent of camera movement.
-export function buildHeightIndex(group){
- const points=[],seen=new Set();
+export function buildHeightIndex(group,sample){
+ const points=[],seen=new Set(),upper=[],lower=[];
  for(const mesh of group.children){
   const a=mesh.geometry.getAttribute('position');if(!a)continue;
   for(let i=0;i<a.count;i++){
    const x=a.getX(i),y=a.getY(i),z=a.getZ(i);
    const key=Math.round(x*10000)+','+Math.round(y*10000)+','+Math.round(z*10000);
    if(seen.has(key))continue;seen.add(key);
-   points.push([x,y,z]);
+   // An actual vertical field crossing, not an extraction ceiling or a bore wall.
+   const epsilon=.055,below=sample(x,y-epsilon,z),above=sample(x,y+epsilon,z);
+   const isTop=below>0&&above<=0,isBottom=below<=0&&above>0;
+   if(!isTop&&!isBottom)continue;
+   const n=points.length;points.push([x,y,z]);
+   if(isTop)upper.push(n);if(isBottom)lower.push(n);
   }
  }
- const order=points.map((_,i)=>i).sort((a,b)=>points[b][1]-points[a][1]);
- return {points,order,vertices:points.length};
+ upper.sort((a,b)=>points[b][1]-points[a][1]);
+ lower.sort((a,b)=>points[a][1]-points[b][1]);
+ return {points,upper,lower,vertices:points.length};
 }
 export function surveyFourSurfaces(sample,radius,offsetX=0,offsetZ=0,budget=96,index){
  const t0=performance.now();
  const arrays={surfaceTerrain:[],sdfSurface:[],sdfUndersurface:[],undersurfaceTerrain:[]};
- const points=index.points,order=index.order,r2=radius*radius,spacing=0.88,spacing2=spacing*spacing;
+ const points=index.points,r2=radius*radius,spacing=0.88,spacing2=spacing*spacing;
  let considered=0,excluded=0;
  const select=(descending)=>{
   const chosen=[];
-  const iter=descending?order:order.slice().reverse();
+  const iter=descending?index.upper:index.lower;
   for(const i of iter){
    const p=points[i],x=p[0]-offsetX,z=p[2]-offsetZ;
    considered++;
@@ -31,7 +37,26 @@ export function surveyFourSurfaces(sample,radius,offsetX=0,offsetZ=0,budget=96,i
   }
   return chosen;
  };
- const upper=select(true),lower=select(false);
+ // The first pass is height-ordered; the independent tile maxima pass protects
+ // lower local summits from being crowded out by a few taller mountains.
+ const selectPeaks=(descending)=>{
+  const order=descending?index.upper:index.lower,tiles=new Map(),size=1.25;
+  for(const i of order){
+   const p=points[i],x=p[0]-offsetX,z=p[2]-offsetZ;
+   if(x*x+p[1]*p[1]+z*z>r2)continue;
+   const key=Math.floor(x/size)+','+Math.floor(z/size);
+   if(!tiles.has(key))tiles.set(key,i);
+  }
+  const chosen=[],seeds=[...tiles.values()].sort((a,b)=>descending?points[b][1]-points[a][1]:points[a][1]-points[b][1]);
+  for(const i of seeds){
+   const p=points[i],x=p[0]-offsetX,z=p[2]-offsetZ;
+   if(chosen.some(q=>(q[0]-x)**2+(q[2]-z)**2<spacing2))continue;
+   chosen.push([x,p[1],z,i]);if(chosen.length>=budget)break;
+  }
+  return {chosen,tiles:tiles.size};
+ };
+ const upperTiles=selectPeaks(true),lowerTiles=selectPeaks(false);
+ const upper=upperTiles.chosen,lower=lowerTiles.chosen;
  const scan=(x,z,high)=>{
   // Find a signed transition along the seed's vertical column; retain
   // separate upper and lower crossings even when a bore splits the column.
@@ -60,6 +85,6 @@ export function surveyFourSurfaces(sample,radius,offsetX=0,offsetZ=0,budget=96,i
   if(sy===null)missingLower++;else arrays.sdfUndersurface.push([x,sy,z]);
  }
  const highest=upper[0],lowest=lower[0];
- const stats={method:'disposable height-sorted mesh indices; vertical SDF bisection',domain:'rendered terrain mesh vertices inside spherical aperture',indexedVertices:index.vertices,requestedColumns:budget,selectedUpper:upper.length,selectedLower:lower.length,candidatesExamined:considered,apertureExcluded:excluded,spacing,missingUpper,missingLower,highestSeed:highest?highest.slice(0,3):null,lowestSeed:lowest?lowest.slice(0,3):null,selectionAndSearchMs:+(performance.now()-t0).toFixed(2),auditPass:missingUpper===0&&missingLower===0};
+ const stats={method:'classified height-ranked mesh indices; tile maxima; vertical SDF bisection',domain:'rendered terrain mesh vertices inside spherical aperture',indexedVertices:index.vertices,requestedColumns:budget,selectedUpper:upper.length,selectedLower:lower.length,candidatesExamined:considered,apertureExcluded:excluded,spacing,missingUpper,missingLower,highestSeed:highest?highest.slice(0,3):null,lowestSeed:lowest?lowest.slice(0,3):null,selectionAndSearchMs:+(performance.now()-t0).toFixed(2),sdfCrossingsValid:missingUpper===0&&missingLower===0,upperTiles:upperTiles.tiles,lowerTiles:lowerTiles.tiles,topCandidates:index.upper.length,bottomCandidates:index.lower.length,extremaCoverageAudited:false};
  return {arrays,stats};
 }
