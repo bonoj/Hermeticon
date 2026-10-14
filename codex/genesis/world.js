@@ -7,6 +7,7 @@ import {createMistsReeds} from '../../arcana/populations/mists-reeds.js';
 import {createBBGarden} from '../../arcana/populations/bb-garden.js';
 import {createSecondGarden} from '../../arcana/populations/second-garden.js';
 import {createFirstBestiary} from '../../arcana/creatures/first-bestiary.js';
+import {createVelvetDrifters} from '../../arcana/creatures/velvet-drifters.js';
 import {createEquatorialTreatment} from '../../arcana/equatorial-treatment.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
@@ -60,6 +61,8 @@ export function createGenesis(){
   radius:terrain.getAperture(),parent:world.content,seed:741});
  const bestiary=createFirstBestiary(T,{surface:reedSurface,offset:botanicalOffset,
   wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
+ const velvetDrifters=createVelvetDrifters(T,{surface:reedSurface,offset:botanicalOffset,
+  wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
  let view=null;
  const tapReport={total:0,underside:0,navigation:0,rayMiss:0,last:null,recent:[]};
  world.attachView=next=>{view=next};
@@ -75,8 +78,8 @@ export function createGenesis(){
   if(tapReport.recent.length>16)tapReport.recent.shift();
  };
 
- world.update=dt=>{wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt)};
+ world.update=dt=>{wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt)};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect()],edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect()],edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
