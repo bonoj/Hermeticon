@@ -37,6 +37,11 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
    mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
    items.push({x:blastPosition.x+ox,y:blastPosition.y,z:blastPosition.z+oz,r:blastScale.x,color:blastColor.clone()});
   }
+  const seen=new Map();for(let i=0;i<mesh.count;i++){const id=visibleOwners[i];if(destroyed.has(id))seen.set(id,(seen.get(id)||0)+1);}
+  const required=new Map();for(const b of beads)if(destroyed.has(b.id))required.set(b.id,(required.get(b.id)||0)+1);
+  for(const [id,total] of required){const p=agents[id],missing=total-(seen.get(id)||0);if(missing<=0)continue;const hidden=beads.filter(b=>b.id===id);
+   for(let j=0;j<missing;j++){const b=hidden[j%hidden.length],co=Math.cos(p.heading),si=Math.sin(p.heading);items.push({x:p.x+b.x*co-b.z*si,y:p.y+b.y,z:p.z+b.x*si+b.z*co,r:b.r,color:(palette[b.c]).clone()});}
+  }
   debris.emit(items,point,options.impulse);
   return hits;
  }
