@@ -12,8 +12,6 @@ export function createGenesis(){
  world.content.name='Genesis contents';
  world.group.add(world.content);
  const terrain=createTerrain();
- terrain.setCavernDim(.34);
- terrain.setRockMode(1); // Lead with midnight basalt; original remains available in the cycle.
  world.content.add(terrain.group);
  const cavernSmoke=createCavernSmoke(T,{radius:9.92});
  world.content.add(cavernSmoke.group);
@@ -88,8 +86,9 @@ export function createGenesis(){
  terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
  // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
- world.cycleRock=()=>terrain.setRockMode(terrain.getRockMode()+1);
- world.rockMode=()=>terrain.rockNames[terrain.getRockMode()];
+ let wallEnabled=true;
+ world.toggleWall=()=>{wallEnabled=!wallEnabled;terrain.setCapEnabled(wallEnabled);return wallEnabled};
+ world.wallEnabled=()=>wallEnabled;
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
 
