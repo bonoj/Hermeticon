@@ -178,10 +178,10 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   // Retain attention unless its subject disappears or becomes occluded.
   const current=candidates.find(c=>c.id===focus?.id);
   const best=candidates.reduce((a,b)=>{
-   const score=c=>(c.salience||1)/(1+.11*root.position.distanceTo(new T.Vector3(...c.position)))+(c.id===focus?.id?.7:0)-(memories.get(c.id)||0)*.32;
+   const score=c=>(c.salience||1)/(1+.11*root.position.distanceTo(new T.Vector3(...c.position)))+(c.id===focus?.id?0.7:0)-(memories.get(c.id)||0)*.32;
    return !a||score(b)>score(a)?b:a;
   },null);
-  const chosen=current&&(!best||best.id===current.id||random()<.78)?current:best;
+  const chosen=current&&time-focusSince<6?current:best;
   if(chosen){
    if(focus?.id!==chosen.id){focusSince=time;attentionChanges++}
    focus=chosen;mode='investigate';
