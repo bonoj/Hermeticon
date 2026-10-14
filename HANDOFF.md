@@ -37,7 +37,7 @@ The equatorial comparison system is extracted to `arcana/equatorial-treatment.js
 
 ## User-visible contract
 
-Current Genesis composition mounts a vessel, signed terrain, equatorial treatment, empty witness nodes, and Wanderer. The UI has a globe observation control, eye inspection and refresh, build SHA and FPS; `athanor/compose.js` also adds the `RIM PUNCH · crossings / solid intervals` label. Do not invent controls from old screenshots or historical handoffs. Preserve large, reliable mobile tap targets and the visual hierarchy.
+Current Genesis composition mounts a vessel, signed terrain, equatorial treatment, empty witness nodes, Wanderer, and the original Mists Reeds population near spawn (geological center 1.4, 1.5). The reeds use signed-field surface roots, Wanderer's geological actor position, and Wanderer's geological offset for panning; Genesis updates them after Wanderer. This integration is committed but not yet visually verified in the public runtime. The UI has a globe observation control, eye inspection and refresh, build SHA and FPS; `athanor/compose.js` also adds the `RIM PUNCH · crossings / solid intervals` label. Do not invent controls from old screenshots or historical handoffs. Preserve large, reliable mobile tap targets and the visual hierarchy.
 
 The observation modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID. HYBRID is accepted. The lens captures the terrain on layer 29 and checks full-scene depth before overlaying edge ink. It must never overwrite normally shaded terrain or clear the already rendered scene during the overlay. See the [observation contract](arcana/observation/README.md).
 
