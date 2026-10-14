@@ -29,6 +29,12 @@ export function createGlasswings(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>
   const hit=new Set();for(const p of agents)if(!p.destroyed&&Math.hypot(p.x-point.x,p.y-point.y,p.z-point.z)<options.radius)hit.add(p.id);
   if(!hit.size)return 0;
   const items=[],o=offset();for(let i=0;i<mesh.count;i++){if(!hit.has(owners[i]))continue;mesh.getMatrixAt(i,m);m.decompose(pos,rot,scale);mesh.getColorAt(i,col);items.push({x:pos.x+o.x,y:pos.y,z:pos.z+o.z,r:scale.x,color:col.clone()});}
+  // Every authored BB transfers exactly once, including clipped or retracted anatomy.
+  const seen=new Map();for(let i=0;i<mesh.count;i++){const id=owners[i];if(hit.has(id))seen.set(id,(seen.get(id)||0)+1);}
+  const required=new Map();for(const b of beads)if(hit.has(b.id))required.set(b.id,(required.get(b.id)||0)+1);
+  for(const [id,total] of required){const p=agents[id],missing=total-(seen.get(id)||0);if(missing<=0)continue;
+   const hidden=beads.filter(b=>b.id===id);for(let j=0;j<missing;j++){const b=hidden[j%hidden.length];items.push({x:p.x+(b.x||0),y:p.y+b.y,z:p.z+(b.z||0),r:b.r,color:(colors[b.c]).clone()});}
+  }
   debris.emit(items,point,options.impulse);for(const p of agents)if(hit.has(p.id))p.destroyed=true;return hit.size;
  }
 
