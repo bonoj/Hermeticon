@@ -134,7 +134,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   if(!terrain||y>3.6||y< -3.6)return false;
   const o=offset();return terrain.sample(x+o.x,y,z+o.z)>0;
  };
- const body=createSphericalBody({radius:EYE_RADIUS,innerRadius:10.07,solidAt,intersectsSphere:terrain?.intersectsSphere?.bind(terrain)??null,margin:.13});
+ const body=createSphericalBody({radius:EYE_RADIUS,innerRadius:10.07,solidAt,intersectsSphere:terrain?.intersectsSphere?.bind(terrain)??null,clearance:terrain?.sphereClearance?.bind(terrain)??null,margin:.13});
  const clearAt=p=>body.valid(p);
  const clearSegment=(a,b)=>body.sweep(a,b);
  // Crossing the slab is only legal where a whole eye fits through a bore.
@@ -346,5 +346,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
 }
