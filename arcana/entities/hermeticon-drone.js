@@ -78,7 +78,7 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
   }
   beads.instanceMatrix.needsUpdate=true;
  };
- root.position.set(0,5.8,0);
+ root.position.set(0,5.2,5.1);
  const update=(dt,camera)=>{
   const step=Math.max(0,Math.min(dt,.1));time+=step;
   if(camera?.position){
@@ -89,7 +89,7 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
   }
   // BB impacts may jostle the vessel, but it returns gently to its perch.
   root.position.addScaledVector(velocity,step);
-  root.position.lerp(new T.Vector3(0,5.8,0),Math.min(1,step*2));
+  root.position.lerp(new T.Vector3(0,5.2,5.1),Math.min(1,step*2));
   velocity.multiplyScalar(Math.exp(-step*4));
   render();
  };
@@ -102,5 +102,5 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode:'high-dome-observer',beadContacts,childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode:'high-dome-observer',visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,beadContacts,childWorld:childWorld.inspect()})};
 }
