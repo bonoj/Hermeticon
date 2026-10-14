@@ -70,29 +70,39 @@ export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>fal
   for(const d of candidates)if(d.lengthSq()>1e-12&&sweep(position,position.clone().add(d))){position.add(d);return true}
   return false;
  };
+ // Emergency overlap recovery is local and bounded. Never teleport across
+ // terrain to an arbitrary distant candidate. This is not continuous wall CCD.
  const resolveBoundary=(position)=>{
   if(valid(position))return {ok:true,corrected:false};
-  // Search on the allowed wall's spherical cap and inward, including
-  // tangential options. Never force a radial correction through terrain.
-  const radial=position.clone().normalize();
+  const radial=position.lengthSq()>1e-12?position.clone().normalize():new T.Vector3(0,1,0);
   const axis=Math.abs(radial.y)<.85?new T.Vector3(0,1,0):new T.Vector3(1,0,0);
   const tangent=new T.Vector3().crossVectors(radial,axis).normalize();
   const bitangent=new T.Vector3().crossVectors(radial,tangent).normalize();
+  const excess=Math.max(0,position.length()-maxCenter);
   const candidate=new T.Vector3();
-  const projected=position.clone().multiplyScalar(Math.min(1,maxCenter/position.length()));
-  for(const inset of [0,.12,.3,.6,1,1.7,2.6,4,6,9]){
-   for(const lateral of [0,.25,.5,1,1.6,2.5,4,6]){
-    for(let i=0;i<(lateral===0?1:16);i++){
-     const a=i*Math.PI*2/16;
-     candidate.copy(projected).addScaledVector(radial,-inset)
-      .addScaledVector(tangent,lateral*Math.cos(a))
-      .addScaledVector(bitangent,lateral*Math.sin(a));
-     if(candidate.lengthSq()>maxCenter*maxCenter)continue;
-     if(valid(candidate)){position.copy(candidate);return {ok:true,corrected:true}}
+  // If wall is the only violated constraint, its shortest correction is radial.
+  if(excess>0){
+   candidate.copy(position).addScaledVector(radial,-excess-1e-5);
+   if(valid(candidate)){position.copy(candidate);return {ok:true,corrected:true,displacement:excess+1e-5}}
+  }
+  // Search a tightly bounded contact neighborhood, preferring minimum movement.
+  // Invalid starting points cannot use sweep; reject if no nearby free solution.
+  const options=[];
+  for(const distance of [.025,.05,.1,.2,.35,.5]){
+   for(let i=0;i<32;i++){
+    const angle=i*Math.PI*2/32;
+    for(const inward of [0,.5,1]){
+     candidate.copy(position).addScaledVector(radial,-distance*inward)
+      .addScaledVector(tangent,distance*Math.sqrt(1-inward*inward)*Math.cos(angle))
+      .addScaledVector(bitangent,distance*Math.sqrt(1-inward*inward)*Math.sin(angle));
+     if(valid(candidate))options.push({point:candidate.clone(),distance:position.distanceTo(candidate)});
     }
    }
+   if(options.length)break;
   }
-  unresolved++;return {ok:false,corrected:false,reason:'No nonpenetrating candidate found'};
+  options.sort((a,b)=>a.distance-b.distance);
+  if(options.length){position.copy(options[0].point);return {ok:true,corrected:true,displacement:options[0].distance}}
+  unresolved++;return {ok:false,corrected:false,reason:'No local nonpenetrating correction within 0.5 units'};
  };
  return {radius,valid,sweep,tryMove,resolveBoundary,inspect:()=>({sweepQueries,contacts,unresolved,clearanceBackend:!!clearance})};
 }
