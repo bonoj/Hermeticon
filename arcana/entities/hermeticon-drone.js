@@ -112,7 +112,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  if(beads.instanceColor)beads.instanceColor.needsUpdate=true;
  interior.add(beads);
  let time=0,beadContacts=0,arrivals=0,blocked=0,glassVisits=0;
- const EYE_RADIUS=1.30,FREE_RADIUS=10.07-EYE_RADIUS-.13;
+ const EYE_RADIUS=1.30;
  const gaze=new T.Vector3(),velocity=new T.Vector3(),destination=new T.Vector3(0,5.2,5.1);
  const lookPoint=new T.Vector3();
  const cameraPosition=new T.Vector3(),trial=new T.Vector3(),probe=new T.Vector3(),direction=new T.Vector3();
@@ -120,16 +120,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const stationAnchor=new T.Vector3(),stationTarget=new T.Vector3(),stationVelocity=new T.Vector3();
  const meridianMount=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),Math.PI/2);
  const UP=new T.Vector3(0,1,0);
- let cameraRef=null,mode='observe',pause=0,routeAge=25;
+ let cameraRef=null,mode='observe';
  let decisions=0,observedChanges=0,investigations=0,explorationAttempts=0,successfulBoreRoutes=0;
  let lastInterest=0,quietSince=0,focusScore=0,attentionReason='none',lastDecision='initial';
- const knownPositions=new Map();
  let wallCorrections=0,frameRebases=0;
  let lastOffset={...offset()};
  const crossingPoint=new T.Vector3();
  let rng=741;
  const random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296};
- const ease=t=>{const u=Math.max(0,Math.min(1,t));return u*u*(3-2*u)};
  // Terrain.sample is the authoritative signed field: positive is solid.
  // The geometry's local X/Z is shifted by Wanderer's offset, so undo that
  // shift for collision sampling. Above/below +/-3.6 is always clear.
@@ -209,8 +207,8 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   // than repeatedly probing the viewport's fixed origin.
   const origin=root.position;
   const mids=[];
-  for(let ring=0;ring<=5;ring++)for(let j=0;j<16;j++){
-   const angle=j*Math.PI/8,dist=ring*2;
+  for(let ring=0;ring<=4;ring++)for(let j=0;j<8;j++){
+   const angle=j*Math.PI/4,dist=ring*2;
    const p=new T.Vector3(origin.x+Math.cos(angle)*dist,0,origin.z+Math.sin(angle)*dist);
    if(clearAt(p))mids.push(p);
   }
