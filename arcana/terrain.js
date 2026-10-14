@@ -91,8 +91,9 @@ export function createTerrain(){
  function fieldSample(X,Y,Z){const gx=(X/WORLD_HALF+1)*(NX-1)/2,gy=(Y-MINY)/(MAXY-MINY)*(NY-1),gz=(Z/WORLD_HALF+1)*(NZ-1)/2;if(gx<0||gy<0||gz<0||gx>=NX-1||gy>=NY-1||gz>=NZ-1)return -1;const x=Math.floor(gx),y=Math.floor(gy),z=Math.floor(gz),a=gx-x,b=gy-y,c=gz-z,lerp=(p,q,t)=>p+(q-p)*t;const layer=k=>lerp(lerp(field[id(x,y,k)],field[id(x+1,y,k)],a),lerp(field[id(x,y+1,k)],field[id(x+1,y+1,k)],a),b);return lerp(layer(z),layer(z+1),c)}
  // Exact unsigned distance to the extracted triangle surface (world/render frame).
  // The positive-solid field marks the interior; zero distance is a contact.
- function sphereClearance(center,radius){
-  collisionPoint.set(center.x+wanderX,center.y,center.z+wanderZ);
+ function sphereClearance(center,radius,frameOffset=null){
+  const ox=frameOffset?.x??wanderX,oz=frameOffset?.z??wanderZ;
+  collisionPoint.set(center.x+ox,center.y,center.z+oz);
   if(fieldSample(collisionPoint.x,collisionPoint.y,collisionPoint.z)>0)return -radius;
   let best=Infinity;collisionStats.queries++;
   for(const chunk of terrainChunks){
@@ -119,8 +120,9 @@ export function createTerrain(){
  }
  // Authoritative intersection against the very triangles extracted for rendering.
  // Mesh coordinates are terrain-space; compensate the Wanderer scroll here.
- function intersectsSphere(center,radius){
-  collisionPoint.set(center.x+wanderX,center.y,center.z+wanderZ);
+ function intersectsSphere(center,radius,frameOffset=null){
+  const ox=frameOffset?.x??wanderX,oz=frameOffset?.z??wanderZ;
+  collisionPoint.set(center.x+ox,center.y,center.z+oz);
   const rr=radius*radius;
   // A sphere completely inside solid volume can miss all boundary triangles.
   if(fieldSample(collisionPoint.x,collisionPoint.y,collisionPoint.z)>0)return true;
