@@ -2,11 +2,11 @@
 
 ## Implemented trial: Pebbleback
 
-`first-bestiary.js` exports `createFirstBestiary(T,{surface,offset,wanderer,parent,seed,radius})` with `{group,update,inspect,dispose}`.
+`first-bestiary.js` exports `createFirstBestiary(T,{surface,offset,wanderer,parent,seed,radius})` with `{group,update,blast,inspect,dispose}`.
 
 Six seeded creatures are generated near spawn (subject to valid signed-field support). Anatomy is entirely BB spheres rendered with a single shared `InstancedMesh`: seven armored body sections, six bead-chain legs, two antennae and eyes. Behavior is bounded deterministic wandering, conservative center and lateral terrain-support checks, articulated gait oscillation, and Wanderer-proximity defensive curling. Coordinates remain geological and receive camera offset only for presentation.
 
-**Limitations:** This is a first playable anatomy/motion trial, not the complete six-species bestiary. The other five species (Velvet Drifter, Glasswing, Lantern Hermit, Bellwraith, Threadwyrm) are not yet implemented. Legs animate but are not individually IK-grounded. Curl is a pose contraction, not a full spherical shell fold. No feeding, material transactions, advanced pathfinding, or live FPS verification is claimed. Preserve the twelve accepted botanical populations.
+**Limitations:** This was the first playable anatomy/motion trial; all six planned species are now implemented. Legs animate but are not individually IK-grounded. Curl is a pose contraction, not a full spherical shell fold. No feeding, material transactions, advanced pathfinding, or live FPS verification is claimed. Preserve the twelve accepted botanical populations.
 
 
 ## Velvet Drifters — implemented trial
@@ -36,3 +36,7 @@ Six seeded creatures are generated near spawn (subject to valid signed-field sup
 ## First Bestiary status
 
 All six planned species are now implemented and mounted in Genesis: Pebblebacks, Velvet Drifters, Threadwyrms, Glasswings, Bellwraiths, Lantern Hermits. These are **candidate trials, not visually accepted canon**. Follow up with actual phone inspection, movement refinement, species-specific missing functional behaviors, and performance profiling. Preserve the accepted twelve botanical populations and Hybrid terrain.
+
+## Meteor interactions and BB inventory — 2026-10-14
+
+All six species implement `blast(point,options,debris)`. Blast proximity is three-dimensional. Glasswings and Bellwraiths can be targeted at altitude; grounded species use their body location. A destroyed creature is removed from active rendering and behavior, while its BB inventory transfers into shared detached physics. Unrendered/clipped anatomy is also transferred using an approximate authored-position fallback, not its exact animated pose. Every creature inspector exposes `activeBeads` separately from original `beads` descriptors and current `visible` instances. No arbitrary detached-material capacity limit. Check before/after `HermeticonSurvey()` for conservation and mobile FPS; code commits alone are not runtime validation.
