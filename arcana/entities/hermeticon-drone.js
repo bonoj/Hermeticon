@@ -212,6 +212,13 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
    const p=new T.Vector3(Math.cos(angle)*ring*1.6,y,Math.sin(angle)*ring*1.6);
    if(p.distanceTo(here)>1.5&&flyTo(p,'survey-'+(y>0?'above':'below')))return;
   }
+  // At a blocked location, probe shorter vertical and lateral moves so the
+  // next frame can still progress rather than retrying the same impossible leg.
+  for(let i=0;i<24;i++){
+   const a=(i+flightFailures*5)*Math.PI/12;
+   const p=here.clone().add(new T.Vector3(Math.cos(a)*1.8,(i%3-1)*1.8,Math.sin(a)*1.8));
+   if(flyTo(p,'local-clearance'))return;
+  }
   flightFailures++;lastDecision='no-clear-flight';mode='hover';
  };
  const render=()=>{
