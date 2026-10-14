@@ -65,3 +65,8 @@ Six new BB-only species are mounted in Genesis via `arcana/populations/second-ga
 ## First Bestiary — Pebbleback trial (2026-10-14)
 
 `arcana/creatures/first-bestiary.js` now mounts in Genesis: up to six seeded BB-only Pebblebacks, shared instanced rendering, segmented armor, six animated bead-chain legs, deterministic support-checked wandering and actor-triggered curl. **Candidate, not yet visually accepted.** Remaining five proposed creature species are not built. See `arcana/creatures/README.md`. No changes to canonical botanical systems or Hybrid terrain.
+
+
+## First Bestiary — Velvet Drifters added (2026-10-14)
+
+`arcana/creatures/velvet-drifters.js` is now mounted in Genesis beside the Pebbleback trial: up to four deterministic BB-only elongated drifters with tendrils, peristaltic idle/motion and geological support-checked wandering/avoidance. Candidate awaiting author visual inspection. Four other proposed creature species remain unimplemented. Preserve the twelve canonical botanical populations.
