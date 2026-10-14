@@ -83,9 +83,6 @@ export function createGenesis(){
  terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
  // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
- let wallEnabled=true;
- world.toggleWall=()=>{wallEnabled=!wallEnabled;terrain.setCapEnabled(wallEnabled);return wallEnabled};
- world.wallEnabled=()=>wallEnabled;
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
 
