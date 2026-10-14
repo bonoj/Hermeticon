@@ -1,3 +1,4 @@
+import {stepGrounded} from '../locomotion/grounding.js';
 // Threadwyrms: BB-only articulated chains, terrain-supported undulation and existing-hole avoidance.
 export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
  if(typeof surface!=='function')throw Error('Threadwyrms require surface(x,z)');
@@ -27,13 +28,8 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.1;p.state=near?'avoid':'explore';
    if(near)p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);
    p.timer-=dt;if(p.timer<=0&&!near){p.timer=1.4+rnd(p.id*37+p.step++)*2.1;p.heading+=(rnd(p.id*53+p.step*7)-.5)*1.5}
-   const step=p.speed*(near?1.5:1)*dt,nx=p.x+Math.cos(p.heading)*step,nz=p.z+Math.sin(p.heading)*step,ny=surface(nx,nz);
-   const left=surface(nx+Math.sin(p.heading)*.12,nz-Math.cos(p.heading)*.12),right=surface(nx-Math.sin(p.heading)*.12,nz+Math.cos(p.heading)*.12);
-   if(ny!=null&&left!=null&&right!=null&&Math.abs(ny-p.y)<.13&&Math.abs(left-ny)<.17&&Math.abs(right-ny)<.17&&Math.hypot(nx,nz)<radius-1&&Math.hypot(nx-p.homeX,nz-p.homeZ)<2.5){
-    p.x=nx;p.z=nz;p.y=ny;
-   }else p.heading+=1.6;
-   p.trail.unshift({x:p.x,z:p.z,y:p.y,heading:p.heading});
-   if(p.trail.length>240)p.trail.pop();
+   stepGrounded(p,dt,{surface,speed:p.speed*(near?1.5:1),radius:radius-1,homeRadius:2.5,stepHeight:.13,footprint:.12});
+
   }
   visible=0;
   for(const b of beads){
