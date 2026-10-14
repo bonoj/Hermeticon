@@ -54,3 +54,8 @@ The renderer must not clear the already rendered scene while compositing the ove
 5. Verify source commit, build workflow, displayed live SHA, and actual runtime behavior separately; a passing build alone is not visual verification.
 
 For project continuity see [Hermeticon handoff](../HANDOFF.md); for collaboration and release discipline see [Sanctum's working contract](https://github.com/bonoj/Sanctum/blob/main/CONTRACT.md).
+
+
+## Second Garden candidate
+
+[`populations/second-garden.js`](populations/second-garden.js) is mounted by Genesis alongside the accepted canonical garden. It introduces six additional BB-only topologies (surface networks, inverted chains, radial arms, hollow towers, geode rings, spherical lattices). This is an implementation candidate pending visual and performance inspection; see [population catalog](populations/README.md). Do not confuse source commit with live or author acceptance.
