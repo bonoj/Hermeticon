@@ -2,6 +2,7 @@
 import {createHermeticon} from '../../arcana/hermeticon.js';
 import {createTerrain} from '../../arcana/terrain.js?v=mountains-20261014';
 import {surveyFourSurfaces,buildHeightIndex} from '../../arcana/four-surfaces.js?v=5';
+import {createDrawSurface} from '../../arcana/draw-surface.js?v=1';
 import {createWanderer} from '../../arcana/wanderer.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
@@ -113,6 +114,44 @@ export function createGenesis(){
  const inspectLattice=()=>({kind:'four-geological-populations',colors:palette,counts:Object.fromEntries(Object.entries(report.arrays).map(([k,v])=>[k,v.length])),...report.stats,rebuilds:scans,buildMs,indexBuildMs,drawCalls:4,offset:[offsetX,offsetZ],method:report.stats.method,note:'Height-ranked mesh vertices; SDF vertical bisection'});
  const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
 
+ // Independent camera-conditioned contour experiment. Candidate status is explicit:
+ // GPU depth visibility and exact sphere/triangle arcs are NOT yet audited.
+ const drawSurface=createDrawSurface(terrain.group);
+ const drawLines=new T.LineSegments(new T.BufferGeometry(),
+   new T.LineBasicMaterial({color:0xf6d67a,depthTest:true,depthWrite:false,transparent:true,opacity:.75}));
+ drawLines.name='draw-witness:camera-contour-candidates';
+ drawLines.frustumCulled=false;
+ drawLines.visible=false; // Diagnostics only until depth and aperture verification.
+ world.content.add(drawLines);
+ let drawReport={...drawSurface.stats,visibilityAudited:false,apertureCurveAudited:false,
+   cameraCandidateSegments:null,boreWallCandidates:null,projectionMs:null,edgeCoverageP95Px:null};
+ let drawCameraSignature='',drawLastAt=-Infinity,drawUpdates=0;
+ function updateDrawWitness(){
+   if(!view)return;
+   const camera=view.camera;
+   camera.updateMatrixWorld();
+   const signature=[camera.position.x,camera.position.y,camera.position.z,
+     camera.quaternion.x,camera.quaternion.y,camera.quaternion.z,camera.quaternion.w,
+     camera.projectionMatrix.elements.join(','),offsetX,offsetZ,terrain.getAperture()].join(',');
+   if(signature===drawCameraSignature)return;
+   const now=performance.now();if(now-drawLastAt<300)return;
+   drawLastAt=now;drawCameraSignature=signature;
+   const result=drawSurface.project(camera,offsetX,offsetZ,terrain.getAperture(),
+     view.renderer.domElement.width,view.renderer.domElement.height,T);
+   drawReport={...drawSurface.stats,...result.stats,cameraUpdates:++drawUpdates,
+     candidateDisplayEnabled:drawLines.visible};
+   // Keep a bounded diagnostic sample. Never call these occlusion-confirmed edges.
+   const points=[],max=1200,stride=Math.max(1,Math.ceil(result.segments.length/max));
+   for(let i=0;i<result.segments.length;i+=stride){
+     const e=result.segments[i],a=e.a*3,b=e.b*3,v=drawSurface.vertices;
+     points.push(v[a]-offsetX,v[a+1],v[a+2]-offsetZ,v[b]-offsetX,v[b+1],v[b+2]-offsetZ);
+   }
+   drawLines.geometry.dispose();
+   drawLines.geometry=new T.BufferGeometry();
+   drawLines.geometry.setAttribute('position',new T.Float32BufferAttribute(points,3));
+ }
+ world.cycleDrawWitness=()=>{drawLines.visible=!drawLines.visible;return drawLines.visible};
+
  const wanderer=createWanderer({terrain});
  world.content.add(wanderer.group);
  const raycaster=new T.Raycaster(),pointer=new T.Vector2();
@@ -145,8 +184,8 @@ export function createGenesis(){
   tapReport.last=record;tapReport.recent.push(record);
   if(tapReport.recent.length>16)tapReport.recent.shift();
  };
- world.update=dt=>wanderer.update(dt);
+ world.update=dt=>{wanderer.update(dt);updateDrawWitness()};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),lattice:inspectLattice(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),lattice:inspectLattice(),drawWitness:drawReport,tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
