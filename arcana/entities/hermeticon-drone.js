@@ -295,10 +295,10 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   stationVelocity.multiplyScalar(Math.exp(-step*2.3));
   trial.copy(root.position).addScaledVector(stationVelocity,step);
   const beforeHover=root.position.clone();
-  if(body.tryMove(root.position,trial.clone().sub(root.position))){
+  if(body.tryMove(root.position,trial.clone().sub(root.position))&&clearAt(root.position)){
    const distance=root.position.distanceTo(beforeHover);hoverTraveled+=distance;traveled+=distance;
    verticalTravel+=Math.abs(root.position.y-beforeHover.y);
-  }else stationVelocity.set(0,0,0);
+  }else{root.position.copy(beforeHover);stationVelocity.set(0,0,0)}
   // The meridian is the eye's forward-bearing hardware: rotate the entire
   // vessel and iris as one, never the anatomy independently.
   if(velocity.lengthSq()>.0001)lookPoint.copy(root.position).add(velocity);
