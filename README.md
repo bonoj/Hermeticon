@@ -6,6 +6,8 @@ A spherical vessel for building and exploring beautiful, perturbable, composable
 
 **For a fresh Clara:** read [HANDOFF.md](HANDOFF.md) for the current world, established behavior, working rules and next investigation.
 
+**Working contract:** [Sanctum/CONTRACT.md](https://github.com/bonoj/Sanctum/blob/main/CONTRACT.md) governs collaboration, creative agency, tool recovery, and verification.
+
 ## Structure
 
 - `athanor/` — running host: renderer, camera, instruments and interface.
