@@ -102,7 +102,7 @@ const detailsButton=document.querySelector('#detailsProbe'),copyButton=document.
 let probeFrames=0,probeFrameMs=0,probeLast=performance.now(),displayFps=null;
 const fpsLabel=document.querySelector('#fps');
 function inspectWorld(){
- const report={identity:{build:BUILD,fps:displayFps},mount:{name:mounts.size?'worlds':'empty',children:world.children.length,count:mounts.size,worlds:[...mounts.values()].map(inspectMount)},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()}};
+ const report={identity:{build:BUILD,fps:displayFps},mount:{name:mounts.size?'worlds':'empty',children:world.children.length,count:mounts.size,worlds:[...mounts.values()].map(inspectMount)},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()},edgeDetection:edgeInspect()};
  probeText.value=JSON.stringify(report,null,2);return report;
 }
 probeButton.onclick=()=>{
@@ -130,6 +130,41 @@ copyButton.onclick=()=>{
  else{probeText.focus();probeText.select()}
 };
 globalThis.BaubleInspect=inspectWorld;
+
+// Screen-space edge laboratory: one scene render, selectable fullscreen GPU filters.
+// Color Sobel is artistic; depth discontinuities are geometric evidence, not yet terrain-only witnesses.
+const edgeNames=['OFF','SOBEL','DEPTH','HYBRID'];
+let edgeMode=0,edgeFrames=0,edgeLastMs=0,edgePeakMs=0;
+const edgeTarget=new T.WebGLRenderTarget(1,1,{depthBuffer:true});
+edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
+edgeTarget.depthTexture.format=T.DepthFormat;
+const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
+const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
+const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:edgeUniforms,
+ vertexShader:`varying vec2 uv;void main(){uv=uv*0.0+position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
+ fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 uv;
+ float luminance(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
+ float linearDepth(float d){float z=d*2.-1.;return (2.*nearPlane*farPlane)/(farPlane+nearPlane-z*(farPlane-nearPlane));}
+ void main(){
+ vec2 stepUV=1./resolution;float c[9];float d[9];int k=0;
+ for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 p=uv+vec2(float(x),float(y))*stepUV; c[k]=luminance(texture2D(tColor,p).rgb);d[k]=linearDepth(texture2D(tDepth,p).r);k++;}
+ float gx=-c[0]+c[2]-2.*c[3]+2.*c[5]-c[6]+c[8];
+ float gy=-c[0]-2.*c[1]-c[2]+c[6]+2.*c[7]+c[8];
+ float sobel=clamp(length(vec2(gx,gy))*1.6,0.,1.);
+ float center=d[4];float discontinuity=0.;
+ for(int i=0;i<9;i++){float delta=abs(d[i]-center)/max(center,.2);discontinuity=max(discontinuity,delta);}
+ float depthEdge=smoothstep(.012,.085,discontinuity);
+ float strength=mode==1?sobel:mode==2?depthEdge:max(sobel*.65,depthEdge);
+ vec3 original=texture2D(tColor,uv).rgb;
+ vec3 result=mode==1?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
+ gl_FragColor=vec4(result,1.);
+ }`});
+edgeScene.add(new T.Mesh(new T.PlaneGeometry(2,2),edgeShader));
+const edgeButton=document.createElement('button');edgeButton.textContent='EDGES: OFF';
+edgeButton.style.cssText='position:fixed;right:12px;bottom:108px;z-index:30;padding:11px 13px;border-radius:9px;border:1px solid #aa986e;background:#101b29;color:#f2d9a2;font:700 12px monospace;touch-action:manipulation';
+edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='EDGES: '+edgeNames[edgeMode]};
+document.body.append(edgeButton);
+const edgeInspect=()=>({mode:edgeNames[edgeMode],source:'full-scene color + depth',terrainOnly:false,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
 let last=performance.now();
 document.addEventListener('visibilitychange',()=>{last=performance.now();probeLast=last;probeFrames=0;probeFrameMs=0});
 function frame(now){requestAnimationFrame(frame);
@@ -143,6 +178,6 @@ for(const entry of mounts.values()){
  if(!entry.active||entry.error||typeof entry.source.update!=='function')continue;
  try{entry.source.update(elapsed/1000,now/1000)}catch(error){entry.error=String(error&&error.stack||error);console.error('World update failed: '+entry.id,error)}
 }
-camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);renderer.render(scene,camera);}
+camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);if(edgeMode===0){renderer.render(scene,camera)}else{const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++}}
 requestAnimationFrame(frame);
 }catch(e){window.BaubleFatal(e);console.error(e)}
