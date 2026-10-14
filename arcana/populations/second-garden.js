@@ -85,26 +85,36 @@ export function createSecondGarden(T,{terrain,surface,offset=()=>({x:0,z:0}),cha
  const mesh=new T.InstancedMesh(geometry,material,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
  const blastMatrix=new T.Matrix4(),blastPosition=new T.Vector3(),blastRotation=new T.Quaternion(),blastScale=new T.Vector3(),blastColor=new T.Color(),visibleOwners=[];
  const dummy=new T.Object3D();let elapsed=0,visible=0;
+ // Index authored anatomy once; impacts must not repeatedly filter the full garden.
+ const beadsByPlant=plants.map(()=>[]);
+ for(const bead of beads)beadsByPlant[bead.id].push(bead);
  function blast(point,options,debris){
-  const affected=new Set();
+  const affected=new Set(),radiusSq=options.radius*options.radius;
+  const o=offset(),px=point.x-o.x,pz=point.z-o.z;
+  const matrices=mesh.instanceMatrix.array;
+  // Matrix translation is stored directly in column-major slots 12–14.
   for(let i=0;i<mesh.count;i++){
-   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);
-   const o=offset(),dx=blastPosition.x+o.x-point.x,dy=blastPosition.y-point.y,dz=blastPosition.z+o.z-point.z;
-   if(dx*dx+dy*dy+dz*dz<=options.radius*options.radius)affected.add(visibleOwners[i]);
+   const m=i*16,dx=matrices[m+12]-px,dy=matrices[m+13]-point.y,dz=matrices[m+14]-pz;
+   if(dx*dx+dy*dy+dz*dz<=radiusSq)affected.add(visibleOwners[i]);
   }
   if(!affected.size)return 0;
-  const items=[];
+  const items=[],seen=new Map();
   for(let i=0;i<mesh.count;i++){
-   if(!affected.has(visibleOwners[i]))continue;
-   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
-   const o=offset();items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x*1,color:blastColor.clone()});
+   const id=visibleOwners[i];if(!affected.has(id))continue;
+   seen.set(id,(seen.get(id)||0)+1);
+   mesh.getMatrixAt(i,blastMatrix);
+   blastMatrix.decompose(blastPosition,blastRotation,blastScale);
+   mesh.getColorAt(i,blastColor);
+   items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x,color:blastColor.clone()});
   }
   if(!debris.canAccept(items.length))return 0;
-  // Every authored BB transfers exactly once, including clipped or retracted anatomy.
-  const seen=new Map();for(let i=0;i<mesh.count;i++){const id=visibleOwners[i];if(affected.has(id))seen.set(id,(seen.get(id)||0)+1);}
-  const required=new Map();for(const b of beads)if(affected.has(b.id))required.set(b.id,(required.get(b.id)||0)+1);
-  for(const [id,total] of required){const p=plants[id],missing=total-(seen.get(id)||0);if(missing<=0)continue;
-   const hidden=beads.filter(b=>b.id===id);for(let j=0;j<missing;j++){const b=hidden[j%hidden.length];items.push({x:p.x+(b.x||0),y:p.y+b.y,z:p.z+(b.z||0),r:b.r,color:(colors[b.c]).clone()});}
+  // Preserve existing hidden-anatomy fallback order and BB conservation.
+  for(const id of affected){
+   const hidden=beadsByPlant[id],p=plants[id],missing=hidden.length-(seen.get(id)||0);
+   for(let j=0;j<missing;j++){
+    const bead=hidden[j%hidden.length];
+    items.push({x:p.x+(bead.x||0),y:p.y+bead.y,z:p.z+(bead.z||0),r:bead.r,color:colors[bead.c].clone()});
+   }
   }
   const emitted=debris.emit(items,point,options.impulse);
   for(const id of affected)plants[id].destroyed=true;
