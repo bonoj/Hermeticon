@@ -10,3 +10,14 @@ Reusable populations extracted from authored worlds. These modules are **availab
 - `surface(x,z)` supplies geological ground elevation or null for invalid locations. `offset()` supplies geological X/Z translation; `characters()` supplies geological X/Z positions. Optional center defaults to Mists (-2,-1), radius to 9.92.
 - Returns `{group,mesh,update(dt),inspect(),dispose()}`. Caller mounts and schedules updates. Does not create buttons or change the host.
 - This is **only the original reeds**, not the 49 later gallery alternatives. Original fixture is untouched. No Genesis mount or live visual parity verification is claimed.
+
+## Original behavior contract
+
+The extracted reeds preserve the original Wanderer gallery-index-0 behavior (source `examples/wanderer-separated/world.js`, `mistReedsStep`):
+
+- Actor clearance: any geological actor within 0.55 units of a stem suppresses its target growth; actors are supplied through `characters()` and are not tied to Wanderer specifically.
+- Growth approaches target at 3.6/s and retraction at 7.5/s, using frame-bounded interpolation. Growth is a per-stem value, not rebuilt when the geological offset changes.
+- The original rim proximity smoothstep also affects growth, while bead positions are clipped to the spherical aperture. This is **legacy visual behavior**, not a claim of persistent biology independent of visibility. Preserve for parity until explicitly asked to change it.
+- Sway is sinusoidal and stem-phased; the original five-to-thirteen-bead silhouettes and muted four-color palette are retained.
+- `offset()` translates geology into the current view; do not feed screen-relative actor coordinates into `characters()`.
+- No runtime parity test has yet been performed. The module remains unmounted in Genesis.
