@@ -43,16 +43,16 @@ gl_FragColor=vec4(result,1.);
 }`});
 const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
 const sourceMaterial=new T.MeshBasicMaterial({map:edgeTarget.texture,depthTest:false,depthWrite:false,toneMapped:false});
-const edgeButton=document.createElement('button');edgeButton.textContent='EDGES: OFF';
+const edgeButton=document.createElement('button');edgeButton.textContent='🌐 OFF';
 edgeButton.style.cssText='position:fixed;right:12px;bottom:108px;z-index:30;padding:11px 13px;border-radius:9px;border:1px solid #aa986e;background:#101b29;color:#f2d9a2;font:700 12px monospace;touch-action:manipulation';
-edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='EDGES: '+edgeNames[edgeMode]};
+edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='🌐 '+edgeNames[edgeMode]};
 document.body.append(edgeButton);
 const edgeInspect=()=>({shaderErrors:[...edgeShaderErrors],shaderProgramCount:renderer.info.programs?.length??null,mode:edgeNames[edgeMode],source:'full-scene color + depth',terrainOnly:false,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
 
 return Object.freeze({
  get mode(){return edgeNames[edgeMode]},
  get modes(){return [...edgeNames]},
- setMode(value){const i=typeof value==='number'?value:edgeNames.indexOf(String(value).toUpperCase());if(!Number.isInteger(i)||i<0||i>=edgeNames.length)throw Error('Unknown edge mode: '+value);edgeMode=i;edgeUniforms.mode.value=i;edgeButton.textContent='EDGES: '+edgeNames[i];return edgeNames[i]},
+ setMode(value){const i=typeof value==='number'?value:edgeNames.indexOf(String(value).toUpperCase());if(!Number.isInteger(i)||i<0||i>=edgeNames.length)throw Error('Unknown edge mode: '+value);edgeMode=i;edgeUniforms.mode.value=i;edgeButton.textContent='🌐 '+edgeNames[i];return edgeNames[i]},
  render(scene,camera){if(edgeMode===0){renderer.render(scene,camera);return}const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}edgeUniforms.nearPlane.value=camera.near;edgeUniforms.farPlane.value=camera.far;renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.clearDepth();edgeQuad.material=edgeMode===1?sourceMaterial:edgeShader;renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++},
  inspect:edgeInspect,
  dispose(){edgeButton.remove();edgeTarget.dispose();edgeQuad.geometry.dispose();edgeShader.dispose();sourceMaterial.dispose();if(renderer.debug.onShaderError===shaderErrorHandler)renderer.debug.onShaderError=previousShaderErrorHandler}
