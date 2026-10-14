@@ -80,3 +80,8 @@ Six new BB-only species are mounted in Genesis via `arcana/populations/second-ga
 ## First Bestiary — Glasswings added (2026-10-14)
 
 `arcana/creatures/glasswings.js` is mounted in Genesis: up to four BB-only aerial creatures with triangular lattice wings, animated wing flex, bounded deterministic flight and actor evasion. Candidate awaiting visual inspection. Four of six planned species implemented; Lantern Hermits and Bellwraiths remain. Perching and unrestricted chasm crossing are not implemented. Preserve accepted terrain and twelve botanical populations.
+
+
+## First Bestiary — Bellwraiths added (2026-10-14)
+
+`arcana/creatures/bellwraiths.js` is mounted in Genesis: up to five BB-only bell-shaped floaters with delayed bead tentacles, pulsation, autonomous drift and actor-triggered rise. Candidate awaiting visual inspection. Five of six planned species implemented; Lantern Hermits remain. No changes to accepted Hybrid terrain or twelve botanical populations.
