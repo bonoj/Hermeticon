@@ -83,7 +83,10 @@ return Object.freeze({
  }finally{
   renderer.setRenderTarget(null);camera.layers.mask=previousMask;scene.background=previousBackground;scene.fog=previousFog;
  }
- renderer.clearDepth();edgeQuad.material=edgeShader;renderer.render(edgeScene,edgeCamera);
+ // Overlay must not auto-clear the already rendered scene (including the vessel and sky).
+ const previousAutoClear=renderer.autoClear;
+ try{renderer.autoClear=false;edgeQuad.material=edgeShader;renderer.render(edgeScene,edgeCamera)}
+ finally{renderer.autoClear=previousAutoClear}
  edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++
 },
  inspect:edgeInspect,
