@@ -14,6 +14,7 @@ try {
 } catch(error){console.warn('Hermeticon build identity unavailable',error)}
 document.querySelector('#build').textContent=BUILD==='unverified'?'--------':BUILD.slice(0,8);
 document.querySelector('#fresh').onclick=()=>location.reload();
+document.querySelector('#meteor')?.addEventListener('click',()=>{for(const entry of mounts.values())if(entry.active&&typeof entry.source.castMeteor==='function')entry.source.castMeteor()});
 
 
 try {
