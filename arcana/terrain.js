@@ -26,7 +26,8 @@ export function createTerrain(){
  const apertureEyes={compileCount:0,vertexHook:false,fragmentHook:false,compileFailures:[],lastCompiledAt:null};
  const terrainMaterial=new T.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.92,metalness:.02,side:T.DoubleSide,flatShading:true,onBeforeCompile:shader=>{shader.uniforms.apertureRadius={value:activeAperture};apertureUniform=shader.uniforms.apertureRadius;shader.uniforms.apertureOffset={value:sharedApertureOffset};apertureEyes.compileCount++;apertureEyes.lastCompiledAt=performance.now();apertureEyes.vertexHook=shader.vertexShader.includes('#include <begin_vertex>');apertureEyes.fragmentHook=shader.fragmentShader.includes('#include <clipping_planes_fragment>');if(!apertureEyes.vertexHook||!apertureEyes.fragmentHook)apertureEyes.compileFailures.push('Missing shader injection anchor');shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform vec3 apertureOffset;');shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAperturePosition=position-apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform float apertureRadius;\nuniform vec3 apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vAperturePosition,vAperturePosition)>apertureRadius*apertureRadius) discard;');shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat apertureFog=smoothstep(7.1,9.70,length(vAperturePosition));\ngl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.045,0.115,0.16),apertureFog);')}});
  const solid=new T.Group();solid.name='terrain:signed-volume';
- const terrainChunks=[];const terrainPerf={totalChunks:CX*CZ,fullRebuilds:0,localRebuilds:0,lastDirtyChunks:0,lastRebuiltCells:0,lastRebuildMs:0,lastChangedChunks:[]};
+ const terrainChunks=[];
+ const collisionA=new T.Vector3(),collisionB=new T.Vector3(),collisionC=new T.Vector3(),collisionClosest=new T.Vector3(),collisionTriangle=new T.Triangle(),collisionPoint=new T.Vector3();const terrainPerf={totalChunks:CX*CZ,fullRebuilds:0,localRebuilds:0,lastDirtyChunks:0,lastRebuiltCells:0,lastRebuildMs:0,lastChangedChunks:[]};
  for(let cz=0;cz<CZ;cz++)for(let cx=0;cx<CX;cx++){const geometry=new T.BufferGeometry(),m=new T.Mesh(geometry,terrainMaterial);m.receiveShadow=true;m.frustumCulled=false;solid.add(m);terrainChunks.push({cx,cz,geometry,triangles:0})}
  let wanderX=0,wanderZ=0,cycle=0,seed=741,triangles=0,fieldMin=0,fieldMax=0,solidCount=0,voidCount=0,buildMs=0,terrainBuildCount=0;
  let operations=[],events=[];const rand=n=>{let v=Math.sin(n*127.1+seed*311.7)*43758.5453;return v-Math.floor(v)};
@@ -71,7 +72,7 @@ export function createTerrain(){
     else{const [a,b]=inside,[c,d]=outside,q0=lerp(p[a],p[c],v[a],v[c]),q1=lerp(p[a],p[d],v[a],v[d]),q2=lerp(p[b],p[c],v[b],v[c]),q3=lerp(p[b],p[d],v[b],v[d]);tri(q0,q1,q2);tri(q2,q1,q3)}
    }
   }
-  c.geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));c.geometry.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(pos.length).fill(.52),3));c.geometry.computeVertexNormals();c.geometry.computeBoundingSphere();c.triangles=pos.length/9;
+  c.geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));c.geometry.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(pos.length).fill(.52),3));c.geometry.computeVertexNormals();c.geometry.computeBoundingSphere();c.geometry.computeBoundingBox();c.triangles=pos.length/9;
  }
  triangles=terrainChunks.reduce((n,c)=>n+c.triangles,0);buildMs=performance.now()-start;
  terrainPerf.lastDirtyChunks=selected.length;terrainPerf.lastRebuiltCells=rebuiltCells;terrainPerf.lastRebuildMs=+buildMs.toFixed(3);terrainPerf.lastChangedChunks=selected;if(bounds)terrainPerf.localRebuilds++;else terrainPerf.fullRebuilds++;
@@ -80,6 +81,37 @@ export function createTerrain(){
 }
 
  function fieldSample(X,Y,Z){const gx=(X/WORLD_HALF+1)*(NX-1)/2,gy=(Y-MINY)/(MAXY-MINY)*(NY-1),gz=(Z/WORLD_HALF+1)*(NZ-1)/2;if(gx<0||gy<0||gz<0||gx>=NX-1||gy>=NY-1||gz>=NZ-1)return -1;const x=Math.floor(gx),y=Math.floor(gy),z=Math.floor(gz),a=gx-x,b=gy-y,c=gz-z,lerp=(p,q,t)=>p+(q-p)*t;const layer=k=>lerp(lerp(field[id(x,y,k)],field[id(x+1,y,k)],a),lerp(field[id(x,y+1,k)],field[id(x+1,y+1,k)],a),b);return lerp(layer(z),layer(z+1),c)}
+ // Authoritative intersection against the very triangles extracted for rendering.
+ // Mesh coordinates are terrain-space; compensate the Wanderer scroll here.
+ function intersectsSphere(center,radius){
+  collisionPoint.set(center.x+wanderX,center.y,center.z+wanderZ);
+  const rr=radius*radius;
+  // A sphere completely inside solid volume can miss all boundary triangles.
+  if(fieldSample(collisionPoint.x,collisionPoint.y,collisionPoint.z)>0)return true;
+  for(const chunk of terrainChunks){
+   const geometry=chunk.geometry,bb=geometry.boundingBox;
+   if(!bb)continue;
+   if(collisionPoint.x+r<bb.min.x||collisionPoint.x-r>bb.max.x||
+      collisionPoint.y+r<bb.min.y||collisionPoint.y-r>bb.max.y||
+      collisionPoint.z+r<bb.min.z||collisionPoint.z-r>bb.max.z)continue;
+   const attr=geometry.getAttribute('position');
+   if(!attr)continue;
+   for(let i=0;i<attr.count;i+=3){
+    collisionA.fromBufferAttribute(attr,i);
+    collisionB.fromBufferAttribute(attr,i+1);
+    collisionC.fromBufferAttribute(attr,i+2);
+    const minX=Math.min(collisionA.x,collisionB.x,collisionC.x),maxX=Math.max(collisionA.x,collisionB.x,collisionC.x);
+    if(collisionPoint.x+r<minX||collisionPoint.x-r>maxX)continue;
+    const minY=Math.min(collisionA.y,collisionB.y,collisionC.y),maxY=Math.max(collisionA.y,collisionB.y,collisionC.y);
+    if(collisionPoint.y+r<minY||collisionPoint.y-r>maxY)continue;
+    const minZ=Math.min(collisionA.z,collisionB.z,collisionC.z),maxZ=Math.max(collisionA.z,collisionB.z,collisionC.z);
+    if(collisionPoint.z+r<minZ||collisionPoint.z-r>maxZ)continue;
+    collisionTriangle.set(collisionA,collisionB,collisionC).closestPointToPoint(collisionPoint,collisionClosest);
+    if(collisionClosest.distanceToSquared(collisionPoint)<rr)return true;
+   }
+  }
+  return false;
+ }
  function materialAt(X,Y,Z){
  if(!atlas)return null;
  const gx=Math.round((X/WORLD_HALF+1)*(NX-1)/2),gy=Math.round((Y-MINY)/(MAXY-MINY)*(NY-1)),gz=Math.round((Z/WORLD_HALF+1)*(NZ-1)/2);
@@ -137,5 +169,5 @@ export function createTerrain(){
   return {magnitude:e,radius,depth,rim,changed,dirtyChunks:terrainPerf.lastDirtyChunks};
  }
  regenerate();
- return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
 }
