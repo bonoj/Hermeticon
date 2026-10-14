@@ -3,6 +3,7 @@
 export function createCavernSmoke(T,{radius=9.92}={}){
  const group=new T.Group();group.name='cavern:smoke';
  const layers=[{y:0.08,alpha:.25},{y:-.48,alpha:.34},{y:-1.04,alpha:.42}];
+ // Legacy sheets retained temporarily pending bounded-volume replacement.
  const geometry=new T.PlaneGeometry(radius*2,radius*2,1,1);
  geometry.rotateX(-Math.PI/2);
  const materials=[];
