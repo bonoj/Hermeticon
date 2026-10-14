@@ -59,3 +59,8 @@ For project continuity see [Hermeticon handoff](../HANDOFF.md); for collaboratio
 ## Second Garden — accepted canon
 
 [`populations/second-garden.js`](populations/second-garden.js) is mounted by Genesis alongside the accepted canonical garden. It introduces six additional BB-only topologies (surface networks, inverted chains, radial arms, hollow towers, geode rings, spherical lattices). All six species were explicitly accepted by the author on 2026-10-14; independent runtime profiling remains unclaimed; see [population catalog](populations/README.md). Preserve the accepted compositions; source commit does not itself verify live deployment.
+
+
+### Spells: Cinderfall
+
+`spells/cinderfall.js` exports `createCinderfall(T,{surface,targets,offset,parent,seed,radius})` returning `{group,cast,update,inspect,dispose}`. One oversized BB descends toward a fixed randomly selected creature coordinate, with 72 delayed turbulent red/orange BB embers and a visual impact burst. No vessel collision, terrain deformation, AOE, organism damage, or conserved loose-material transition. Genesis currently auto-casts every 14 simulation seconds and exposes `world.castMeteor()`. Awaiting visual acceptance and mobile verification.
