@@ -260,11 +260,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   // Follow the stationary terrain-frame location as the viewport moves.
   // Only contact with the glass wall may add actual world displacement.
   let physical=new T.Vector3(),failed=false;
+  let lastSafeWorld=old.clone().add(new T.Vector3(base.x,0,base.z));
   for(let i=1;i<=steps;i++){
    const alpha=i/steps;
    const frame={x:base.x+dx*alpha,z:base.z+dz*alpha};
    const desired=new T.Vector3(old.x-dx*alpha+physical.x,old.y+physical.y,old.z-dz*alpha+physical.z);
-   if(desired.length()<=FREE_RADIUS&&terrain?.sphereClearance(desired,radius,frame)>=0)continue;
+   if(desired.length()<=FREE_RADIUS&&(terrain?.sphereClearance(desired,radius,frame)??Infinity)>=0){
+    lastSafeWorld.copy(desired).add(new T.Vector3(frame.x,0,frame.z));continue;
+   }
    const radial=desired.clone().normalize();
    const penetration=Math.max(0,desired.length()-FREE_RADIUS);
    if(penetration<=0)continue; // Terrain invalidation is not a wall contact.
@@ -283,7 +286,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
       .addScaledVector(bitangent,side*Math.sin(angle));
      const candidate=desired.clone().add(correction);
      if(candidate.length()>FREE_RADIUS)continue;
-     const worldStart=old.clone().add(physical).add(new T.Vector3(base.x,0,base.z));
+     const worldStart=lastSafeWorld.clone();
      const worldEnd=candidate.clone().add(new T.Vector3(frame.x,0,frame.z));
      const delta=worldEnd.clone().sub(worldStart);
      // Conservative advancement against stationary terrain in world space.
@@ -291,19 +294,21 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
      for(let k=0;k<128&&traveled<distance;k++){
       const p=worldStart.clone().addScaledVector(delta,traveled/distance);
       const clearance=terrain?.sphereClearance(p,radius,{x:0,z:0})??Infinity;
-      if(clearance<0){safe=false;break}
+      const intermediateFrame={x:base.x+dx*(i-1+k/128)/steps,z:base.z+dz*(i-1+k/128)/steps};
+      const renderPoint=p.clone().sub(new T.Vector3(intermediateFrame.x,0,intermediateFrame.z));
+      if(clearance<0||renderPoint.length()>FREE_RADIUS+.001){safe=false;break}
       if(distance-traveled<=clearance*.8){traveled=distance;break}
       if(clearance<=1e-6){safe=false;break}
       traveled+=Math.min(distance-traveled,clearance*.8);
      }
      if(!safe||traveled<distance||terrain?.sphereClearance(worldEnd,radius,{x:0,z:0})<0)continue;
-     physical.add(worldEnd.sub(worldStart));found=true;scrollConstraintContacts++;break;
+     physical.add(worldEnd.sub(worldStart));lastSafeWorld.copy(worldEnd);found=true;scrollConstraintContacts++;break;
     }
     if(found)break;
    }
    if(!found){scrollUnresolved++;failed=true;break}
   }
-  root.position.copy(old).add(new T.Vector3(-dx,0,-dz)).add(physical);
+  root.position.copy(lastSafeWorld).sub(new T.Vector3(next.x,0,next.z));
   if(failed){mode='collision-unresolved';velocity.set(0,0,0);stationVelocity.set(0,0,0)}
   const rebaseDelta=new T.Vector3(-dx,0,-dz);
   destination.add(rebaseDelta);stationAnchor.add(rebaseDelta);stationTarget.add(rebaseDelta);crossingPoint.add(rebaseDelta);
