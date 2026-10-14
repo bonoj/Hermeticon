@@ -4,7 +4,7 @@
 ## Character
 A floating, faintly amused naturalist who occasionally finds something worth getting out of his chair for.
 
-He is **an eye, not a puppy**. Curiosity is not pursuit. He can see things without approaching them, and should spend most of his time watching, not traveling. His disposition is indolent, gently entertained by a world full of things to observe. He is comfortable doing nothing.
+He is **an eye, not a puppy**. He is always in gentle physical motion: buoyant bobbing, lateral corrections, and station keeping, even when mentally idle. Stillness is not laziness. Curiosity is not pursuit. He can see things without approaching them, and should spend most of his time watching, not traveling. His disposition is indolent, gently entertained by a world full of things to observe. He is comfortable doing nothing.
 
 ## Anatomy and kinematics
 - The **glass Hermeticon sphere** is his enclosure/body. Its volume is physical, not merely its center point.
@@ -14,7 +14,7 @@ He is **an eye, not a puppy**. Curiosity is not pursuit. He can see things witho
 - Navigation respects the *entire spherical swept volume* against the terrain signed field, larger Hermeticon's inner glass boundary, and relevant obstacles. Six axial probes are not proof of sphere clearance.
 
 ## Behavioral contract
-1. **Idle observation (default):** watch the world, slow gaze changes, occasionally drift.
+1. **Idle observation (default):** watch the world, slow gaze changes, continuous small station-keeping motions.
 2. **Casual interest:** visually track a creature or event from the current vantage. No movement required.
 3. **Sustained fascination:** hold attention on something unusual, perhaps longer than expected.
 4. **Investigation (occasional):** move to a better viewing position only if there is a compelling reason.
