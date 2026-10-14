@@ -76,3 +76,7 @@ Cinderfall has no automatic timer. New meteor taps do not cancel active projecti
 ## Radial impact dispatch
 
 [`physics/impact-dispatcher.js`](physics/impact-dispatcher.js) exports  createImpactDispatcher({debris,creatures,plants,terrain,surface,...}) and is mounted by Genesis. It preserves loose → creature → plant → crater ordering, force scaling, material receiver counts, and per-stage timing. Genesis chooses receivers; Cinderfall remains the spell. Source verification is not live runtime verification.
+
+## Material inventory observation
+
+[`observation/material-survey.js`](observation/material-survey.js) exports `createMaterialSurvey({populations,debris})`. Genesis provides live systems; the reusable observer reports active authored inventory, detached material, total conservation accounting, visible inventory, ownership, allocation, and population snapshots. Descriptor totals are not counted when `activeBeads` is available. Source verification does not establish browser runtime behavior.
