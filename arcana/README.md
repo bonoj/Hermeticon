@@ -39,7 +39,7 @@ The renderer must not clear the already rendered scene while compositing the ove
 
 ## Composition and lifecycle
 
-**Genesis** ([`codex/genesis/world.js`](../codex/genesis/world.js)) instantiates vessel, terrain, equatorial treatment, node maker, Wanderer, Mists Reeds and the canonical BB botanical garden. Terrain owns tap hit classification and navigation target selection; Wanderer receives `moveTo(x,z)`. Genesis exposes observation targets rather than owning the renderer or shader pass.
+**Genesis** ([`codex/genesis/world.js`](../codex/genesis/world.js)) instantiates vessel, terrain, equatorial treatment, node maker, Wanderer, three botanical populations, six bestiary species, Cinderfall, and detached BB physics. Terrain owns tap hit classification and navigation target selection; Wanderer receives `moveTo(x,z)`. Genesis exposes observation targets rather than owning the renderer or shader pass.
 
 **Athanor** ([`athanor/athanor.js`](../athanor/athanor.js)) owns the renderer and lens scheduling. It discovers observation targets on world mount. The compatibility import `edge-detection.js` intentionally remains stable.
 
@@ -61,6 +61,13 @@ For project continuity see [Hermeticon handoff](../HANDOFF.md); for collaboratio
 [`populations/second-garden.js`](populations/second-garden.js) is mounted by Genesis alongside the accepted canonical garden. It introduces six additional BB-only topologies (surface networks, inverted chains, radial arms, hollow towers, geode rings, spherical lattices). All six species were explicitly accepted by the author on 2026-10-14; independent runtime profiling remains unclaimed; see [population catalog](populations/README.md). Preserve the accepted compositions; source commit does not itself verify live deployment.
 
 
-### Spells: Cinderfall
+## Additional mounted Arcana (2026-10-14)
 
-`spells/cinderfall.js` exports `createCinderfall(T,{surface,targets,offset,parent,seed,radius})` returning `{group,cast,update,inspect,dispose}`. One oversized BB descends toward a fixed randomly selected creature coordinate, with 72 delayed turbulent red/orange BB embers and a visual impact burst. No vessel collision, terrain deformation, AOE, organism damage, or conserved loose-material transition. Genesis currently auto-casts every 14 simulation seconds and exposes `world.castMeteor()`. Awaiting visual acceptance and mobile verification.
+| Arcana | Entry point | Responsibility | Genesis |
+| --- | --- | --- | --- |
+| Second Garden | [`populations/second-garden.js`](populations/second-garden.js) | Six accepted BB-only botanical species | **Mounted** |
+| Bestiary | [`creatures/README.md`](creatures/README.md) | Six BB-only autonomous creature trial species, including two aerial | **Mounted; trial** |
+| Cinderfall | [`spells/cinderfall.js`](spells/cinderfall.js) | Manual concurrent meteors; aerial targeting; 3D radial impact | **Mounted** |
+| Detached BBs | [`physics/bead-debris.js`](physics/bead-debris.js) | Released material, terrain/vessel contact, dynamic instance allocation | **Mounted** |
+
+Cinderfall has no automatic timer. New meteor taps do not cancel active projectiles. Each impact may disassemble nearby creatures/plants into loose BBs, impart radial force, and deform terrain. No BB population ceiling is imposed; actual memory/FPS must be observed. Active authored BBs plus detached BBs constitute the material count; historical descriptors are not physical inventory. See [handoff](../HANDOFF.md) and [observation](observation/README.md) for verification and diagnostics.
