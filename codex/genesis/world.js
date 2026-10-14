@@ -85,7 +85,7 @@ export function createGenesis(){
  world.attachView=view=>{navigation.attachView(view);droneCamera=view?.camera??null};
  world.tap=navigation.tap;
 
- world.update=dt=>{drone.update(dt,droneCamera);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt);debris.collideSphere(drone.group.position,.77,drone.contactBead)};
+ world.update=dt=>{drone.update(dt,droneCamera);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt);debris.collideSphere(drone.group.position,1.29,drone.contactBead)};
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
