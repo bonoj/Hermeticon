@@ -112,6 +112,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  if(beads.instanceColor)beads.instanceColor.needsUpdate=true;
  interior.add(beads);
  let time=0,beadContacts=0,arrivals=0,blocked=0,glassVisits=0;
+ let traveled=0,hoverTraveled=0,verticalTravel=0,verticalReversals=0,lastVerticalDirection=0;
  const EYE_RADIUS=1.30;
  const gaze=new T.Vector3(),velocity=new T.Vector3(),destination=new T.Vector3(0,5.2,5.1);
  const lookPoint=new T.Vector3();
@@ -121,6 +122,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const meridianMount=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),Math.PI/2);
  const UP=new T.Vector3(0,1,0);
  let cameraRef=null,mode='observe';
+ let nextExploration=0;
  let decisions=0,observedChanges=0,investigations=0,explorationAttempts=0,successfulBoreRoutes=0;
  let lastInterest=0,quietSince=0,focusScore=0,attentionReason='none',lastDecision='initial';
  let wallCorrections=0,frameRebases=0;
@@ -289,7 +291,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   rebase();
   // Rendering is viewport-scoped; existence, memory and simulation are not.
   // Cull the whole eye only when its entire spherical body is outside.
-  root.visible=root.position.length() < 10.07+EYE_RADIUS;
+  root.visible=root.position.length()+EYE_RADIUS+.13 <= 10.07;
   if(camera?.position)cameraRef=camera;
   sense();
   if(root.position.y< -1.4)belowSeconds+=step;
@@ -308,11 +310,16 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
    mode='observe';destination.copy(root.position);lastDecision='exploration-arrival';
   }
   if(mode==='observe'){
-   if(focus){quietSince=time;lastDecision='watch'}
-   else if(!quietSince)quietSince=time;
-   // Exploration follows sustained lack of perceptible interests, not
-   // a random idle roll or an obligatory route timer.
-   if(!focus&&time-quietSince>6){decide();quietSince=time}
+   // Observation does not immobilize the body. Explore after a period of
+   // station keeping even when a familiar subject remains visible.
+   if(time>=nextExploration){
+    if(!focus||time-focusSince>5){
+     const before=mode;
+     if(planExploration()){decisions++;lastDecision='self-directed-'+lastDecision}
+     else lastDecision='no-clear-route';
+     nextExploration=time+9;
+    }else nextExploration=time+2;
+   }
   }
   if(mode!=='observe'){
    direction.copy(destination).sub(root.position);
@@ -322,7 +329,12 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
     const desiredSpeed=Math.min(mode==='explore'||mode==='cross-bore'?2.2:1.4,Math.sqrt(2*1.5*distance));
     velocity.lerp(direction.multiplyScalar(desiredSpeed),Math.min(1,step*2.5));
     trial.copy(root.position).addScaledVector(velocity,step);
-    if(!body.tryMove(root.position,trial.clone().sub(root.position))){
+    const beforeTravel=root.position.clone();
+    if(body.tryMove(root.position,trial.clone().sub(root.position))){
+     traveled+=root.position.distanceTo(beforeTravel);
+     const dy=root.position.y-beforeTravel.y;verticalTravel+=Math.abs(dy);
+     if(Math.abs(dy)>.0001){const sign=Math.sign(dy);if(lastVerticalDirection&&sign!==lastVerticalDirection)verticalReversals++;lastVerticalDirection=sign}
+    }else{
      blocked++;velocity.set(0,0,0);mode='observe';destination.copy(root.position);
      lastDecision='blocked';quietSince=time-5;
     }
@@ -330,19 +342,22 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   }else velocity.multiplyScalar(Math.exp(-step*4));
   // Constant low-energy station keeping, independent of attention or travel.
   // Anchor follows deliberate travel but not every oscillation, preventing drift.
-  stationAnchor.lerp(root.position,Math.min(1,step*.32));
+  if(mode!=='observe')stationAnchor.copy(root.position);
   stationTarget.copy(stationAnchor).add(new T.Vector3(
-   .16*Math.sin(time*.73)+.09*Math.sin(time*1.19+1.2),
-   .19*Math.sin(time*.91+.5)+.07*Math.sin(time*1.67),
-   .14*Math.cos(time*.61+.8)+.08*Math.sin(time*1.31)
+   .45*Math.sin(time*.73)+.16*Math.sin(time*1.19+1.2),
+   .62*Math.sin(time*.91+.5)+.18*Math.sin(time*1.67),
+   .42*Math.cos(time*.61+.8)+.14*Math.sin(time*1.31)
   ));
   // While traveling, hover around the moving body; while idle, hover around anchor.
-  direction.copy(stationTarget).sub(root.position).multiplyScalar(1.2);
+  direction.copy(stationTarget).sub(root.position).multiplyScalar(5.0);
   stationVelocity.addScaledVector(direction,step);
-  stationVelocity.multiplyScalar(Math.exp(-step*1.9));
+  stationVelocity.multiplyScalar(Math.exp(-step*2.3));
   trial.copy(root.position).addScaledVector(stationVelocity,step);
-  if(body.tryMove(root.position,trial.clone().sub(root.position))){}
-  else stationVelocity.set(0,0,0);
+  const beforeHover=root.position.clone();
+  if(body.tryMove(root.position,trial.clone().sub(root.position))){
+   const distance=root.position.distanceTo(beforeHover);hoverTraveled+=distance;traveled+=distance;
+   verticalTravel+=Math.abs(root.position.y-beforeHover.y);
+  }else stationVelocity.set(0,0,0);
   // The meridian is the eye's forward-bearing hardware: rotate the entire
   // vessel and iris as one, never the anatomy independently.
   if(focus)lookPoint.fromArray(focus.position);
@@ -362,5 +377,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,frameRebasesPreservingWorld,decisions,observedChanges,investigations,explorationAttempts,successfulBoreRoutes,attentionReason,lastDecision,focusScore,quietFor:time-quietSince,outsideVisibleVessel:root.position.length()>=10.07+EYE_RADIUS,terrainClearance:terrain?.sphereClearance(root.position,EYE_RADIUS+.13,lastOffset)??null,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,frameRebasesPreservingWorld,decisions,observedChanges,investigations,explorationAttempts,successfulBoreRoutes,attentionReason,lastDecision,focusScore,quietFor:time-quietSince,outsideVisibleVessel:root.position.length()+EYE_RADIUS+.13>10.07,terrainClearance:terrain?.sphereClearance(root.position,EYE_RADIUS+.13,lastOffset)??null,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,traveled,hoverTraveled,verticalTravel,verticalReversals,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
 }
