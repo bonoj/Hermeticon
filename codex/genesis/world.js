@@ -11,6 +11,22 @@ export function createGenesis(){
  world.group.add(world.content);
  const terrain=createTerrain();
  world.content.add(terrain.group);
+ const edgeGeometry=(()=>{
+  const innerRadius=10.07, apertureRadius=9.72;
+  const heights=[-1.15,-0.575,0,0.575,1.15], angles=32, radialSamples=24;
+  return {kind:'signed-field-cross-section',innerRadius,apertureRadius,
+   rows:heights.map(y=>{
+    const inner=Math.sqrt(innerRadius**2-y**2), aperture=Math.sqrt(apertureRadius**2-y**2);
+    let solid=0,voidSamples=0;
+    for(let i=0;i<angles;i++)for(let j=0;j<radialSamples;j++){
+     const a=i*Math.PI*2/angles, radius=aperture+(inner-aperture)*(j+0.5)/radialSamples;
+     const value=terrain.sample(radius*Math.cos(a),y,radius*Math.sin(a));
+     if(value>0)solid++;else voidSamples++;
+    }
+    return {y,inner,aperture,radialGap:inner-aperture,solid,void:voidSamples};
+   })
+  };
+ })();
  const wanderer=createWanderer({terrain});
  world.content.add(wanderer.group);
  const raycaster=new T.Raycaster(),pointer=new T.Vector2();
@@ -45,6 +61,6 @@ export function createGenesis(){
  };
  world.update=dt=>wanderer.update(dt);
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
