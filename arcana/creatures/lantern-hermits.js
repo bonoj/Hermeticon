@@ -1,3 +1,4 @@
+import {stepGrounded} from '../locomotion/grounding.js';
 // Lantern Hermits: asymmetric BB-shell collectors, terrain-supported walking.
 export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
  if(typeof surface!=='function')throw Error('Lantern Hermits require surface(x,z)');
@@ -42,11 +43,9 @@ export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=
     p.heading+=(hash(p.id*41+p.step*11)-.5)*1.8;
    }
    p.gesture+=((p.state==='collect'?1:0)-p.gesture)*Math.min(1,dt*3.2);
-   if(p.state!=='search')continue;
-   const nx=p.x+Math.cos(p.heading)*p.speed*dt,nz=p.z+Math.sin(p.heading)*p.speed*dt,ny=surface(nx,nz);
-   const left=surface(nx+Math.sin(p.heading)*.22,nz-Math.cos(p.heading)*.22),right=surface(nx-Math.sin(p.heading)*.22,nz+Math.cos(p.heading)*.22);
-   if(ny!=null&&left!=null&&right!=null&&Math.abs(ny-p.y)<.15&&Math.abs(left-ny)<.18&&Math.abs(right-ny)<.18&&Math.hypot(nx,nz)<radius-1.1&&Math.hypot(nx-p.homeX,nz-p.homeZ)<2.3){p.x=nx;p.z=nz;p.y=ny}
-   else p.heading+=1.7;
+   if(p.state!=='search'){stepGrounded(p,dt,{surface,speed:0,radius:radius-1.1,homeRadius:2.3,stepHeight:.15,footprint:.22});continue;}
+   stepGrounded(p,dt,{surface,speed:p.speed,radius:radius-1.1,homeRadius:2.3,stepHeight:.15,footprint:.22});
+
   }
   visible=0;
   for(const b of beads){
