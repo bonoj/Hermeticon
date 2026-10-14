@@ -98,42 +98,6 @@ export function createTerrain(){
  // Triangles are clipped against the field's zero crossing, not bore coordinates.
  const capGroup=new T.Group();capGroup.name='terrain:aperture-cap';solid.add(capGroup);
  const capMaterial=new T.MeshStandardMaterial({color:0x7a817e,roughness:1,metalness:0,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
- // Surface-only illusion of an internally turbulent, light-absorbing volume.
- // Both geological surface and signed-field aperture cap share this treatment.
- const cloudTime={value:0};
- function cloudSurface(material){
-  const previous=material.onBeforeCompile||(()=>{});
-  material.onBeforeCompile=shader=>{
-   previous(shader);
-   shader.uniforms.cloudTime=cloudTime;
-   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloudPosition;');
-   shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCloudPosition=position;');
-   shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
-varying vec3 vCloudPosition;
-uniform float cloudTime;
-float cloudHash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
-float cloudNoise(vec3 p){
- vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
- return mix(mix(mix(cloudHash(i),cloudHash(i+vec3(1,0,0)),f.x),mix(cloudHash(i+vec3(0,1,0)),cloudHash(i+vec3(1,1,0)),f.x),f.y),
- mix(mix(cloudHash(i+vec3(0,0,1)),cloudHash(i+vec3(1,0,1)),f.x),mix(cloudHash(i+vec3(0,1,1)),cloudHash(i+vec3(1,1,1)),f.x),f.y),f.z);
-}`);
-   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-vec3 q=vCloudPosition;
-float billow=cloudNoise(q*.36+vec3(0.,cloudTime*.035,0.));
-float folds=cloudNoise(q*.91+vec3(cloudTime*.025,0.,-cloudTime*.02));
-float wisps=cloudNoise(q*2.4+vec3(0.,-cloudTime*.055,0.));
-float density=smoothstep(.21,.78,billow*.64+folds*.27+wisps*.09);
-vec3 deep=vec3(.008,.017,.027);
-vec3 illuminated=vec3(.14,.23,.27);
-vec3 cloud=mix(deep,illuminated,pow(density,1.65));
-cloud*=.72+.28*wisps;
-diffuseColor.rgb=cloud;
-`);
-  };
-  material.customProgramCacheKey=()=> 'cloud-surface-v1';
- }
- cloudSurface(terrainMaterial);
- cloudSurface(capMaterial);
  let capMesh=null,capTriangles=0,capBuildMs=0,capRebuilds=0,capEnabled=true;
  function rebuildCap(){
   const start=performance.now(),positions=[],latitude=80,longitude=240,r=activeAperture-0.012;
@@ -163,5 +127,5 @@ diffuseColor.rgb=cloud;
  }
  regenerate();
  rebuildCap();
- return {group:solid,updateAtmosphere:dt=>{cloudTime.value+=Math.min(dt,.1)},setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
 }
