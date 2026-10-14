@@ -1,12 +1,12 @@
 import {WANDERER_PHYSICS as P,reflectContact,signedFieldNormal,catchVesselUnderside} from './wanderer-contacts.js';
 export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.8,metalness:.04});
- let mesh=null,allocated=0;
- function ensureMesh(required){if(required<=allocated)return;const next=Math.max(required,allocated?allocated*2:256);const replacement=new T.InstancedMesh(geo,mat,next);replacement.frustumCulled=false;replacement.count=0;parent.add(replacement);if(mesh)parent.remove(mesh);mesh=replacement;allocated=next;}
+ let mesh=null,allocated=0;const perf={growths:0,lastGrowthMs:0,peakGrowthMs:0,lastEmitMs:0,peakEmitMs:0,lastPhysicsMs:0,peakPhysicsMs:0,lastRenderMs:0,peakRenderMs:0};
+ function ensureMesh(required){if(required<=allocated)return;const t=performance.now();const next=Math.max(required,allocated?allocated*2:256);const replacement=new T.InstancedMesh(geo,mat,next);replacement.frustumCulled=false;replacement.count=0;parent.add(replacement);if(mesh)parent.remove(mesh);mesh=replacement;allocated=next;perf.growths++;perf.lastGrowthMs=performance.now()-t;perf.peakGrowthMs=Math.max(perf.peakGrowthMs,perf.lastGrowthMs);}
  ensureMesh(256);
  const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0};let terrainHits=0,vesselHits=0,emitted=0;
  function canAccept(){return true;}
- function emit(items,point,impulse=18){
+ function emit(items,point,impulse=18){const t=performance.now();
   const o=offset();
   for(const item of items){
    const x=item.x,y=item.y,z=item.z,dx=x-point.x,dy=y-point.y,dz=z-point.z;
@@ -15,7 +15,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
    const b={x,y,z,vx:dx*inv*power,vy:dy*inv*power+3,vz:dz*inv*power,r:item.r,color:item.color,ax:Math.sin(emitted*3.7)*14,ay:Math.cos(emitted*2.3)*14,az:Math.sin(emitted*1.9)*14,owner:'terrain',rx:0,ry:0,rz:0};
    beads.push(b);emitted++;
   }
-  return items.length;
+  perf.lastEmitMs=performance.now()-t;perf.peakEmitMs=Math.max(perf.peakEmitMs,perf.lastEmitMs);return items.length;
  }
  function receiveImpulse(point,{radius=3.2,impulse=18}={}){
   let affected=0;const o=offset();
@@ -27,7 +27,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
   }
   return affected;
  }
- function update(dt){
+ function update(dt){const physicsStart=performance.now();
   const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
   for(const b of beads){
@@ -58,6 +58,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
     b.ax*=.999;b.ay*=.999;b.az*=.999;
    }
   }
+  perf.lastPhysicsMs=performance.now()-physicsStart;perf.peakPhysicsMs=Math.max(perf.peakPhysicsMs,perf.lastPhysicsMs);const renderStart=performance.now();
   ensureMesh(beads.length);
   let n=0,terrainOwned=0,vesselOwned=0;
   for(const b of beads){
@@ -68,8 +69,8 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
    mesh.setMatrixAt(n,dummy.matrix);mesh.setColorAt(n,b.color);n++;
   }
   mesh.count=n;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;
+  ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
