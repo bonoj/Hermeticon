@@ -13,7 +13,7 @@ export function createGenesis(){
  world.group.add(world.content);
  const terrain=createTerrain();
  world.content.add(terrain.group);
- const cavernSmoke=createCavernSmoke(T,{radius:9.92});
+ const cavernSmoke=createCavernSmoke(T,{radius:9.92,terrain});
  world.content.add(cavernSmoke.group);
  const edgeGeometry=(()=>{
   const innerRadius=10.07, apertureRadius=9.72;
@@ -83,7 +83,7 @@ export function createGenesis(){
  function wandererOffsetX(){return edgeWanderX}
  function wandererOffsetZ(){return edgeWanderZ}
  const originalSetOffset=terrain.setOffset;
- terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
+ terrain.setOffset=(x,z)=>{originalSetOffset(x,z);cavernSmoke.setOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
  // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
  let wallEnabled=true;
