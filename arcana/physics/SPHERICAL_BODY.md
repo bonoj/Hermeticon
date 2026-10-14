@@ -53,3 +53,7 @@ Removed the discrete neighborhood candidate search entirely. `resolveBoundary` n
 ## Executable regression fixture
 
 Open [spherical-body-regression.html](./spherical-body-regression.html) in the deployed Arcana directory to run the deterministic browser regression suite. It exercises static terrain-plane collision, sphere contact, swept crossings, wall exit, wall-only correction, conflicting terrain/wall constraints, and embedded-body fail-closed behavior. It is a harness, **not a recorded passing test run**; the tests use an analytic half-space rather than the actual terrain extraction. Additional moving-wall trajectories and terrain mesh fixtures remain mandatory before certification.
+
+## 2026-10-14 scroll solver review
+
+Genesis eye scroll handling now uses explicit-frame terrain clearance and increments `scrollConstraintContacts` and `scrollUnresolved`. On unresolved collision, normal eye locomotion is suppressed while the body remains invalid. **Important:** the current scroll handler still applies the final viewport rebase after an unresolved contact, so it does not guarantee nonpenetration. The solver also has no executed integration tests for moving wall plus ground, and the candidate path evaluation needs review for contact continuity across scroll substeps. Do not mark the moving-wall milestone complete or claim a verified no-clipping guarantee.
