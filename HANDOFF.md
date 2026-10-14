@@ -41,3 +41,7 @@ A fourth 🪨 button was explicitly requested to cycle six reversible **shader-o
 ## Cavern smoke trial (2026-10-14)
 
 Genesis now mounts `arcana/cavern-smoke.js`: three depth-tested, non-depth-writing animated procedural smoke sheets at y=0.08, -0.48, -1.04, beneath the normal top surface (nominal y=1.15). Opaque terrain hides the sheets above solid rock, while genuine through-bores reveal smoke. Sheets fade smoothly before aperture radius 9.92 to avoid an obvious circular cutoff. Rock palette gained a shared `setCavernDim` uniform; Genesis sets .34, preserving geometry and six selectable treatments. This is a reversible visual trial, not physically volumetric fog or SDF-perfect smoke. **Not visually verified; inspect edge seams, depressed terrain, and performance before accepting.**
+
+## Wall switch and rock material disengagement (2026-10-14)
+
+🪨 now toggles the opaque signed-field aperture cap ON/OFF (default ON) through `terrain.setCapEnabled`, with visible wall status and `aria-pressed`. This allows comparison of the smoke without the occluding cap; the signed-field terrain and genuine bores remain untouched. Genesis no longer imports/installs or selects rock materials. The six shader treatments remain preserved, unmodified, in `arcana/rock-materials.js` for later reuse. Smoke remains enabled. Earlier handoff descriptions of 🪨 as a rock-palette cycler are superseded by this section. Confirm deployed SHA and appearance before calling live.
