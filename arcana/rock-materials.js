@@ -4,13 +4,15 @@ export function createRockMaterials(terrainMaterial,capMaterial){
  const rockNames=['Original mortar','Midnight basalt','Layered slate','Ironstone','Obsidian','Ancient limestone'];
  let rockMode=0;
  const rockUniform={value:0};
+ const cavernDim={value:1};
  const rockShader=(shader)=>{
   shader.uniforms.rockMode=rockUniform;
+  shader.uniforms.cavernDim=cavernDim;
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vRockPosition;');
   shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvRockPosition=position;');
   shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
 varying vec3 vRockPosition;
-uniform float rockMode;
+uniform float rockMode;\nuniform float cavernDim;
 float rockHash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 float rockNoise(vec3 p){
  vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
@@ -48,12 +50,12 @@ if(rockMode>0.5){
   mineral*=1.0-0.38*fracture;
  }
  mineral*=0.82+0.22*fine;
- diffuseColor.rgb=mineral;
+ diffuseColor.rgb=mineral*cavernDim;
 }
 `);
  };
  const previousTerrainShader=terrainMaterial.onBeforeCompile;
  terrainMaterial.onBeforeCompile=shader=>{previousTerrainShader(shader);rockShader(shader)};
  capMaterial.onBeforeCompile=rockShader;
- return {rockNames,setRockMode:index=>{rockMode=((index%rockNames.length)+rockNames.length)%rockNames.length;rockUniform.value=rockMode;return rockNames[rockMode]},getRockMode:()=>rockMode};
+ return {rockNames,setCavernDim:value=>{cavernDim.value=Math.max(0,Math.min(1,value))},rockNames,setRockMode:index=>{rockMode=((index%rockNames.length)+rockNames.length)%rockNames.length;rockUniform.value=rockMode;return rockNames[rockMode]},getRockMode:()=>rockMode};
 }
