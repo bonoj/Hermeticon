@@ -1,5 +1,14 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-// Shared world-space geometry: no camera guesses or unexplained magic coordinates.
+/**
+ * COMPOSABLE CONTRACT — world-space observation (read-only diagnostics).
+ * WORLD radii describe the Genesis glass shell and terrain render aperture.
+ * inspectObjectSpace(object,camera) checks actual parent attachment,
+ * object bounds, glass containment, camera-space projection and frustum.
+ * These checks are not pixel evidence and do not verify a live deployment.
+ * Use before changing coordinates of any apparently missing entity.
+ * NOTE: bounds include descendant geometry; shell transparency, occlusion,
+ * camera clipping and material shader behavior require separate inspection.
+ */
 export const WORLD={outerRadius:10.25,innerRadius:10.07,terrainAperture:9.72};
 export function sphereFits(center,radius,limit=WORLD.innerRadius){return center.length()+radius<=limit}
 export function inspectObjectSpace(object,camera){
