@@ -84,3 +84,7 @@ Cinderfall has no automatic timer. New meteor taps do not cancel active projecti
 ## Terrain navigation and tap ownership
 
 [`interaction/terrain-navigation.js`](interaction/terrain-navigation.js) exports `createTerrainNavigation({terrain,actor})`. Terrain classifies taps and supplies navigation targets; the actor executes movement. The adapter retains bounded 16-entry tap diagnostics and exposes `attachView`, `tap`, and `inspect`. Genesis wires the adapter without changing its public interfaces. Source verification is not browser verification.
+
+## World-space visibility diagnostics
+
+[`observation/world-space.js`](observation/world-space.js) defines the vessel's outer/inner radii and terrain aperture and provides `inspectObjectSpace(object,camera)`. It reports actual world-space bounds, scene-graph attachment, glass containment, projected NDC coordinates, and camera-frustum intersection. The Genesis eye includes this report under `systems[].space`. Before changing an apparently missing entity's coordinates, inspect these values; do not mistake a scene-graph, build, or camera issue for placement. This does not by itself prove browser pixels or deployment.
