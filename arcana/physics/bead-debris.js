@@ -10,10 +10,20 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9
    const x=item.x,y=item.y,z=item.z,dx=x-point.x,dy=y-point.y,dz=z-point.z;
    const dist=Math.hypot(dx,dy,dz)||.001,fall=Math.max(.25,1-Math.min(1,dist/3.2));
    const power=impulse*fall*(.65+.35*Math.sin(emitted*12.9898)**2),inv=1/dist;
-   const b={x,y,z,vx:dx*inv*power,vy:dy*inv*power+3,vz:dz*inv*power,r:item.r,color:item.color,ax:Math.sin(emitted*3.7)*14,ay:Math.cos(emitted*2.3)*14,az:Math.sin(emitted*1.9)*14,rx:0,ry:0,rz:0};
+   const b={x,y,z,vx:dx*inv*power,vy:dy*inv*power+3,vz:dz*inv*power,r:item.r,color:item.color,ax:Math.sin(emitted*3.7)*14,ay:Math.cos(emitted*2.3)*14,az:Math.sin(emitted*1.9)*14,owner:'terrain',rx:0,ry:0,rz:0};
    beads.push(b);emitted++;
   }
   return items.length;
+ }
+ function receiveImpulse(point,{radius=3.2,impulse=18}={}){
+  let affected=0;const o=offset();
+  for(const b of beads){
+   const x=b.x+(b.owner==='vessel'?o.x:0),z=b.z+(b.owner==='vessel'?o.z:0),dx=x-point.x,dy=b.y-point.y,dz=z-point.z,d=Math.hypot(dx,dy,dz);
+   if(d>=radius)continue;
+   const force=impulse*(1-d/radius)**2,inv=1/Math.max(.001,d);
+   b.vx+=dx*inv*force;b.vy+=dy*inv*force;b.vz+=dz*inv*force;b.ax+=force*1.3;b.ay+=force*.9;affected++;
+  }
+  return affected;
  }
  function update(dt){
   const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
@@ -58,5 +68,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;
  }
 
- return {emit,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,ownership:{...ownership}})};
+ return {emit,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,ownership:{...ownership}})};
 }
