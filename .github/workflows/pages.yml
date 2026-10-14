@@ -74,8 +74,10 @@ jobs:
           instrument.write_text(source.replace("'../arcana/edge-detection.js'",f"'../arcana/edge-detection.js?v={sha}'"))
           assert f"'../arcana/edge-detection.js?v={sha}'" in instrument.read_text()
           edge_source=(root/'arcana/edge-detection.js').read_text()
-          assert 'export function createEdgeDetection' in edge_source
-          assert "document.querySelector('#buttons').append(edgeButton)" in edge_source
+          assert "export {createObservationLens as createEdgeDetection" in edge_source
+          lens_source=(root/'arcana/observation/lens.js').read_text()
+          assert 'export function createObservationLens' in lens_source
+          assert "document.querySelector('#buttons').append(edgeButton)" in lens_source
           print('EDGE INSTRUMENT VALIDATED',sha)
 
           compose=athanor/'compose.js'
