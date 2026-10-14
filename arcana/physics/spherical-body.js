@@ -74,35 +74,41 @@ export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>fal
  // terrain to an arbitrary distant candidate. This is not continuous wall CCD.
  const resolveBoundary=(position)=>{
   if(valid(position))return {ok:true,corrected:false};
+  // Only the Hermeticon wall is allowed to invoke this correction.
+  // If terrain is occupied at the starting position, never guess a path
+  // through it: return unresolved and let the caller handle the constraint.
+  if(clearance&&clearance(position,radius+margin)<0){
+   unresolved++;return {ok:false,corrected:false,reason:'Terrain overlap: no verified continuous correction'};
+  }
   const radial=position.lengthSq()>1e-12?position.clone().normalize():new T.Vector3(0,1,0);
-  const axis=Math.abs(radial.y)<.85?new T.Vector3(0,1,0):new T.Vector3(1,0,0);
-  const tangent=new T.Vector3().crossVectors(radial,axis).normalize();
-  const bitangent=new T.Vector3().crossVectors(radial,tangent).normalize();
   const excess=Math.max(0,position.length()-maxCenter);
-  const candidate=new T.Vector3();
-  // If wall is the only violated constraint, its shortest correction is radial.
-  if(excess>0){
-   candidate.copy(position).addScaledVector(radial,-excess-1e-5);
-   if(valid(candidate)){position.copy(candidate);return {ok:true,corrected:true,displacement:excess+1e-5}}
+  if(excess<=0){
+   unresolved++;return {ok:false,corrected:false,reason:'Invalid configuration without wall encroachment'};
   }
-  // Search a tightly bounded contact neighborhood, preferring minimum movement.
-  // Invalid starting points cannot use sweep; reject if no nearby free solution.
-  const options=[];
-  for(const distance of [.025,.05,.1,.2,.35,.5]){
-   for(let i=0;i<32;i++){
-    const angle=i*Math.PI*2/32;
-    for(const inward of [0,.5,1]){
-     candidate.copy(position).addScaledVector(radial,-distance*inward)
-      .addScaledVector(tangent,distance*Math.sqrt(1-inward*inward)*Math.cos(angle))
-      .addScaledVector(bitangent,distance*Math.sqrt(1-inward*inward)*Math.sin(angle));
-     if(valid(candidate))options.push({point:candidate.clone(),distance:position.distanceTo(candidate)});
-    }
+  // A radial segment is the minimum displacement for an enclosing sphere.
+  // Its start lies outside the permitted wall, but the terrain clearance
+  // remains valid throughout if the signed distance never falls below zero.
+  const end=position.clone().addScaledVector(radial,-excess-1e-5);
+  if(clearance){
+   const distance=position.distanceTo(end);
+   let traveled=0;
+   for(let i=0;i<256&&traveled<distance;i++){
+    const p=position.clone().lerp(end,traveled/distance);
+    const free=clearance(p,radius+margin);
+    if(free<0){unresolved++;return {ok:false,corrected:false,reason:'Terrain blocks wall correction'}}
+    if(distance-traveled<=free*.8){traveled=distance;break}
+    if(free<=1e-6){unresolved++;return {ok:false,corrected:false,reason:'Terrain contact blocks wall correction'}}
+    traveled+=Math.min(distance-traveled,free*.8);
    }
-   if(options.length)break;
+   if(traveled<distance||clearance(end,radius+margin)<0){
+    unresolved++;return {ok:false,corrected:false,reason:'Wall correction cannot be certified'};
+   }
   }
-  options.sort((a,b)=>a.distance-b.distance);
-  if(options.length){position.copy(options[0].point);return {ok:true,corrected:true,displacement:options[0].distance}}
-  unresolved++;return {ok:false,corrected:false,reason:'No local nonpenetrating correction within 0.5 units'};
+  if(!valid(end)){
+   unresolved++;return {ok:false,corrected:false,reason:'No valid radial wall correction'};
+  }
+  position.copy(end);
+  return {ok:true,corrected:true,displacement:excess+1e-5};
  };
  return {radius,valid,sweep,tryMove,resolveBoundary,inspect:()=>({sweepQueries,contacts,unresolved,clearanceBackend:!!clearance})};
 }
