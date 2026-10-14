@@ -65,10 +65,11 @@ jobs:
           assert (athanor/'athanor.js').is_file()
           compose=athanor/'compose.js'
           content=compose.read_text()
-          assert "'./athanor.js'" in content and "'../arcana/hermeticon.js'" in content
-          content=content.replace("'./athanor.js'",f"'./athanor.js?v={sha}'").replace("'../arcana/hermeticon.js'",f"'../arcana/hermeticon.js?v={sha}'")
+          assert "'./athanor.js'" in content and "'../codex/genesis/world.js'" in content
+          content=content.replace("'./athanor.js'",f"'./athanor.js?v={sha}'").replace("'../codex/genesis/world.js'",f"'../codex/genesis/world.js?v={sha}'")
           compose.write_text(content)
           assert (root/'arcana/hermeticon.js').is_file()
+          assert (root/'codex/genesis/world.js').is_file()
           print('PUBLIC ENTRIES READY',sha)
           PY
       - uses: actions/upload-pages-artifact@v3
