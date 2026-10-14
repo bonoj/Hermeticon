@@ -1,47 +1,53 @@
 # Hermeticon — cold Clara handoff (2026-10-14)
 
-**Mission:** Build a beautiful, perturbable, composable executable world inside a spherical vessel. Preserve established systems; investigate the next visual problem without inventing adjacent features.
+**Mission:** Build beautiful, perturbable, composable executable worlds inside a spherical vessel. Protect accepted work; let the machinery serve the play.
 
 **Live:** https://bonoj.github.io/Hermeticon/  
-**Repo:** `bonoj/Hermeticon` (`main`)  
-**Full previous handoff:** [archive/handoffs/2026-10-14-handoff.md](archive/handoffs/2026-10-14-handoff.md). Consult for engineering detail/history, not as a competing set of instructions.
+**Repository:** `bonoj/Hermeticon` (`main`)  
+**Canonical reusable systems:** [Arcana Catalog](arcana/README.md)  
+**Observation treatments and regression guard:** [Observation README](arcana/observation/README.md)  
+**Historical engineering detail:** [archived 2026-10-14 handoff](archive/handoffs/2026-10-14-handoff.md), not current instructions.  
+**Working contract:** [Sanctum/CONTRACT.md](https://github.com/bonoj/Sanctum/blob/main/CONTRACT.md).
 
-## Orient in the running system
+## Accepted current state
 
-- **Athanor** (`athanor/compose.js`, `athanor/athanor.js`, `athanor/interface.css`): host, camera, render loop, toolbar, 👁 inspection and build/FPS.
-- **Genesis** (`codex/genesis/world.js`): authored world mounted by Athanor at root and `/athanor/`.
-- **Arcana**: `terrain.js` is signed-field terrain (top/bottom relief, true through-bores, spherical aperture clipping and an opaque signed-field aperture sidewall); `wanderer.js` is supported tap-to-walk navigation with terrain-relative motion; `edge-detection.js` is the existing 🌐 full-scene observation lens; `node-maker.js` is an **empty, instrumented** node renderer, not an active witness selector.
-- `examples/wanderer-separated/` is an **older independent fixture**, not the current Genesis. Do not assume its BBs, fire or geographical nodes exist in Genesis.
+**2026-10-14: Terrain-only HYBRID observation visually accepted by the author.** Accepted code checkpoint `7c74e324`. The terrain is readable, lit and beautiful in Hybrid. The lens changes **only terrain edges**; glass/brass vessel, Wanderer, and outside world remain unaffected. **This investigation is done. Do not reopen or retune it without an explicit request.**
 
-**Known-good terrain checkpoint:** `40928287` — the accepted signed-field opaque cap with bore exemptions. Subsequent atmosphere experiments were rolled back; `main` also contains later UI and deployment fixes. **Do not reset `main` to the checkpoint** or disturb working terrain/Wanderer just to change presentation.
+Two regressions were resolved:
+- `bc169a40`: overlay auto-clear erased the rendered vessel/background.
+- `e06b2baa`: opaque compositing of offscreen terrain made the terrain nearly black.
+- `7c74e324`: transparent edge-ink overlay on the normal lit scene, accepted.
 
-**Toolbar contract:** **🪨 🌐 👁 ↻**, left-to-right (🪨 explicitly requested 2026-10-14 for rock treatments); dark buttons, **thin brass rims**, reliable tap targets. Globe is appended by `edge-detection.js`; eye and refresh are in the HTML. The shared CSS defines fixed ordering slots so append timing cannot shuffle them. No additional map button. The previous mismatch came from competing CSS rules **and unversioned cached CSS**; the Pages workflow now stamps stylesheet URLs as well as JS. The fix was committed, but **visual confirmation on the actual deployed build is still required**.
+The Arcana catalog and observation README were updated afterward. Always distinguish committed, deployed, and user-verified behavior; the accepted screenshot is the evidence for Hybrid.
 
-## Next investigation: cavernous depth without visible innards
+## Where things live
 
-The current **opaque cap** hides undesirable terrain internals reliably and cheaply, but makes the aperture feel sealed rather than cavernous. Preserve it as the control condition.
+- **Athanor:** `athanor/athanor.js`, `athanor/compose.js`, `athanor/interface.css`. Owns camera, renderer, mount lifecycle, UI, inspection, FPS, and the observation lens schedule. `arcana/edge-detection.js` remains the compatibility import.
+- **Genesis:** `codex/genesis/world.js`. Authored composition: `createHermeticon()`, `createTerrain()`, `createEquatorialTreatment()`, `createNodeMaker()`, `createWanderer()`. It exposes `observationTargets().terrain`; Athanor passes this to the lens. Genesis does not own the postprocess.
+- **Arcana:** [catalog](arcana/README.md). Contains reusable vessel, terrain, Wanderer, boundary intervals, equatorial treatments, observation, node maker, rock materials, cavern smoke, and optional occlusion wall.
+- **Old fixture:** `examples/wanderer-separated/` is preserved history, **not** the current Genesis. Its BBs, fire, landmarks, and encounters are not automatically in Genesis.
 
-Explore **genuinely different occlusion treatments** that imply depth while still concealing unfinished geometry: e.g., **localized volumetric-looking fog**, **darkness/penumbral falloff**, **depth-based dissolution**, and **subtle distant illumination**. These are **ideas to evaluate, not implemented systems or prescribed solutions**. Do not merely recolor or make the opaque cap translucent, or apply generic global fog and call the problem solved. When testing an alternative, ensure the opaque cap is actually disabled for that mode; compare legibility, bore openings, mobile performance and unwanted visibility. Keep experiments reversible and isolated.
+## Ownership and interaction
 
-**Deferred, not current work:** GPU DRAW-boundary detection (terrain-only occupancy/depth overlay, eventual sparse 3D witnesses). Do not revive CPU camera-wide raycast selectors or automatically populate nodes. Details are in the archived handoff.
+**Terrain owns tap interpretation.** Genesis delegates `world.tap` to `terrain.interact(x,y,view,wanderer.getWalkingHeight())`; only a returned navigable target is passed to `wanderer.moveTo(x,z)`. The node maker is instrumented but empty; no active GPU boundary witness or camera-wide CPU selector is mounted.
 
-## Working contract
+The equatorial comparison system is extracted to `arcana/equatorial-treatment.js`, with ten presets and default shader-only transition (preset 8). The former spherical occlusion wall was extracted to `arcana/occlusion-wall.js` and is **not mounted**. Do not put it back into Genesis without instruction.
 
-1. Inspect **current** files and public SHA before modifying anything. 👁 reports build/FPS and system state; screenshot observations are not benchmarks.
-2. Make small, focused changes. Reuse solved code; preserve tap navigation, signed-field terrain, the three controls and mobile responsiveness. No speculative UI or new subsystems.
-3. Publish only via existing `.github/workflows/pages.yml`; consult `bonoj/Gate/README.md` for deployment rules. **Commit ≠ live**. Confirm the displayed public SHA and visible behavior before claiming success; diagnose/retry the existing workflow if necessary.
-4. For historical engineering details, use the archived handoff, source and Git history. Keep this file short and authoritative.
+`arcana/rock-materials.js` and `arcana/cavern-smoke.js` are **available but not mounted in the current Genesis composition**. Historical rock-button, cap-toggle, and smoke-trial descriptions are superseded; do not infer current controls from them.
 
-## Rock laboratory (2026-10-14)
+## User-visible contract
 
-A fourth 🪨 button was explicitly requested to cycle six reversible **shader-only** geological treatments: Original mortar (baseline), Midnight basalt, Layered slate, Ironstone, Obsidian, Ancient limestone. `arcana/terrain.js` supplies `setRockMode/getRockMode/rockNames` and `rockTreatment` inspection; `codex/genesis/world.js` exposes the cycle; `athanor/compose.js` mounts the button and label. Treatments apply to both terrain and signed-field aperture cap, with no topology changes or rebuilds. Preserve genuine signed-field voids and bores. Initial shader palette is unreviewed visually; require public SHA + user screenshot before judging aesthetics. The old rim study is not the current priority.
+Current Genesis composition mounts a vessel, signed terrain, equatorial treatment, empty witness nodes, and Wanderer. The UI has a globe observation control, eye inspection and refresh, build SHA and FPS; `athanor/compose.js` also adds the `RIM PUNCH · crossings / solid intervals` label. Do not invent controls from old screenshots or historical handoffs. Preserve large, reliable mobile tap targets and the visual hierarchy.
 
-**Extraction:** Rock shader implementation moved to `arcana/rock-materials.js` on 2026-10-14; terrain imports and applies it to terrain/cap materials. Rock behavior and UI are otherwise unchanged.
+The observation modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID. HYBRID is accepted. The lens captures the terrain on layer 29 and checks full-scene depth before overlaying edge ink. It must never overwrite normally shaded terrain or clear the already rendered scene during the overlay. See the [observation contract](arcana/observation/README.md).
 
-## Cavern smoke trial (2026-10-14)
+## Next work
 
-Genesis now mounts `arcana/cavern-smoke.js`: three depth-tested, non-depth-writing animated procedural smoke sheets at y=0.08, -0.48, -1.04, beneath the normal top surface (nominal y=1.15). Opaque terrain hides the sheets above solid rock, while genuine through-bores reveal smoke. Sheets fade smoothly before aperture radius 9.92 to avoid an obvious circular cutoff. Rock palette gained a shared `setCavernDim` uniform; Genesis sets .34, preserving geometry and six selectable treatments. This is a reversible visual trial, not physically volumetric fog or SDF-perfect smoke. **Not visually verified; inspect edge seams, depressed terrain, and performance before accepting.**
+**No current mandate to revisit Hybrid.** Return to authored worldbuilding and the user's next explicit direction. Deferred possibilities such as GPU DRAW-boundary witnesses, cavern treatments, sparse nodes, and material systems are *not* automatically authorized projects.
 
-## Wall switch and rock material disengagement (2026-10-14)
+## Working and publishing discipline
 
-🪨 now toggles the opaque signed-field aperture cap ON/OFF (default ON) through `terrain.setCapEnabled`, with visible wall status and `aria-pressed`. This allows comparison of the smoke without the occluding cap; the signed-field terrain and genuine bores remain untouched. Genesis no longer imports/installs or selects rock materials. The six shader treatments remain preserved, unmodified, in `arcana/rock-materials.js` for later reuse. Smoke remains enabled. Earlier handoff descriptions of 🪨 as a rock-palette cycler are superseded by this section. Confirm deployed SHA and appearance before calling live.
+1. Read this handoff, the [Arcana Catalog](arcana/README.md), and the **current source** before changing code. Do not revive superseded experiments.
+2. Prefer small composable changes; preserve signed-field voids, terrain-owned taps, Wanderer, accepted Hybrid, and the untouched vessel.
+3. Deploy through `.github/workflows/pages.yml`; consult [Gate](https://github.com/bonoj/Gate/blob/main/README.md). A commit is not live. Read the public build SHA and verify behavior before declaring a deploy successful.
+4. Avoid speculative deployments, extra features, repeated user tests, and unnecessary UI. The machinery protects the play.
