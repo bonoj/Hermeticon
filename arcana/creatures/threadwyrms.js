@@ -22,12 +22,28 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
  }
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.84});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
+ const visibleOwners=[];const blastMatrix=new T.Matrix4(),blastPosition=new T.Vector3(),blastScale=new T.Vector3(),blastRotation=new T.Quaternion(),blastColor=new T.Color();
  const dummy=new T.Object3D();let elapsed=0,visible=0;
- function receiveImpulse(point,options){let hits=0;for(const p of agents){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
+ function blast(point,options,debris){
+  let hits=0;const destroyed=new Set();
+  for(const p of agents){
+   if(p.destroyed)continue;
+   if(Math.hypot(p.x-point.x,p.y+.2-point.y,p.z-point.z)<options.radius){p.destroyed=true;destroyed.add(p.id);hits++;}
+  }
+  if(!hits)return 0;
+  const {x:ox=0,z:oz=0}=offset(),items=[];
+  for(let i=0;i<mesh.count;i++){
+   if(!destroyed.has(visibleOwners[i]))continue;
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
+   items.push({x:blastPosition.x+ox,y:blastPosition.y,z:blastPosition.z+oz,r:blastScale.x,color:blastColor.clone()});
+  }
+  debris.emit(items,point,options.impulse);
+  return hits;
+ }
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of agents){
-   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
+   if(p.destroyed)continue;
    const near=Math.hypot(actor.x-p.x,actor.z-p.z)<1.1;p.state=near?'avoid':'explore';
    if(near)p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);
    p.timer-=dt;if(p.timer<=0&&!near){p.timer=1.4+rnd(p.id*37+p.step++)*2.1;p.heading+=(rnd(p.id*53+p.step*7)-.5)*1.5}
@@ -37,14 +53,14 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
   }
   visible=0;
   for(const b of beads){
-   const p=agents[b.id],lag=Math.min(p.trail.length-1,b.seg*7),t=p.trail[lag],wave=Math.sin(elapsed*5+p.phase-b.seg*.6);
+   const p=agents[b.id];if(p.destroyed)continue;const lag=Math.min(p.trail.length-1,b.seg*7),t=p.trail[lag],wave=Math.sin(elapsed*5+p.phase-b.seg*.6);
    const heading=t.heading,co=Math.cos(heading),si=Math.sin(heading);
    const localX=b.x,localZ=b.z+Math.sin(elapsed*3+p.phase-b.seg*.45)*.028,localY=b.y+.12+Math.sin(elapsed*6+p.phase-b.seg*.7)*.018;
    const xx=t.x-ox+localX*co-localZ*si,zz=t.z-oz+localX*si+localZ*co,yy=t.y+localY+(b.part===1?Math.max(0,wave)*.022:0);
    if(xx*xx+yy*yy+zz*zz>(radius-.12)**2)continue;
-   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,palette[b.c]);visible++;
+   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();visibleOwners[visible]=b.id;mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,palette[b.c]);visible++;
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,receiveImpulse,inspect:()=>({name:'Threadwyrms',creatures:agents.map(p=>({species:'threadwyrm',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,trail:p.trail.length})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Threadwyrms',creatures:agents.map(p=>({species:'threadwyrm',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,trail:p.trail.length})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
