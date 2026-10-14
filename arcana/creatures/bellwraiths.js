@@ -24,9 +24,18 @@ export function createBellwraiths(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.58,metalness:.06,transparent:false});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
  const dummy=new T.Object3D();let elapsed=0,visible=0;
+ const owners=[];const m=new T.Matrix4(),pos=new T.Vector3(),rot=new T.Quaternion(),scale=new T.Vector3(),col=new T.Color();
+ function blast(point,options,debris){
+  const hit=new Set();for(const p of agents)if(!p.destroyed&&Math.hypot(p.x-point.x,p.y-point.y,p.z-point.z)<options.radius)hit.add(p.id);
+  if(!hit.size)return 0;
+  const items=[],o=offset();for(let i=0;i<mesh.count;i++){if(!hit.has(owners[i]))continue;mesh.getMatrixAt(i,m);m.decompose(pos,rot,scale);mesh.getColorAt(i,col);items.push({x:pos.x+o.x,y:pos.y,z:pos.z+o.z,r:scale.x,color:col.clone()});}
+  debris.emit(items,point,options.impulse);for(const p of agents)if(hit.has(p.id))p.destroyed=true;return hit.size;
+ }
+
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of agents){
+   if(p.destroyed)continue;
    const close=Math.hypot(actor.x-p.x,actor.z-p.z)<1.35;p.state=close?'rise':'drift';
    p.timer-=dt;if(p.timer<=0){p.timer=2+hash(p.id*31+p.step++)*2.5;p.heading+=(hash(p.id*43+p.step*7)-.5)*1.8}
    if(close)p.heading=Math.atan2(p.z-actor.z,p.x-actor.x);
@@ -39,7 +48,7 @@ export function createBellwraiths(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
   }
   visible=0;
   for(const b of beads){
-   const p=agents[b.id],pulse=Math.sin(elapsed*2.5+p.phase),co=Math.cos(p.heading),si=Math.sin(p.heading);
+   const p=agents[b.id];if(p.destroyed)continue;const pulse=Math.sin(elapsed*2.5+p.phase),co=Math.cos(p.heading),si=Math.sin(p.heading);
    let x=b.x,z=b.z,y=b.y;
    if(b.kind===1){const lag=elapsed*1.7+p.phase-b.t*2.4-b.arm*.35;
     const sway=Math.sin(lag)*(.02+b.t*.15),sway2=Math.cos(lag*.8)*(.01+b.t*.09);
@@ -47,9 +56,9 @@ export function createBellwraiths(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
    }else{x*=1+pulse*.045;z*=1+pulse*.045;y+=pulse*.022}
    const xx=p.x-ox+x*co-z*si,zz=p.z-oz+x*si+z*co,yy=p.y+y;
    if(xx*xx+yy*yy+zz*zz>(radius-.1)**2)continue;
-   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,colors[b.c]);visible++;
+   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();owners[visible]=b.id;mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,colors[b.c]);visible++;
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,inspect:()=>({name:'Bellwraiths',creatures:agents.map(p=>({species:'bellwraith',x:+p.x.toFixed(2),z:+p.z.toFixed(2),altitude:+p.y.toFixed(2),state:p.state})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Bellwraiths',creatures:agents.filter(p=>!p.destroyed).map(p=>({species:'bellwraith',x:+p.x.toFixed(2),z:+p.z.toFixed(2),altitude:+p.y.toFixed(2),state:p.state})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
