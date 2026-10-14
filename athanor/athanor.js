@@ -160,6 +160,7 @@ const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms
  gl_FragColor=vec4(result,1.);
  }`});
 const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
+const sourceMaterial=new T.MeshBasicMaterial({map:edgeTarget.texture,depthTest:false,depthWrite:false,toneMapped:false});
 const edgeButton=document.createElement('button');edgeButton.textContent='EDGES: OFF';
 edgeButton.style.cssText='position:fixed;right:12px;bottom:108px;z-index:30;padding:11px 13px;border-radius:9px;border:1px solid #aa986e;background:#101b29;color:#f2d9a2;font:700 12px monospace;touch-action:manipulation';
 edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='EDGES: '+edgeNames[edgeMode]};
@@ -178,6 +179,6 @@ for(const entry of mounts.values()){
  if(!entry.active||entry.error||typeof entry.source.update!=='function')continue;
  try{entry.source.update(elapsed/1000,now/1000)}catch(error){entry.error=String(error&&error.stack||error);console.error('World update failed: '+entry.id,error)}
 }
-camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);if(edgeMode===0){renderer.render(scene,camera)}else{const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.clearDepth();renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++}}
+camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);if(edgeMode===0){renderer.render(scene,camera)}else{const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.clearDepth();edgeQuad.material=edgeMode===1?sourceMaterial:edgeShader;renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++}}
 requestAnimationFrame(frame);
 }catch(e){window.BaubleFatal(e);console.error(e)}
