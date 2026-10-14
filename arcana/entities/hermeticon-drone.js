@@ -25,6 +25,8 @@ export function createHermeticonDrone({parent,terrain,offset=()=>({x:0,z:0}),id=
  }
  interior.add(gems);
  vessel.content.add(interior);
+ // createHermeticon returns content detached; mount it explicitly, as Genesis does.
+ vessel.group.add(vessel.content);
  if(parent)parent.add(root);
  let time=0,phase=-1,look=false;
  const target=new T.Vector3(),start=new T.Vector3();
