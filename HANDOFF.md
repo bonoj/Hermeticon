@@ -57,6 +57,6 @@ The observation modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID. HYBRID is accepted.
 4. Avoid speculative deployments, extra features, repeated user tests, and unnecessary UI. The machinery protects the play.
 
 
-## Second Garden — current candidate (2026-10-14)
+## Second Garden — ACCEPTED CANON (2026-10-14)
 
-Six new BB-only species are mounted in Genesis via `arcana/populations/second-garden.js`: Mycelial Lace, Glassfall, Star Anemones, Cinder Chimneys, Geode Hearts and Tumble Orbs. This is **committed, not yet author-accepted or live-verified**. All six share one instanced BB mesh, deterministic geological roots, idle sway, reversible growth, and actor clearance. Glassfall searches for signed-field underside roots and may have zero valid roots in a given placement; inspect before claiming it is visible. No functional material ports, locomotion, excavation, or condensation yet. Preserve the canonical original garden and accepted Hybrid terrain treatment.
+Six new BB-only species are mounted in Genesis via `arcana/populations/second-garden.js`: Mycelial Lace, Glassfall, Star Anemones, Cinder Chimneys, Geode Hearts and Tumble Orbs. **Author explicitly accepted all six species on 2026-10-14.** Source committed; independent live runtime verification is not claimed. All six share one instanced BB mesh, deterministic geological roots, idle sway, reversible growth, and actor clearance. Glassfall searches for signed-field underside roots and may have zero valid roots in a given placement; inspect before claiming it is visible. No functional material ports, locomotion, excavation, or condensation yet. Preserve the canonical original garden and accepted Hybrid terrain treatment.
