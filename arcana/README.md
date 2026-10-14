@@ -10,6 +10,7 @@ Arcana is Hermeticon's inventory of **reusable mechanisms**. Before implementing
 | --- | --- | --- | --- |
 | Vessel | [`hermeticon.js`](hermeticon.js) — `createHermeticon()` | Spherical glass/brass vessel and content mounting | **Mounted** |
 | Signed terrain | [`terrain.js`](terrain.js) — `createTerrain()` | Signed field, terrain mesh, aperture, offset, terrain-owned tap interpretation | **Mounted** |
+| Terrain surface query | [`terrain-surface-query.js`](terrain-surface-query.js) — `createTerrainSurfaceQuery(terrain)` | Signed-field vertical surface crossing with Genesis-compatible search and refinement | **Mounted through Genesis** |
 | BB botanical populations | [`populations/bb-garden.js`](populations/bb-garden.js) — `createBBGarden(T,opts)` | **Canonical** five-species BB-only garden; deterministic roots, bead arrangements, idle sway, reversible actor-triggered growth | **Mounted and author-accepted** |
 | Mists Reeds | [`populations/mists-reeds.js`](populations/mists-reeds.js) — `createMistsReeds(T,opts)` | Original bead-lattice reeds, preserved actor clearance and sway | **Mounted** |
 | Geometric botanical prototypes | [`populations/potential/`](populations/potential/) | Preserved pre-BB species and swaying behavior | **Archived, not mounted** |
