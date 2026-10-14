@@ -41,10 +41,10 @@ float center=linearDepth(texture2D(tDepth,vEdgeUv).r);
 float dx=linearDepth(texture2D(tDepth,vEdgeUv+vec2(px.x,0.)).r);
 float dy=linearDepth(texture2D(tDepth,vEdgeUv+vec2(0.,px.y)).r);
 float depthEdge=smoothstep(.012,.085,max(abs(dx-center),abs(dy-center))/max(center,.2));
-float strength=mode==2?sobel:mode==3?depthEdge:max(sobel*.65,depthEdge);
 vec3 original=texture2D(tColor,vEdgeUv).rgb;
-vec3 result=mode==2?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
-gl_FragColor=vec4(result,1.);
+${observationTreatments.filter(t=>t.kind==='shader').map((t,i)=>`${i?'else ':''}if(mode==${t.mode}){float strength=${t.strength};gl_FragColor=vec4(${t.color},1.);}`).join('')}
+else {gl_FragColor=vec4(original,1.);}
+return;
 }`});
 const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
 const sourceMaterial=new T.MeshBasicMaterial({map:edgeTarget.texture,depthTest:false,depthWrite:false,toneMapped:false});
