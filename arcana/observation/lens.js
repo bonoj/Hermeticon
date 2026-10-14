@@ -5,13 +5,18 @@ import {depthTreatment} from './depth.js';
 import {hybridTreatment} from './hybrid.js';
 export const observationTreatments=Object.freeze([sourceTreatment,sobelTreatment,depthTreatment,hybridTreatment]);
 export function createObservationLens(T,renderer,camera){
+let observedTerrain=null;
+const terrainLayer=29;
 const edgeNames=['OFF',...observationTreatments.map(t=>t.name)];
 let edgeMode=0,edgeFrames=0,edgeLastMs=0,edgePeakMs=0;
 const edgeTarget=new T.WebGLRenderTarget(1,1,{depthBuffer:true});
 edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedShortType);
 edgeTarget.depthTexture.format=T.DepthFormat;
+const terrainTarget=new T.WebGLRenderTarget(1,1,{depthBuffer:true});
+terrainTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedShortType);
+terrainTarget.depthTexture.format=T.DepthFormat;
 const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
-const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
+const edgeUniforms={tColor:{value:terrainTarget.texture},tDepth:{value:terrainTarget.depthTexture},tSceneDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
 const edgeShaderErrors=[];
 const previousShaderErrorHandler=renderer.debug.onShaderError;
 const shaderErrorHandler=(gl,program,vertexShader,fragmentShader)=>{
@@ -19,9 +24,9 @@ const shaderErrorHandler=(gl,program,vertexShader,fragmentShader)=>{
  edgeShaderErrors.push(report);if(edgeShaderErrors.length>5)edgeShaderErrors.shift();console.error('Hermeticon shader compilation',report);
 };
 renderer.debug.onShaderError=shaderErrorHandler;
-const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:edgeUniforms,
+const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,transparent:true,toneMapped:false,uniforms:edgeUniforms,
  vertexShader:`varying vec2 vEdgeUv;void main(){vEdgeUv=position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
- fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 vEdgeUv;
+ fragmentShader:`uniform sampler2D tColor,tDepth,tSceneDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 vEdgeUv;
 float lum(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
 float linearDepth(float d){float z=d*2.-1.;return 2.*nearPlane*farPlane/(farPlane+nearPlane-z*(farPlane-nearPlane));}
 void main(){
@@ -42,6 +47,9 @@ float dx=linearDepth(texture2D(tDepth,vEdgeUv+vec2(px.x,0.)).r);
 float dy=linearDepth(texture2D(tDepth,vEdgeUv+vec2(0.,px.y)).r);
 float depthEdge=smoothstep(.012,.085,max(abs(dx-center),abs(dy-center))/max(center,.2));
 vec3 original=texture2D(tColor,vEdgeUv).rgb;
+float terrainRaw=texture2D(tDepth,vEdgeUv).r;
+float sceneRaw=texture2D(tSceneDepth,vEdgeUv).r;
+if(terrainRaw>=.999999||terrainRaw>sceneRaw+.00005){gl_FragColor=vec4(0.);return;}
 ${observationTreatments.filter(t=>t.kind==='shader').map((t,i)=>`${i?'else ':''}if(mode==${t.mode}){float strength=${t.strength};gl_FragColor=vec4(${t.color},1.);}`).join('')}
 else {gl_FragColor=vec4(original,1.);}
 return;
@@ -51,14 +59,34 @@ const sourceMaterial=new T.MeshBasicMaterial({map:edgeTarget.texture,depthTest:f
 const edgeButton=document.createElement('button');edgeButton.textContent='🌐';edgeButton.id='edgeLens';edgeButton.type='button';edgeButton.title='Observation lens: OFF';edgeButton.setAttribute('aria-label','Observation lens: OFF');
 edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.title='Observation lens: '+edgeNames[edgeMode];edgeButton.setAttribute('aria-label',edgeButton.title)};
 document.querySelector('#buttons').append(edgeButton);
-const edgeInspect=()=>({shaderErrors:[...edgeShaderErrors],shaderProgramCount:renderer.info.programs?.length??null,mode:edgeNames[edgeMode],source:'full-scene color + depth',terrainOnly:false,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
+const edgeInspect=()=>({shaderErrors:[...edgeShaderErrors],shaderProgramCount:renderer.info.programs?.length??null,mode:edgeNames[edgeMode],source:'terrain-only color/depth + full-scene occlusion depth',terrainOnly:!!observedTerrain,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
 
 return Object.freeze({
  get mode(){return edgeNames[edgeMode]},
  get modes(){return [...edgeNames]},
+ observeTerrain(group){if(observedTerrain)observedTerrain.traverse(o=>o.layers.disable(terrainLayer));observedTerrain=group||null;if(observedTerrain)observedTerrain.traverse(o=>o.layers.enable(terrainLayer));},
  setMode(value){const i=typeof value==='number'?value:edgeNames.indexOf(String(value).toUpperCase());if(!Number.isInteger(i)||i<0||i>=edgeNames.length)throw Error('Unknown edge mode: '+value);edgeMode=i;edgeUniforms.mode.value=i;edgeButton.title='Observation lens: '+edgeNames[i];edgeButton.setAttribute('aria-label',edgeButton.title);return edgeNames[i]},
- render(scene,camera){if(edgeMode===0){renderer.render(scene,camera);return}const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}edgeUniforms.nearPlane.value=camera.near;edgeUniforms.farPlane.value=camera.far;renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.clearDepth();edgeQuad.material=edgeMode===1?sourceMaterial:edgeShader;renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++},
+ render(scene,camera){
+ if(edgeMode===0||(!observedTerrain&&edgeMode!==1)){renderer.render(scene,camera);return}
+ const start=performance.now(),w=renderer.domElement.width,h=renderer.domElement.height;
+ if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);terrainTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}
+ edgeUniforms.nearPlane.value=camera.near;edgeUniforms.farPlane.value=camera.far;
+ // Capture complete-scene depth for foreground occlusion, then draw the normal scene unchanged.
+ renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);
+ renderer.render(scene,camera);
+ if(edgeMode===1){edgeLastMs=performance.now()-start;edgeFrames++;return}
+ const previousMask=camera.layers.mask,previousBackground=scene.background,previousFog=scene.fog;
+ try{
+  camera.layers.set(terrainLayer);scene.background=null;
+  renderer.setRenderTarget(terrainTarget);renderer.setClearColor(0x000000,0);renderer.clear(true,true,true);
+  renderer.render(scene,camera);
+ }finally{
+  renderer.setRenderTarget(null);camera.layers.mask=previousMask;scene.background=previousBackground;scene.fog=previousFog;
+ }
+ renderer.clearDepth();edgeQuad.material=edgeShader;renderer.render(edgeScene,edgeCamera);
+ edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++
+},
  inspect:edgeInspect,
- dispose(){edgeButton.remove();edgeTarget.dispose();edgeQuad.geometry.dispose();edgeShader.dispose();sourceMaterial.dispose();if(renderer.debug.onShaderError===shaderErrorHandler)renderer.debug.onShaderError=previousShaderErrorHandler}
+ dispose(){edgeButton.remove();edgeTarget.dispose();terrainTarget.dispose();edgeQuad.geometry.dispose();edgeShader.dispose();sourceMaterial.dispose();if(renderer.debug.onShaderError===shaderErrorHandler)renderer.debug.onShaderError=previousShaderErrorHandler}
 });
 }
