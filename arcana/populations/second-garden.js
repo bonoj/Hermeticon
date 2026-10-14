@@ -83,16 +83,35 @@ export function createSecondGarden(T,{terrain,surface,offset=()=>({x:0,z:0}),cha
  }
  const geometry=new T.IcosahedronGeometry(1,1),material=new T.MeshStandardMaterial({roughness:.83,metalness:.025});
  const mesh=new T.InstancedMesh(geometry,material,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
+ const blastMatrix=new T.Matrix4(),blastPosition=new T.Vector3(),blastRotation=new T.Quaternion(),blastScale=new T.Vector3(),blastColor=new T.Color(),visibleOwners=[];
  const dummy=new T.Object3D();let elapsed=0,visible=0;
+ function blast(point,options,debris){
+  const affected=new Set();
+  for(let i=0;i<mesh.count;i++){
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);
+   const o=offset(),dx=blastPosition.x+o.x-point.x,dy=blastPosition.y-point.y,dz=blastPosition.z+o.z-point.z;
+   if(dx*dx+dy*dy+dz*dz<=options.radius*options.radius)affected.add(visibleOwners[i]);
+  }
+  if(!affected.size)return 0;
+  const items=[];
+  for(let i=0;i<mesh.count;i++){
+   if(!affected.has(visibleOwners[i]))continue;
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
+   const o=offset();items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x*1,color:blastColor.clone()});
+  }
+  const emitted=debris.emit(items,point,options.impulse);
+  for(const id of affected)plants[id].destroyed=true;
+  return emitted;
+ }
  function update(dt){dt=Math.max(0,Math.min(dt,.1));elapsed+=dt;const {x:ox=0,z:oz=0}=offset(),actors=characters();
-  for(const p of plants){const nearby=actors.some(a=>Math.hypot(a.x-p.x,a.z-p.z)<.68);const target=nearby?0:1;p.growth+=(target-p.growth)*Math.min(1,dt*(target>p.growth?3.6:7.5))}
+  for(const p of plants){if(p.destroyed)continue;const nearby=actors.some(a=>Math.hypot(a.x-p.x,a.z-p.z)<.68);const target=nearby?0:1;p.growth+=(target-p.growth)*Math.min(1,dt*(target>p.growth?3.6:7.5))}
   visible=0;
-  for(const b of beads){const p=plants[b.id],g=clamp((p.growth-b.rank)*14);if(g<=.01)continue;
+  for(const b of beads){const p=plants[b.id];if(p.destroyed)continue;const g=clamp((p.growth-b.rank)*14);if(g<=.01)continue;
    const wave=Math.sin(elapsed*.82+p.phase)*.035*b.tip,xx=p.x-ox+(b.x+wave)*g,yy=p.y+b.y*g-(1-g)*.12,zz=p.z-oz+(b.z+Math.cos(elapsed*.73+p.phase)*.027*b.tip)*g;
    if(xx*xx+yy*yy+zz*zz>(radius-.13)**2)continue;
-   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r*(.25+.75*g));dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,colors[b.c]);visible++;
+   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r*(.25+.75*g));dummy.updateMatrix();visibleOwners[visible]=b.id;mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,colors[b.c]);visible++;
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,inspect:()=>({name:'Second Garden',roots:plants.length,beads:beads.length,visible,species:species.map((name,s)=>({name,roots:plants.filter(p=>p.s===s).length}))}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Second Garden',roots:plants.length,beads:beads.length,visible,species:species.map((name,s)=>({name,roots:plants.filter(p=>p.s===s).length}))}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
 }
