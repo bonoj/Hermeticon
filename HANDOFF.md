@@ -90,3 +90,8 @@ Six new BB-only species are mounted in Genesis via `arcana/populations/second-ga
 ## First Bestiary — six-species implementation complete (2026-10-14)
 
 `arcana/creatures/lantern-hermits.js` is mounted in Genesis. All six planned BB-only creature species now have trial implementations: Pebblebacks, Velvet Drifters, Threadwyrms, Glasswings, Bellwraiths, Lantern Hermits. Lantern Hermits carry hollow BB shells, use four animated bead-chain legs, and perform collection gestures without material transfer. **All six remain candidates awaiting author visual acceptance and mobile FPS inspection.** No changes to accepted Hybrid terrain or twelve canonical botanical populations. Creature details and limitations: `arcana/creatures/README.md`.
+
+
+## Cinderfall spell — phase one trial (2026-10-14)
+
+Reusable `arcana/spells/cinderfall.js` mounted in `codex/genesis/world.js` at commit `913aa6a5`. Random target from the six creature systems, fixed at cast; BB projectile with 72 red/orange BBs in a turbulent delayed wake; visual impact burst. Auto-casts every 14 simulation seconds, with `world.castMeteor()` manual hook. **No terrain modification, damage, or AOE**; accepted Hybrid terrain remains untouched. Visual/mobile verification still pending. Next phases: radial blast, organism BB release, later crater deformation if requested.
