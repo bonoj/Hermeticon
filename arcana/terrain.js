@@ -125,7 +125,24 @@ export function createTerrain(){
   capMesh=new T.Mesh(geometry,capMaterial);capMesh.frustumCulled=false;capGroup.add(capMesh);
   capTriangles=positions.length/9;capRebuilds++;capBuildMs=+(performance.now()-start).toFixed(2);
  }
+ const interactionRay=new T.Raycaster(),interactionPointer=new T.Vector2();
+ const navigationPlane=new T.Plane(new T.Vector3(0,1,0),0),navigationPoint=new T.Vector3();
+ function interact(x,y,view,walkingHeight){
+  const rect=view.renderer.domElement.getBoundingClientRect();
+  interactionPointer.set((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1);
+  view.camera.updateMatrixWorld();solid.updateMatrixWorld(true);
+  interactionRay.setFromCamera(interactionPointer,view.camera);
+  const hit=interactionRay.intersectObjects(solid.children.filter(c=>c!==capGroup),false)[0];
+  let normalY=null,point=null;
+  if(hit){const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+   if(normal.dot(interactionRay.ray.direction)>0)normal.negate();normalY=normal.y;point=hit.point.toArray();
+   if(normalY<-.25)return {owner:'terrain-underside',normalY,point,hit:true,target:null};}
+  navigationPlane.constant=-walkingHeight;
+  if(!interactionRay.ray.intersectPlane(navigationPlane,navigationPoint))return {owner:'miss',normalY,point,hit:!!hit,target:null};
+  const tx=navigationPoint.x+wanderX,tz=navigationPoint.z+wanderZ;
+  return {owner:'navigation',normalY,point,hit:!!hit,target:Number.isFinite(tx)&&Number.isFinite(tz)?{x:tx,z:tz}:null};
+ }
  regenerate();
  rebuildCap();
- return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
 }
