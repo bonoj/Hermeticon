@@ -57,41 +57,14 @@ The observation modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID. HYBRID is accepted.
 4. Avoid speculative deployments, extra features, repeated user tests, and unnecessary UI. The machinery protects the play.
 
 
-## Second Garden — ACCEPTED CANON (2026-10-14)
+## Current Genesis — populations, creatures, meteors, material (2026-10-14)
 
-Six new BB-only species are mounted in Genesis via `arcana/populations/second-garden.js`: Mycelial Lace, Glassfall, Star Anemones, Cinder Chimneys, Geode Hearts and Tumble Orbs. **Author explicitly accepted all six species on 2026-10-14.** Source committed; independent live runtime verification is not claimed. All six share one instanced BB mesh, deterministic geological roots, idle sway, reversible growth, and actor clearance. Glassfall searches for signed-field underside roots and may have zero valid roots in a given placement; inspect before claiming it is visible. No functional material ports, locomotion, excavation, or condensation yet. Preserve the canonical original garden and accepted Hybrid terrain treatment.
+The botanical composition includes original Mists Reeds, the accepted five-species BB Garden, and accepted six-species Second Garden. All six trial bestiary species are mounted: Pebblebacks, Velvet Drifters, Threadwyrms, Glasswings, Bellwraiths, Lantern Hermits. They are implementation trials, not automatically author-accepted visuals. See [population catalog](arcana/populations/README.md) and [creature catalog](arcana/creatures/README.md).
 
+**Cinderfall** (`arcana/spells/cinderfall.js`) is a **manual** meteor spell invoked by the Athanor meteor control / `world.castMeteor()`. Automatic casting was removed. Meteors can overlap in flight; each completes its own trajectory and impact, and a later tap does not cancel an earlier meteor. Creature targets include flying species' altitude. Each impact applies a three-dimensional radial blast to loose BBs and mounted organisms and can deform terrain separately at ground level. The original creature structures become inactive and release their BBs into `arcana/physics/bead-debris.js`. Loose BBs simulate terrain and vessel contacts; independent BB–BB collisions are not implemented.
 
-## First Bestiary — Pebbleback trial (2026-10-14)
+**Material accounting:** each authored population reports `activeBeads` (excluding destroyed anatomy); debris reports `count`. `world.materialSurvey()`, `HermeticonSurvey()`, and `Athanor.inspect()` expose inspection without extra HUD clutter. The physical total is active authored BBs + detached BBs, **not** historical descriptor count + debris. Blast transfers now include clipped/retracted BBs; the current fallback for unrendered anatomy uses approximate authored positions rather than exact current animation poses. Treat conservation as an implementation intention until checked against a live before/after survey. No arbitrary population cap: debris rendering expands allocation as needed. This is not a promise of unlimited memory or performance.
 
-`arcana/creatures/first-bestiary.js` now mounts in Genesis: up to six seeded BB-only Pebblebacks, shared instanced rendering, segmented armor, six animated bead-chain legs, deterministic support-checked wandering and actor-triggered curl. **Candidate, not yet visually accepted.** Remaining five proposed creature species are not built. See `arcana/creatures/README.md`. No changes to canonical botanical systems or Hybrid terrain.
+**Observation default:** Athanor calls `edgeDetection.setMode('HYBRID')` at startup (commit `d134f50e`). This preserves the accepted terrain-only treatment; OFF/SOURCE/SOBEL/DEPTH remain selectable. The accepted rendering checkpoint is `7c74e324`, not a claim that the latest build was visually verified.
 
-
-## First Bestiary — Velvet Drifters added (2026-10-14)
-
-`arcana/creatures/velvet-drifters.js` is now mounted in Genesis beside the Pebbleback trial: up to four deterministic BB-only elongated drifters with tendrils, peristaltic idle/motion and geological support-checked wandering/avoidance. Candidate awaiting author visual inspection. Four other proposed creature species remain unimplemented. Preserve the twelve canonical botanical populations.
-
-
-## First Bestiary — Threadwyrms added (2026-10-14)
-
-`arcana/creatures/threadwyrms.js` is now mounted in Genesis, up to three BB-only 24-segment articulated terrain-followers with movement history and Wanderer avoidance. This is an unaccepted candidate awaiting visual inspection. Three of six planned species are implemented; Glasswings, Lantern Hermits and Bellwraiths remain. Existing-hole entry and emergence are not yet implemented. Preserve the twelve canonical botanical populations.
-
-
-## First Bestiary — Glasswings added (2026-10-14)
-
-`arcana/creatures/glasswings.js` is mounted in Genesis: up to four BB-only aerial creatures with triangular lattice wings, animated wing flex, bounded deterministic flight and actor evasion. Candidate awaiting visual inspection. Four of six planned species implemented; Lantern Hermits and Bellwraiths remain. Perching and unrestricted chasm crossing are not implemented. Preserve accepted terrain and twelve botanical populations.
-
-
-## First Bestiary — Bellwraiths added (2026-10-14)
-
-`arcana/creatures/bellwraiths.js` is mounted in Genesis: up to five BB-only bell-shaped floaters with delayed bead tentacles, pulsation, autonomous drift and actor-triggered rise. Candidate awaiting visual inspection. Five of six planned species implemented; Lantern Hermits remain. No changes to accepted Hybrid terrain or twelve botanical populations.
-
-
-## First Bestiary — six-species implementation complete (2026-10-14)
-
-`arcana/creatures/lantern-hermits.js` is mounted in Genesis. All six planned BB-only creature species now have trial implementations: Pebblebacks, Velvet Drifters, Threadwyrms, Glasswings, Bellwraiths, Lantern Hermits. Lantern Hermits carry hollow BB shells, use four animated bead-chain legs, and perform collection gestures without material transfer. **All six remain candidates awaiting author visual acceptance and mobile FPS inspection.** No changes to accepted Hybrid terrain or twelve canonical botanical populations. Creature details and limitations: `arcana/creatures/README.md`.
-
-
-## Cinderfall spell — phase one trial (2026-10-14)
-
-Reusable `arcana/spells/cinderfall.js` mounted in `codex/genesis/world.js` at commit `913aa6a5`. Random target from the six creature systems, fixed at cast; BB projectile with 72 red/orange BBs in a turbulent delayed wake; visual impact burst. Auto-casts every 14 simulation seconds, with `world.castMeteor()` manual hook. **No terrain modification, damage, or AOE**; accepted Hybrid terrain remains untouched. Visual/mobile verification still pending. Next phases: radial blast, organism BB release, later crater deformation if requested.
+**Current verification boundary:** source changes are committed; confirm Pages build, displayed SHA, browser startup, rapid meteor taps, flying creature impacts, and before/after BB totals before claiming the current build is live and sound. No new rules, population caps, or observation HUD should be introduced merely to test it.
