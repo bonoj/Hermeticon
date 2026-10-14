@@ -12,6 +12,7 @@ export function createGenesis(){
  world.content.name='Genesis contents';
  world.group.add(world.content);
  const terrain=createTerrain();
+ terrain.setCavernDim(.34);
  terrain.setRockMode(1); // Lead with midnight basalt; original remains available in the cycle.
  world.content.add(terrain.group);
  const cavernSmoke=createCavernSmoke(T,{radius:9.92});
