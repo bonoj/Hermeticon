@@ -36,3 +36,6 @@
 
 /* Build identifier shares FPS typography; FPS remains the single style source. */
 #buildRow #build{font:inherit;font-size:12px;color:#e7dbb7}
+
+/* Globe observation lens belongs to the shared bottom instrument bar. */
+#buttons #edgeLens{order:2;font-size:23px;touch-action:manipulation}
