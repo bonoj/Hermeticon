@@ -1,6 +1,7 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {createHermeticon} from '../hermeticon.js';
 import {inspectObjectSpace} from '../observation/world-space.js';
+import {createSphericalBody} from '../physics/spherical-body.js';
 
 /**
  * DESIGN CONTRACT: see ./HERMETICON_EYE.md for character, anatomy,\n * attention and locomotion.\n * COMPOSABLE CONTRACT — nested Hermeticon eye.
@@ -133,20 +134,9 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   if(!terrain||y>3.6||y< -3.6)return false;
   const o=offset();return terrain.sample(x+o.x,y,z+o.z)>0;
  };
- const clearAt=p=>{
-  if(p.length()>FREE_RADIUS)return false;
-  // Sphere probes against the signed field, including underside and walls.
-  if(solidAt(p.x,p.y,p.z))return false;
-  for(const [x,y,z] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],...Array.from({length:20},(_,i)=>{const y=1-2*(i+.5)/20,a=i*2.399963,h=Math.sqrt(1-y*y);return [Math.cos(a)*h,y,Math.sin(a)*h]})]){
-   if(solidAt(p.x+x*EYE_RADIUS,p.y+y*EYE_RADIUS,p.z+z*EYE_RADIUS))return false;
-  }
-  return true;
- };
- const clearSegment=(a,b)=>{
-  const length=a.distanceTo(b),steps=Math.max(1,Math.ceil(length/.38));
-  for(let i=1;i<=steps;i++)if(!clearAt(probe.copy(a).lerp(b,i/steps)))return false;
-  return true;
- };
+ const body=createSphericalBody({radius:EYE_RADIUS,innerRadius:10.07,solidAt,margin:.13});
+ const clearAt=p=>body.valid(p);
+ const clearSegment=(a,b)=>body.sweep(a,b);
  // Crossing the slab is only legal where a whole eye fits through a bore.
  // The waypoint at the slab's midplane forces a real aperture crossing.
 
@@ -272,16 +262,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   lastOffset={x:next.x,z:next.z};frameRebases++;
  };
  const enforceWall=()=>{
-  const d=root.position.length();
-  if(d<=FREE_RADIUS)return;
-  const excess=d-FREE_RADIUS;
-  // Radial contact correction only. No player-seeking or position reset.
-  root.position.multiplyScalar(FREE_RADIUS/d);
-  destination.copy(root.position);
-  stationAnchor.copy(root.position);
-  velocity.set(0,0,0);stationVelocity.set(0,0,0);
-  wallCorrections++;
-  mode='wall-clearance';routeAge=0;pause=2;
+  if(body.valid(root.position))return;
+  const result=body.resolveBoundary(root.position);
+  if(!result.ok){blocked++;mode='collision-unresolved';velocity.set(0,0,0);stationVelocity.set(0,0,0);return}
+  if(result.corrected){
+   destination.copy(root.position);stationAnchor.copy(root.position);
+   velocity.set(0,0,0);stationVelocity.set(0,0,0);
+   wallCorrections++;mode='wall-clearance';routeAge=0;pause=2;
+  }
  };
 
  const update=(dt,camera)=>{
@@ -319,7 +307,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
     const blend=Math.min(1,step*.8);
     velocity.lerp(direction.multiplyScalar(desiredSpeed),blend);
     trial.copy(root.position).addScaledVector(velocity,step);
-    if(clearSegment(root.position,trial))root.position.copy(trial);
+    if(body.tryMove(root.position,trial.clone().sub(root.position))){}
     else{blocked++;velocity.set(0,0,0);mode='observe';routeAge=25;}
    }
   }
@@ -336,7 +324,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   stationVelocity.addScaledVector(direction,step);
   stationVelocity.multiplyScalar(Math.exp(-step*1.9));
   trial.copy(root.position).addScaledVector(stationVelocity,step);
-  if(clearSegment(root.position,trial))root.position.copy(trial);
+  if(body.tryMove(root.position,trial.clone().sub(root.position))){}
   else stationVelocity.set(0,0,0);
   // The meridian is the eye's forward-bearing hardware: rotate the entire
   // vessel and iris as one, never the anatomy independently.
