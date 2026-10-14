@@ -95,6 +95,20 @@ export function createGenesis(){
  // This maker owns only instances, colors, and honest instrumentation.
  const nodeMaker=createNodeMaker(T,world.content);
  world.setWitnessNodes=nodes=>nodeMaker.set(nodes);
+ const brassGroup=new T.Group();brassGroup.name='brass-bbs';world.content.add(brassGroup);
+ const brassPositions=[];
+ for(let ix=-5;ix<=5;ix++)for(let iz=-5;iz<=5;iz++)for(let iy=-2;iy<=2;iy++){
+  const x=ix*1.65,z=iz*1.65,y=iy*.73;
+  if(x*x+z*z>9.35**2||terrain.sample(x,0,z)<=0)continue;
+  const h=Math.abs(Math.sin(ix*127.1+iz*311.7+iy*74.7)*43758.5453)%1;
+  if(h<.24)brassPositions.push([x,y,z]);
+ }
+ const brassMesh=new T.InstancedMesh(new T.SphereGeometry(.047,7,5),new T.MeshStandardMaterial({color:0xc79a4e,metalness:.85,roughness:.26}),brassPositions.length);
+ const brassDummy=new T.Object3D();
+ brassPositions.forEach((p,i)=>{brassDummy.position.set(...p);brassDummy.updateMatrix();brassMesh.setMatrixAt(i,brassDummy.matrix)});
+ brassMesh.instanceMatrix.needsUpdate=true;brassMesh.frustumCulled=false;brassGroup.add(brassMesh);
+ const baseSetOffset=terrain.setOffset;
+ terrain.setOffset=(x,z)=>{baseSetOffset(x,z);brassGroup.position.set(-x,0,-z)};
  const wanderer=createWanderer({terrain});
  world.content.add(wanderer.group);
  const raycaster=new T.Raycaster(),pointer=new T.Vector2();
