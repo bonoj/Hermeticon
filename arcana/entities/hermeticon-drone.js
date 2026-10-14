@@ -9,7 +9,7 @@ import {inspectObjectSpace} from '../observation/world-space.js';
  * -> interior -> instanced BB eye. Both parent.add(root) and
  * vessel.group.add(vessel.content) are required (the missing first link
  * caused the entire eye orb to vanish on 2026-10-14).
- * Eye anatomy faces local +Z; cancel vessel's X rotation for the interior.
+ * Eye anatomy faces local +Z; brass meridian and iris rotate together.
  * World coordinates: mobile inside inner radius 10.07, scaled shell radius 1.28125;
  * Uses terrain.sample for collision; gaze follows interest, not camera lock.
  * Exposes {group,childWorld,update,contactBead,inspect}. This factory
@@ -21,15 +21,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const root=new T.Group();root.name='Hermeticon eye '+id;
  const vessel=createHermeticon();
  vessel.group.scale.setScalar(.125);
- vessel.group.rotation.x=Math.PI/2; // upright brass meridian, unchanged hardware
+ vessel.group.rotation.x=Math.PI/2; // meridian vertical in eye-local coordinates
  root.add(vessel.group);
  if(parent)parent.add(root);
  vessel.group.add(vessel.content);
  const interior=new T.Group();interior.name='BB eye interior '+id;
  vessel.content.add(interior);
- // Cancel the vessel's upright-band rotation for the eye anatomy alone.
- // Its pupil is authored on local +Z and must face the camera, not the floor.
- interior.rotation.x=-Math.PI/2;
+ // Eye anatomy faces +Z. Cancel the static meridian alignment here;
+ // the shared root then rotates both iris and brass together.
  const geometry=new T.IcosahedronGeometry(1,1);
  const material=new T.MeshStandardMaterial({roughness:.45,metalness:.03,emissive:0x161b24,emissiveIntensity:.12});
  const points=[],colors=[],base=[];
@@ -205,15 +204,14 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
     else{blocked++;velocity.set(0,0,0);routeAge=25;}
    }
   }
-  // The vessel keeps its meridian upright; only the eye anatomy looks around.
+  // The meridian is the eye's forward-bearing hardware: rotate the entire
+  // vessel and iris as one, never the anatomy independently.
   if(mode==='inspect-glass'&&cameraRef)cameraRef.getWorldPosition(lookPoint);
   else if(velocity.lengthSq()>.025)lookPoint.copy(root.position).add(velocity);
   else lookPoint.copy(destination);
   lookMatrix.lookAt(lookPoint,root.position,UP);
   targetQuat.setFromRotationMatrix(lookMatrix);
-  // Interior's compensating -X rotation means this orientation belongs to
-  // its parent content, not the outer brass shell.
-  vessel.content.quaternion.slerp(targetQuat,Math.min(1,step*2.1));
+  root.quaternion.slerp(targetQuat,Math.min(1,step*2.1));
   render();
  };
  const contactBead=(x,y,z,r,vx,vy,vz)=>{
