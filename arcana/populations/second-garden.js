@@ -114,5 +114,5 @@ export function createSecondGarden(T,{terrain,surface,offset=()=>({x:0,z:0}),cha
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,blast,inspect:()=>({name:'Second Garden',roots:plants.length,beads:beads.length,visible,species:species.map((name,s)=>({name,roots:plants.filter(p=>p.s===s).length}))}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Second Garden',roots:plants.length,beads:beads.length,activeBeads:beads.reduce((n,b)=>n+(plants[b.id].destroyed?0:1),0),visible,species:species.map((name,s)=>({name,roots:plants.filter(p=>p.s===s).length}))}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
 }
