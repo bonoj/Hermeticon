@@ -111,6 +111,7 @@ export function createGenesis(){
  const previousSetOffset=terrain.setOffset;
  terrain.setOffset=(x,z)=>{previousSetOffset(x,z);offsetX=x;offsetZ=z;if(Math.hypot(x-lastX,z-lastZ)>.24)rebuildRim()};
  rebuildRim();
+ latticeGroup.visible=false; // Legacy comparison only.
  const inspectLattice=()=>({kind:'four-geological-populations',colors:palette,counts:Object.fromEntries(Object.entries(report.arrays).map(([k,v])=>[k,v.length])),...report.stats,rebuilds:scans,buildMs,indexBuildMs,drawCalls:4,offset:[offsetX,offsetZ],method:report.stats.method,note:'Height-ranked mesh vertices; SDF vertical bisection'});
  const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
 
@@ -126,6 +127,14 @@ export function createGenesis(){
  let drawReport={...drawSurface.stats,visibilityAudited:false,apertureCurveAudited:false,
    cameraCandidateSegments:null,boreWallCandidates:null,projectionMs:null,edgeCoverageP95Px:null};
  let drawCameraSignature='',drawLastAt=-Infinity,drawUpdates=0;
+ const cameraNodes=new T.Group();cameraNodes.name='camera-contour-witnesses';world.content.add(cameraNodes);
+ const nodeMeshes={};
+ for(const [kind,color] of Object.entries(palette)){
+   const mesh=new T.InstancedMesh(witnessGeo,new T.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.24,metalness:.72,roughness:.18,depthWrite:false}),128);
+   mesh.count=0;mesh.frustumCulled=false;cameraNodes.add(mesh);nodeMeshes[kind]=mesh;
+ }
+ const visibilityRay=new T.Raycaster(),rayDirection=new T.Vector3(),rayTarget=new T.Vector3();
+
  function updateDrawWitness(){
    if(!view)return;
    const camera=view.camera;
@@ -138,7 +147,51 @@ export function createGenesis(){
    drawLastAt=now;drawCameraSignature=signature;
    const result=drawSurface.project(camera,offsetX,offsetZ,terrain.getAperture(),
      view.renderer.domElement.width,view.renderer.domElement.height,T);
+   const width=view.renderer.domElement.width,height=view.renderer.domElement.height;
+   const bins=new Map(),cell=Math.max(18,Math.min(width,height)/19);
+   for(const edge of result.segments){
+     const [sx,sy,ex,ey]=edge.screen,x=(sx+ex)/2,y=(sy+ey)/2;
+     if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||x>width||y>height)continue;
+     const key=Math.floor(x/cell)+','+Math.floor(y/cell);
+     const score=(edge.wall?3:0)+Math.hypot(ex-sx,ey-sy)*.02;
+     const prior=bins.get(key);
+     if(!prior||score>prior.score)bins.set(key,{edge,score});
+   }
+   const selected=Object.fromEntries(Object.keys(palette).map(k=>[k,[]]));
+   const v=drawSurface.vertices,aperture2=terrain.getAperture()**2;
+   let rayTests=0,rejectedOcclusion=0,rejectedAperture=0;
+   for(const {edge} of [...bins.values()].sort((a,b)=>b.score-a.score).slice(0,256)){
+     const a=edge.a*3,b=edge.b*3;
+     const x=(v[a]+v[b])/2-offsetX,y=(v[a+1]+v[b+1])/2,z=(v[a+2]+v[b+2])/2-offsetZ;
+     if(x*x+y*y+z*z>aperture2){rejectedAperture++;continue}
+     rayTarget.set(x,y,z);rayDirection.copy(rayTarget).sub(camera.position);
+     const distance=rayDirection.length();if(distance<.001)continue;
+     rayDirection.multiplyScalar(1/distance);
+     visibilityRay.set(camera.position,rayDirection);visibilityRay.near=.01;visibilityRay.far=distance+.08;
+     rayTests++;
+     const blocked=visibilityRay.intersectObjects(terrain.group.children,false).some(hit=>{
+       const p=hit.point;
+       return p.x*p.x+p.y*p.y+p.z*p.z<=aperture2&&hit.distance<distance-.11;
+     });
+     if(blocked){rejectedOcclusion++;continue}
+     const face=drawSurface.faces[edge.faces[0]];
+     const kind=edge.wall?'sdfUndersurface':face.normal[1]<-.4?'undersurfaceTerrain':
+       face.normal[1]>.4?'surfaceTerrain':'sdfSurface';
+     selected[kind].push([x,y,z]);
+   }
+   for(const [kind,mesh] of Object.entries(nodeMeshes)){
+     mesh.count=Math.min(128,selected[kind].length);
+     for(let i=0;i<mesh.count;i++){
+       dummy.position.set(...selected[kind][i]);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+     }
+     mesh.instanceMatrix.needsUpdate=true;
+   }
    drawReport={...drawSurface.stats,...result.stats,cameraUpdates:++drawUpdates,
+     mode:'camera-contour midpoint witnesses with raycast visibility',
+     counts:Object.fromEntries(Object.entries(nodeMeshes).map(([k,m])=>[k,m.count])),
+     screenBins:bins.size,rayTests,rejectedOcclusion,rejectedAperture,
+     visibilityMethod:'CPU terrain raycast with spherical aperture filtering',
+     visibilityAudited:false,contourCoverageAudited:false,
      candidateDisplayEnabled:drawLines.visible};
    // Keep a bounded diagnostic sample. Never call these occlusion-confirmed edges.
    const points=[],max=1200,stride=Math.max(1,Math.ceil(result.segments.length/max));
@@ -186,6 +239,6 @@ export function createGenesis(){
  };
  world.update=dt=>{wanderer.update(dt);updateDrawWitness()};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),lattice:inspectLattice(),drawWitness:drawReport,tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),lattice:{...inspectLattice(),visible:false,legacy:true},drawWitness:drawReport,tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
