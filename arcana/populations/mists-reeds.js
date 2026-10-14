@@ -45,6 +45,12 @@ export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,
    const o=offset();items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x*0.048,color:blastColor.clone()});
   }
   if(!debris.canAccept(items.length))return 0;
+  // Every authored BB transfers exactly once, including clipped or retracted anatomy.
+  const seen=new Map();for(let i=0;i<mesh.count;i++){const id=visibleOwners[i];if(affected.has(id))seen.set(id,(seen.get(id)||0)+1);}
+  const required=new Map();for(const b of beads)if(affected.has(b.stem))required.set(b.stem,(required.get(b.stem)||0)+1);
+  for(const [id,total] of required){const p=stems[id],missing=total-(seen.get(id)||0);if(missing<=0)continue;
+   const hidden=beads.filter(b=>b.stem===id);for(let j=0;j<missing;j++){const b=hidden[j%hidden.length];items.push({x:p.x+(b.x||0),y:p.ground+p.height*b.height,z:p.z+(b.z||0),r:0.048,color:(palette[b.head?3:(b.stem%2)]).clone()});}
+  }
   const emitted=debris.emit(items,point,options.impulse);
   for(const id of affected)stems[id].destroyed=true;
   return emitted;
