@@ -4,11 +4,11 @@ import {createTerrain} from '../../arcana/terrain.js?v=stable-20bd541b-restore';
 import {createNodeMaker} from '../../arcana/node-maker.js?v=1';
 import {createWanderer} from '../../arcana/wanderer.js';
 import {createMistsReeds} from '../../arcana/populations/mists-reeds.js';
-import {createAmethystParasols} from '../../arcana/populations/amethyst-parasols.js';
-import {createAmberGourds} from '../../arcana/populations/amber-gourds.js';
-import {createCrownLanterns} from '../../arcana/populations/crown-lanterns.js';
-import {createChaliceSucculents} from '../../arcana/populations/chalice-succulents.js';
-import {createRubyPendants} from '../../arcana/populations/ruby-pendants.js';
+import {createAmethystParasols} from '../../arcana/populations/potential/amethyst-parasols.js';
+import {createAmberGourds} from '../../arcana/populations/potential/amber-gourds.js';
+import {createCrownLanterns} from '../../arcana/populations/potential/crown-lanterns.js';
+import {createChaliceSucculents} from '../../arcana/populations/potential/chalice-succulents.js';
+import {createRubyPendants} from '../../arcana/populations/potential/ruby-pendants.js';
 import {createEquatorialTreatment} from '../../arcana/equatorial-treatment.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
