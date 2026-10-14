@@ -15,7 +15,7 @@
 
 **Known-good terrain checkpoint:** `40928287` — the accepted signed-field opaque cap with bore exemptions. Subsequent atmosphere experiments were rolled back; `main` also contains later UI and deployment fixes. **Do not reset `main` to the checkpoint** or disturb working terrain/Wanderer just to change presentation.
 
-**Toolbar contract:** exactly **🌐 👁 ↻**, left-to-right; dark buttons, **thin brass rims**, reliable tap targets. Globe is appended by `edge-detection.js`; eye and refresh are in the HTML. The shared CSS defines fixed ordering slots so append timing cannot shuffle them. No fourth/map button. The previous mismatch came from competing CSS rules **and unversioned cached CSS**; the Pages workflow now stamps stylesheet URLs as well as JS. The fix was committed, but **visual confirmation on the actual deployed build is still required**.
+**Toolbar contract:** **🪨 🌐 👁 ↻**, left-to-right (🪨 explicitly requested 2026-10-14 for rock treatments); dark buttons, **thin brass rims**, reliable tap targets. Globe is appended by `edge-detection.js`; eye and refresh are in the HTML. The shared CSS defines fixed ordering slots so append timing cannot shuffle them. No additional map button. The previous mismatch came from competing CSS rules **and unversioned cached CSS**; the Pages workflow now stamps stylesheet URLs as well as JS. The fix was committed, but **visual confirmation on the actual deployed build is still required**.
 
 ## Next investigation: cavernous depth without visible innards
 
@@ -31,3 +31,7 @@ Explore **genuinely different occlusion treatments** that imply depth while stil
 2. Make small, focused changes. Reuse solved code; preserve tap navigation, signed-field terrain, the three controls and mobile responsiveness. No speculative UI or new subsystems.
 3. Publish only via existing `.github/workflows/pages.yml`; consult `bonoj/Gate/README.md` for deployment rules. **Commit ≠ live**. Confirm the displayed public SHA and visible behavior before claiming success; diagnose/retry the existing workflow if necessary.
 4. For historical engineering details, use the archived handoff, source and Git history. Keep this file short and authoritative.
+
+## Rock laboratory (2026-10-14)
+
+A fourth 🪨 button was explicitly requested to cycle six reversible **shader-only** geological treatments: Original mortar (baseline), Midnight basalt, Layered slate, Ironstone, Obsidian, Ancient limestone. `arcana/terrain.js` supplies `setRockMode/getRockMode/rockNames` and `rockTreatment` inspection; `codex/genesis/world.js` exposes the cycle; `athanor/compose.js` mounts the button and label. Treatments apply to both terrain and signed-field aperture cap, with no topology changes or rebuilds. Preserve genuine signed-field voids and bores. Initial shader palette is unreviewed visually; require public SHA + user screenshot before judging aesthetics. The old rim study is not the current priority.
