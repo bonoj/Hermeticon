@@ -12,6 +12,9 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  vessel.group.add(vessel.content);
  const interior=new T.Group();interior.name='BB eye interior '+id;
  vessel.content.add(interior);
+ // Cancel the vessel's upright-band rotation for the eye anatomy alone.
+ // Its pupil is authored on local +Z and must face the camera, not the floor.
+ interior.rotation.x=-Math.PI/2;
  const geometry=new T.IcosahedronGeometry(1,1);
  const material=new T.MeshStandardMaterial({roughness:.45,metalness:.03,emissive:0x161b24,emissiveIntensity:.12});
  const points=[],colors=[],base=[];
