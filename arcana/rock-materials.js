@@ -12,7 +12,8 @@ export function createRockMaterials(terrainMaterial,capMaterial){
   shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvRockPosition=position;');
   shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
 varying vec3 vRockPosition;
-uniform float rockMode;\nuniform float cavernDim;
+uniform float rockMode;
+uniform float cavernDim;
 float rockHash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 float rockNoise(vec3 p){
  vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
