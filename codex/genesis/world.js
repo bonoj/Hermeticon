@@ -81,10 +81,11 @@ export function createGenesis(){
   onImpact:impactDispatcher.dispatch});
  world.castMeteor=()=>cinderfall.cast();
  const navigation=createTerrainNavigation({terrain,actor:wanderer});
- world.attachView=navigation.attachView;
+ let droneCamera=null;
+ world.attachView=view=>{navigation.attachView(view);droneCamera=view?.camera??null};
  world.tap=navigation.tap;
 
- world.update=dt=>{drone.update(dt);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt)};
+ world.update=dt=>{drone.update(dt,droneCamera);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt)};
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
