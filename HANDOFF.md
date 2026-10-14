@@ -35,3 +35,5 @@ Explore **genuinely different occlusion treatments** that imply depth while stil
 ## Rock laboratory (2026-10-14)
 
 A fourth 🪨 button was explicitly requested to cycle six reversible **shader-only** geological treatments: Original mortar (baseline), Midnight basalt, Layered slate, Ironstone, Obsidian, Ancient limestone. `arcana/terrain.js` supplies `setRockMode/getRockMode/rockNames` and `rockTreatment` inspection; `codex/genesis/world.js` exposes the cycle; `athanor/compose.js` mounts the button and label. Treatments apply to both terrain and signed-field aperture cap, with no topology changes or rebuilds. Preserve genuine signed-field voids and bores. Initial shader palette is unreviewed visually; require public SHA + user screenshot before judging aesthetics. The old rim study is not the current priority.
+
+**Extraction:** Rock shader implementation moved to `arcana/rock-materials.js` on 2026-10-14; terrain imports and applies it to terrain/cap materials. Rock behavior and UI are otherwise unchanged.
