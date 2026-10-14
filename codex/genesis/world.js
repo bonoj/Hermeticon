@@ -96,14 +96,36 @@ export function createGenesis(){
  const nodeMaker=createNodeMaker(T,world.content);
  world.setWitnessNodes=nodes=>nodeMaker.set(nodes);
  const brassGroup=new T.Group();brassGroup.name='brass-bbs';world.content.add(brassGroup);
- const brassPositions=[];
- for(let ix=-5;ix<=5;ix++)for(let iz=-5;iz<=5;iz++)for(let iy=-2;iy<=2;iy++){
-  const x=ix*1.65,z=iz*1.65,y=iy*.73;
-  if(x*x+z*z>9.35**2||terrain.sample(x,0,z)<=0)continue;
+ const brassRadius=.047,brassClearance=.085,brassPositions=[];
+ const brassAudit={candidates:0,accepted:0,rejectedOutsideField:0,rejectedNotSolid:0,rejectedClearance:0,minSignedField:null,maxSignedField:null,minNeighborField:null,maxNeighborField:null,aboveSurface:0,belowSurface:0,insideBores:0,linked:false};
+ const offsets=[[brassRadius,0,0],[-brassRadius,0,0],[0,brassRadius,0],[0,-brassRadius,0],[0,0,brassRadius],[0,0,-brassRadius]];
+ for(let ix=-6;ix<=6;ix++)for(let iz=-6;iz<=6;iz++)for(let iy=-3;iy<=3;iy++){
+  const x=ix*1.42,z=iz*1.42,y=iy*.42;
+  if(x*x+z*z>9.35**2)continue;
   const h=Math.abs(Math.sin(ix*127.1+iz*311.7+iy*74.7)*43758.5453)%1;
-  if(h<.24)brassPositions.push([x,y,z]);
+  if(h>.27)continue;
+  brassAudit.candidates++;
+  const v=terrain.sample(x,y,z);
+  if(!Number.isFinite(v)){brassAudit.rejectedOutsideField++;continue}
+  if(v<=0){brassAudit.rejectedNotSolid++;continue}
+  const neighbors=offsets.map(([dx,dy,dz])=>terrain.sample(x+dx,y+dy,z+dz));
+  const minimum=Math.min(v,...neighbors);
+  if(minimum<brassClearance){brassAudit.rejectedClearance++;continue}
+  brassPositions.push([x,y,z]);
+  brassAudit.minSignedField=brassAudit.minSignedField===null?v:Math.min(brassAudit.minSignedField,v);
+  brassAudit.maxSignedField=brassAudit.maxSignedField===null?v:Math.max(brassAudit.maxSignedField,v);
+  brassAudit.minNeighborField=brassAudit.minNeighborField===null?minimum:Math.min(brassAudit.minNeighborField,minimum);
+  brassAudit.maxNeighborField=brassAudit.maxNeighborField===null?minimum:Math.max(brassAudit.maxNeighborField,minimum);
  }
- const brassMesh=new T.InstancedMesh(new T.SphereGeometry(.047,7,5),new T.MeshStandardMaterial({color:0xc79a4e,metalness:.85,roughness:.26}),brassPositions.length);
+ brassAudit.accepted=brassPositions.length;
+ // Independent signed-field audit, including every sphere's six extremities.
+ for(const [x,y,z] of brassPositions){
+  const samples=[terrain.sample(x,y,z),...offsets.map(([dx,dy,dz])=>terrain.sample(x+dx,y+dy,z+dz))];
+  if(samples.some(v=>v<=0))brassAudit.insideBores++;
+  if(terrain.sample(x,y+brassRadius,z)<=0)brassAudit.aboveSurface++;
+  if(terrain.sample(x,y-brassRadius,z)<=0)brassAudit.belowSurface++;
+ }
+ const brassMesh=new T.InstancedMesh(new T.SphereGeometry(brassRadius,7,5),new T.MeshStandardMaterial({color:0xc79a4e,metalness:.85,roughness:.26}),brassPositions.length);
  const brassDummy=new T.Object3D();
  brassPositions.forEach((p,i)=>{brassDummy.position.set(...p);brassDummy.updateMatrix();brassMesh.setMatrixAt(i,brassDummy.matrix)});
  brassMesh.instanceMatrix.needsUpdate=true;brassMesh.frustumCulled=false;brassGroup.add(brassMesh);
@@ -143,6 +165,6 @@ export function createGenesis(){
  };
  world.update=dt=>{wanderer.update(dt)};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},nodes:nodeMaker.inspect(),brassBBs:{...brassAudit,radius:brassRadius,clearance:brassClearance,positions:brassPositions.map(p=>p.map(n=>+n.toFixed(3)))},tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
