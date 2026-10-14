@@ -1,6 +1,16 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-// Extracted from the preserved Wanderer vessel; owned by Hermeticon, not its inhabitants.
+/**
+ * COMPOSABLE CONTRACT — Hermeticon vessel (not a world simulation).
+ * Owns: glass, equatorial brass, rivets; radii outer=10.25, inner=10.07.
+ * Returns TWO DETACHED groups: `group` (shell) and `content` (inhabitants).
+ * Caller MUST mount both: `parent.add(vessel.group)` and
+ * `vessel.group.add(vessel.content)`. The factory does not mount them.
+ * World origin is the sphere center. Shell rotation rotates descendants;
+ * rotate inhabitant content inversely if shell hardware needs its own axis.
+ * Do not modify accepted glass/brass appearance to fix missing inhabitants.
+ * Incident 2026-10-14: missing scene attachment made a nested eye invisible.
+ */
 const R=10.25, INNER_R=R-.18;
 export function createHermeticon(){
  const group=new THREE.Group();group.name='Hermeticon';
