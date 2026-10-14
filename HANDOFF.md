@@ -29,6 +29,11 @@ The only active node code is `createNodeMaker(THREE,parent)`, wired as `world.se
 
 There is **no automatic node selection**. The old `arcana/four-surfaces.js` height-rank algorithm and `arcana/draw-surface.js` edge inventory were removed from the active tree in `b1e4e822`. Do not restore them by default.
 
+
+## 🌐 First-class edge observation instrument (2026-10-14)
+
+`arcana/edge-detection.js` exports `createEdgeDetection(THREE,renderer,camera)`. Athanor instantiates it once, delegates rendering via `.render(scene,camera)` and 👁 via `.inspect()`. It exposes `.mode`, `.modes`, `.setMode(nameOrIndex)` and `.dispose()`. The tool owns its offscreen color/depth target, fullscreen Sobel/depth/hybrid shaders, SOURCE control path, mobile mode button and shader compilation diagnostics. OFF renders normally. Modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID; they are preserved observational lenses, not throwaway experiments. They read the **whole scene**, not terrain-only occupancy, and do not provide world-space nodes or verified edge coverage. `renderer.debug.onShaderError` is restored on disposal if still owned. The established Pages workflow stamps the new module import with its SHA to prevent stale cache mixing. Live visual equivalence after extraction requires a fresh public build check; the pre-extraction verified shader build was `2e4c3ed2`.
+
 ## Next: minimal GPU DRAW-boundary experiment
 
 The critical correction: **the camera defines the viewpoint, not the authority. The visible rendered DRAW is the evidence.** We want the boundary of **terrain actually drawn in the current viewport**: the circular aperture edge and visible borehole openings. Avoid searching every geological mesh edge or running hundreds of CPU visibility rays.
