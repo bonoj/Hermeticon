@@ -4,10 +4,10 @@ export function createBBTrial(T,{terrain,innerRadius,offset=()=>({x:0,z:0}),pare
  const radius=.075,body={x:0,y:0,z:0,vx:0,vy:0,vz:0};
  const mesh=new T.Mesh(new T.IcosahedronGeometry(radius,1),new T.MeshStandardMaterial({color:0xf4ae59,metalness:.35,roughness:.32}));
  mesh.name='Physics BB trial';parent?.add(mesh);
- let active=false,terrainHits=0,vesselHits=0,frames=0;
+ let active=false,terrainHits=0,vesselHits=0,vesselCorrections=0,frames=0,peakSpeed=0,initialEnergy=0,peakEnergy=0;
  function launch(){
   const o=offset();body.x=2.4;body.z=-1.7;body.y=4.8;
-  body.vx=1.15;body.vy=0;body.vz=.35;active=true;frames=0;
+  body.vx=1.15;body.vy=0;body.vz=.35;active=true;frames=0;terrainHits=0;vesselHits=0;vesselCorrections=0;peakSpeed=0;initialEnergy=.5*(body.vx**2+body.vy**2+body.vz**2)+P.gravity*body.y;peakEnergy=initialEnergy;
  }
  function update(dt){
   if(!active)return;
@@ -25,21 +25,23 @@ export function createBBTrial(T,{terrain,innerRadius,offset=()=>({x:0,z:0}),pare
     if(sample(old.x,old.y,old.z)<-radius&&sample(x,y,z)>=-radius){
      const normal=signedFieldNormal(sample,x,y,z);
      reflectContact(body,normal,P.terrainRestitution,P.terrainTangentDamping);
-     body.x=old.x+(x-old.x)*(j-1)/count+normal.x*.004;
-     body.y=old.y+(y-old.y)*(j-1)/count+normal.y*.004;
-     body.z=old.z+(z-old.z)*(j-1)/count+normal.z*.004;
+     const safeT=(j-1)/count;
+     body.x=old.x+(nx-old.x)*safeT+normal.x*.004;
+     body.y=old.y+(ny-old.y)*safeT+normal.y*.004;
+     body.z=old.z+(nz-old.z)*safeT+normal.z*.004;
      terrainHits++;hit=true;break;
     }
    }
    if(!hit){body.x=nx;body.y=ny;body.z=nz}
    const vessel=catchVesselUnderside(body,{innerRadius,beadRadius:radius});
-   if(vessel.caught)vesselHits++;
+   if(vessel.caught){vesselCorrections++;if(vessel.bounced)vesselHits++;}
+   const speed=Math.hypot(body.vx,body.vy,body.vz);peakSpeed=Math.max(peakSpeed,speed);peakEnergy=Math.max(peakEnergy,.5*speed*speed+P.gravity*body.y);
   }
   const rr=Math.hypot(body.x,body.y,body.z);
   mesh.visible=rr+radius<innerRadius;
   mesh.position.set(body.x,body.y,body.z);
  }
- function inspect(){return {active,position:[body.x,body.y,body.z],velocity:[body.vx,body.vy,body.vz],terrainHits,vesselHits,frames,visible:mesh.visible}}
+ function inspect(){return {active,position:[body.x,body.y,body.z],velocity:[body.vx,body.vy,body.vz],terrainHits,vesselHits,vesselCorrections,frames,peakSpeed,initialEnergy,peakEnergy,energy:.5*(body.vx**2+body.vy**2+body.vz**2)+P.gravity*body.y,visible:mesh.visible}}
  function dispose(){mesh.removeFromParent();mesh.geometry.dispose();mesh.material.dispose()}
  mesh.visible=false;
  return {launch,update,inspect,dispose};
