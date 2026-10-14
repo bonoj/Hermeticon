@@ -79,8 +79,8 @@ export function createGenesis(){
  function wandererOffsetX(){return edgeWanderX}
  function wandererOffsetZ(){return edgeWanderZ}
  const originalSetOffset=terrain.setOffset;
- terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z;edgeGroup.position.set(-x,0,-z)};
- // Edge skin follows terrain displacement; geological sampling is fixed at initial construction.
+ terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
+ // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
