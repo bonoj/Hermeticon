@@ -5,7 +5,7 @@ Wanderer is one executable world within Hermeticon, not Hermeticon's architectur
 ## Wanderer implementation
 
 - Authoritative code: `world.js`; UI styles: `interface.css`; errors: `errors.js`; local entry: `index.html`.
-- Hermeticon root `index.html` currently points to these same shared assets; it is an entrance to Wanderer, not a separate world.
+- **Current correction (2026-10-14):** Hermeticon root runs Athanor + Genesis, not these legacy fixture assets. This preserved Wanderer runs at `examples/wanderer-separated/`; consult the root `HANDOFF.md` for Genesis.
 - Archived ancestor: `../../archive/legacy-monolith/index.html` (historical only). Original JIT ancestor: `bonoj/Repository/src/jit/hermeticon-wanderer/index.html` at `f8fd252ca4abb91f7ca7c445197944a044df2173`; leave untouched.
 
 ## World contracts

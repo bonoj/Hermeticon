@@ -1,35 +1,23 @@
-# Hermeticon — Wanderer
+# Hermeticon
 
-Hermeticon is a standalone executable world. **Live entrance:** https://bonoj.github.io/Hermeticon/ . **Preserved example:** https://bonoj.github.io/Hermeticon/examples/wanderer-separated/ .
+**Live entrance:** https://bonoj.github.io/Hermeticon/  
+**Current world:** Athanor mounts **Genesis** via `athanor/compose.js` → `codex/genesis/world.js`.  
+**Read first:** [HANDOFF.md](HANDOFF.md) for implemented systems, diagnostics, publication and next experiment.
 
-## Source of truth
+Genesis combines `arcana/terrain.js` (signed-field slab with bores, independent top/bottom relief and shader-clipped spherical aperture), `arcana/wanderer.js` (supported tap-to-walk navigation and moving geological frame), and `arcana/node-maker.js` (instrumented four-color node renderer, **empty by design**). The old camera/height-based node selectors were removed in clean commit `b1e4e822` and remain in Git history.
 
-- `examples/wanderer-separated/world.js`: running world, simulation, camera, controls, and current UI behavior.
-- `examples/wanderer-separated/interface.css`: shared interface styling.
-- `examples/wanderer-separated/errors.js`: error capture.
-- `examples/wanderer-separated/index.html`: example entry.
-- `index.html`: **thin root entry**, referencing the same example assets; do not put a second copy of the world here.
-- `archive/legacy-monolith/index.html`: original monolithic reference, preserved; never use it as the active source.
-- `.github/workflows/pages.yml`: only publication route; stamps the executing commit and verifies both public entries.
+**Next experiment:** extract the visible boundary of GPU-rendered terrain in the current viewport. Begin with a terrain-only occupancy mask and a visual boundary overlay. If a bore opening shows terrain behind it, occupancy alone will not expose the lip; evaluate depth/surface identity only as needed. Prove the outline before placing nodes. No CPU mesh scans or witness raycasts.
 
-## Provenance
+## Boundaries
 
-Graduated by **cloning**, not moving, the JIT Wanderer from `bonoj/Repository/src/jit/hermeticon-wanderer/index.html` at source commit `f8fd252ca4abb91f7ca7c445197944a044df2173`. The JIT ancestor and its deployment are untouched. The current displayed eight-character BUILD is stamped from the deployed Hermeticon commit, **not** the ancestral JIT SHA.
+- `athanor/`: runtime, camera, render loop, inspection and current Genesis mount.
+- `codex/genesis/`: authored composition.
+- `arcana/`: composable terrain, Wanderer, node maker and other parts.
+- `examples/wanderer-separated/`: **preserved older full Wanderer fixture**, independent of Genesis. Its fire, BBs, Crucible, geographical nodes and material contracts belong to its [own handoff](examples/wanderer-separated/HANDOFF.md).
+- `archive/legacy-monolith/`: historical reference, not the running baseline.
 
-## Development and publication
+Original JIT Wanderer was cloned, not moved, from `bonoj/Repository/src/jit/hermeticon-wanderer/index.html` at `f8fd252ca4abb91f7ca7c445197944a044df2173`.
 
-Edit the shared example assets; preserve the root entry and example as two entrances to **one** implementation. Push to `main` to trigger `Publish Hermeticon` in GitHub Actions. The workflow assembles a static `site/` artifact, stamps `world.js`, adds SHA cache-busting asset URLs to both HTML entries, and deploys to GitHub Pages. There is no mirror repository, bundler, or application server.
+## Publication
 
-Before changing deployment mechanics, read `bonoj/Gate/README.md`, the existing workflow, and `examples/wanderer-separated/HANDOFF.md`. **Do not improvise a new publishing path or SHA-specific release URL.** A commit is not proof that the public build is live; verify the actual public HTML/build SHA and runtime.
-
-**Failure is recoverable, not a lock:** a failed build, verification, or deployment does not prohibit another push or manual `workflow_dispatch` retry. Diagnose the failing step; repair and trigger a new run. New pushes supersede in-flight work; never require the user to chase refreshes or manually prove delivery. Do not report success without evidence. See `examples/wanderer-separated/HANDOFF.md` for retry steps and engineering contracts.
-
-## Current world and material behavior
-
-The authored terrain has **22 named geographical nodes**, derived from an author-supplied hand-drawn map. Their source descriptions, clarifications, and historical atlas experiments are preserved in [WORLD_GENERATION_EXPERIMENT.md](examples/wanderer-separated/WORLD_GENERATION_EXPERIMENT.md); proposed systems in that note are not necessarily implemented. Quills, Amaranthine Fields, Mists, and Downton participate in established local activity. Eighteen additional encounter seeds now have bounded scene prototypes and inspectable lifecycle state; these are not eighteen completed physical encounters. The 2026-10-13 expedition activated 17 of 18, while Ocean of Tears remained dormant because of an aperture gating mismatch. The Summerlands geological transaction attempted but failed; no geological transactions were confirmed. See the Ledger expedition note for witnessed results. Names are not a license to invent canonical lore.
-
-Wanderer fire produces **125 red blood BBs and 375 yellow solid BBs per burst**. Released BBs persist across respawns, use geological coordinates, and remain gravity-driven. Wanderer tap navigation is suspended during the fire sequence and resumes on respawn. Fire and Wanderer fragments use shared aperture clipping; visibility is not material ownership. The current material arrays and Crucible ownership/frame rules are transitional. The intended material-world contract keeps BB identity, geological position, contact/support, provenance and rendering frame separate; **the runtime has not yet been migrated**. For contracts, caveats, and verification, see `examples/wanderer-separated/HANDOFF.md`.
-
-## Arcana — composable inventory
-
-Before creating or rebuilding any system, inspect [`arcana/`](arcana/) for existing composables. `arcana/hermeticon.js` exports the initial empty Hermeticon world as a Three.js group with inspection. `athanor/compose.js` mounts it through the Athanor contract. Athanor itself does not import Hermeticon. Preserve the original Wanderer fixture. Add further arcana by extraction from working systems, not reinvention.
+`.github/workflows/pages.yml` publishes `main` via GitHub Pages, assembling the site and stamping SHA identity. The root and `/athanor/` run Genesis; `/examples/wanderer-separated/` runs the preserved fixture. Read `bonoj/Gate/README.md` before changing deployment. Verify actual public SHA/runtime; **commit ≠ live**. Retry failures through the existing workflow, not an improvised route.
