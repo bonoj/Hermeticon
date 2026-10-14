@@ -27,6 +27,21 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
   }
   return affected;
  }
+ function collideSphere(center,radius,receive){
+  const o=offset();let hits=0;
+  for(const b of beads){
+   const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
+   const dx=x-center.x,dy=b.y-center.y,dz=z-center.z,d=Math.hypot(dx,dy,dz);
+   if(d>=radius+b.r)continue;
+   const nx=d>.0001?dx/d:0,ny=d>.0001?dy/d:1,nz=d>.0001?dz/d:0;
+   if(receive(x,b.y,z,b.r,b.vx,b.vy,b.vz)){
+    const approach=b.vx*nx+b.vy*ny+b.vz*nz;
+    if(approach<0){b.vx-=1.5*approach*nx;b.vy-=1.5*approach*ny;b.vz-=1.5*approach*nz;}
+    hits++;
+   }
+  }
+  return hits;
+ }
  function update(dt){const physicsStart=performance.now();
   const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
@@ -72,5 +87,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,collideSphere,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
