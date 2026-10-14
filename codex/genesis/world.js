@@ -73,8 +73,23 @@ export function createGenesis(){
  const debris=createBeadDebris(T,{terrain,offset:botanicalOffset,innerRadius:world.inspect().vessel.innerRadius,parent:world.content});
  // Eye is independent of the established populations and terrain.
  let eye=null,eyeError=null,eyeCamera=null;
- try{eye=createHermeticonDrone({parent:world.content,id:'genesis-eye',terrain,offset:botanicalOffset});}catch(error){eyeError=String(error);console.error('Eye construction failed',error)}
  const creatureSystems=[bestiary,velvetDrifters,threadwyrms,glasswings,bellwraiths,lanternHermits];
+ const observeEyeWorld=()=>{
+  const o=botanicalOffset(),targets=[];
+  const w=wanderer.inspect();
+  targets.push({id:'wanderer',position:[w.x-o.x,w.y+.5,w.z-o.z],salience:4});
+  for(const system of creatureSystems){
+   const snapshot=system.inspect();
+   for(const [index,c] of (snapshot.creatures||[]).entries()){
+    if(!Number.isFinite(c.x)||!Number.isFinite(c.z))continue;
+    const y=Number.isFinite(c.altitude)?c.altitude:Number.isFinite(c.y)?c.y:terrainSurface(c.x,c.z);
+    if(y==null)continue;
+    targets.push({id:(snapshot.name||'creature')+':'+index,position:[c.x-o.x,y,c.z-o.z],salience:2.5});
+   }
+  }
+  return targets;
+ };
+ try{eye=createHermeticonDrone({parent:world.content,id:'genesis-eye',terrain,offset:botanicalOffset,observe:observeEyeWorld});}catch(error){eyeError=String(error);console.error('Eye construction failed',error)}
  const impactDispatcher=createImpactDispatcher({debris,creatures:creatureSystems,plants:[reeds,garden,secondGarden],terrain,surface:terrainSurface});
  const cinderfall=createCinderfall(T,{surface:terrainSurface,offset:botanicalOffset,
   targets:()=>creatureSystems.flatMap(s=>s.inspect().creatures||[]),
