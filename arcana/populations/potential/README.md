@@ -1,18 +1,20 @@
-# Potential — alien botanical visual studies
+# Potential — preserved geometric populations
 
-Reference staging area for prospective populations. These are **visual targets**, not implemented species.
+These are the **actual executable first-pass populations** created for the alien garden, retained because their stalks sway pleasantly. They may never be used in the eventual all-BB design. **Do not delete or rewrite them when developing the BB versions.**
 
-## Studies created 2026-10-14
+## Preserved code
 
-1. **Geometric alien garden** — original illustration with space corn, amethyst parasols, amber gourds, crown lanterns, chalice succulents, and ruby pendants. Source image generated in conversation; pending binary import as `geometric-alien-garden.png`.
-2. **All-BB alien garden** — reinterpretation where every plant is built entirely from spherical beads of varying sizes, with no cylinders, cones, or stems. Source image generated in conversation; pending binary import as `all-bb-alien-garden.png`. **Preferred implementation reference.**
+- [botanical-population.js](botanical-population.js) — shared seeded placement, geometry construction, geological-offset presentation, and independently phased idle sway.
+- [amethyst-parasols.js](amethyst-parasols.js)
+- [amber-gourds.js](amber-gourds.js)
+- [crown-lanterns.js](crown-lanterns.js)
+- [chalice-succulents.js](chalice-succulents.js)
+- [ruby-pendants.js](ruby-pendants.js)
 
-## Construction rule
+All six files were copied verbatim from `arcana/populations/` before the old paths were removed. The five species continue to be mounted by Genesis through imports pointing here, so their behavior remains available and visible. Mists Reeds remains in the main populations folder, unchanged.
 
-- All vegetation consists exclusively of BB spheres, no mesh stems, cones, cups, or petal polygons.
-- Stalks are stacked BBs; bulbs and fruit are BB clusters; crowns and canopies are BB arrangements.
-- BB sizes vary but should never exceed the size of the spacecraft (upper bound to be defined in world units).
-- Geological anchoring and population-owned idle animation persist independently of view offsets.
-- These references supersede the first-pass non-BB geometry in the five current Arcana population implementations; those implementations have **not** yet been converted.
+## Future direction
 
-**Asset status:** This document records the references and desired paths, but the PNG binaries have not been uploaded to this GitHub repository. Do not claim they are present until verified.
+The new desired organisms use **only BB spheres** of varying sizes: stacked beads for stalks, bead clusters for fruit, and bead arrangements for crowns. This is a **future implementation**, not a retrofit of these preserved geometric species. Their asynchronous swaying remains a useful animation reference.
+
+The two conversation-generated images (original geometric garden and all-BB interpretation) have **not** been uploaded as PNG binaries to GitHub.
