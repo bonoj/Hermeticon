@@ -142,22 +142,43 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
 
  // Betwixt Observer inheritance: sense -> acquire -> track -> investigate.
  // Observations are supplied by Genesis; the eye never knows species internals.
- let focus=null,focusSince=0,attentionChanges=0,lastObservationCount=0;
+ let focus=null,focusSince=0,attentionChanges=0,lastObservationCount=0,nextSense=0;
+ const memories=new Map();
+ const seen=new Map();
+ let observations=[];
+ // Optical visibility is a point ray, not the full-body swept-volume
+ // collision test. A subject on the ground must remain visible from above.
  const visibleTarget=entry=>{
   const p=entry.position;
-  if(!p||!p.every(Number.isFinite))return false;
-  const v=new T.Vector3(...p);
-  return v.distanceTo(root.position)<14&&clearSegment(root.position,v);
+  if(!Array.isArray(p)||p.length!==3||!p.every(Number.isFinite))return false;
+  const v=new T.Vector3(...p),distance=v.distanceTo(root.position);
+  if(distance>14||distance<.01)return false;
+  const steps=Math.max(1,Math.ceil(distance/.45));
+  for(let i=1;i<steps;i++){
+   probe.copy(root.position).lerp(v,i/steps);
+   if(solidAt(probe.x,probe.y,probe.z))return false;
+  }
+  return true;
+ };
+ const sense=()=>{
+  if(time<nextSense)return;
+  nextSense=time+.35;
+  try{observations=(observe()||[]).filter(visibleTarget)}catch(error){observations=[];console.warn('Eye observation unavailable',error)}
+  lastObservationCount=observations.length;
+  for(const c of observations)seen.set(c.id,{position:c.position.slice(),time});
+  for(const [id,m] of seen)if(time-m.time>18)seen.delete(id);
+  if(focus){const fresh=observations.find(c=>c.id===focus.id);
+   if(fresh)focus=fresh;
+   else if(time-focusSince>1.2)focus=null;
+  }
  };
  const chooseDestination=()=>{
-  let observations=[];
-  try{observations=observe()||[]}catch(error){console.warn('Eye observation unavailable',error)}
-  lastObservationCount=observations.length;
-  const candidates=observations.filter(visibleTarget);
+  sense();
+  const candidates=observations;
   // Retain attention unless its subject disappears or becomes occluded.
   const current=candidates.find(c=>c.id===focus?.id);
   const best=candidates.reduce((a,b)=>{
-   const score=c=>(c.salience||1)/(1+.11*root.position.distanceTo(new T.Vector3(...c.position)))+(c.id===focus?.id?.7:0);
+   const score=c=>(c.salience||1)/(1+.11*root.position.distanceTo(new T.Vector3(...c.position)))+(c.id===focus?.id?.7:0)-(memories.get(c.id)||0)*.32;
    return !a||score(b)>score(a)?b:a;
   },null);
   const chosen=current&&(!best||best.id===current.id||random()<.78)?current:best;
@@ -174,6 +195,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
    }
    return true;
   }
+  if(focus)memories.set(focus.id,(memories.get(focus.id)||0)+1);
   focus=null;
   if(cameraRef&&random()<.32){
    cameraRef.getWorldPosition(cameraPosition);
@@ -204,6 +226,11 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const update=(dt,camera)=>{
   const step=Math.max(0,Math.min(dt,.06));time+=step;
   if(camera?.position)cameraRef=camera;
+  sense();
+  if(focus&&mode==='investigate'&&time-focusSince>7){
+   memories.set(focus.id,(memories.get(focus.id)||0)+1);
+   focus=null;routeAge=25;
+  }
   if(pause>0){pause-=step;velocity.multiplyScalar(Math.exp(-step*6));}
   else{
    routeAge+=step;
@@ -243,5 +270,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
 }
