@@ -72,3 +72,7 @@ For project continuity see [Hermeticon handoff](../HANDOFF.md); for collaboratio
 | Detached BBs | [`physics/bead-debris.js`](physics/bead-debris.js) | Released material, terrain/vessel contact, dynamic instance allocation | **Mounted** |
 
 Cinderfall has no automatic timer. New meteor taps do not cancel active projectiles. Each impact may disassemble nearby creatures/plants into loose BBs, impart radial force, and deform terrain. No BB population ceiling is imposed; actual memory/FPS must be observed. Active authored BBs plus detached BBs constitute the material count; historical descriptors are not physical inventory. See [handoff](../HANDOFF.md) and [observation](observation/README.md) for verification and diagnostics.
+
+## Radial impact dispatch
+
+[`physics/impact-dispatcher.js`](physics/impact-dispatcher.js) exports  createImpactDispatcher({debris,creatures,plants,terrain,surface,...}) and is mounted by Genesis. It preserves loose → creature → plant → crater ordering, force scaling, material receiver counts, and per-stage timing. Genesis chooses receivers; Cinderfall remains the spell. Source verification is not live runtime verification.
