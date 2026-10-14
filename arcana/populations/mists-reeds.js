@@ -16,6 +16,7 @@ export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,
  const mesh=new T.InstancedMesh(geometry,material,8000);
  mesh.count=0;mesh.frustumCulled=false;
  const group=new T.Group();group.name='Mists Reeds';group.add(mesh);if(parent)parent.add(group);
+ const blastMatrix=new T.Matrix4(),blastPosition=new T.Vector3(),blastRotation=new T.Quaternion(),blastScale=new T.Vector3(),blastColor=new T.Color(),visibleOwners=[];
  const dummy=new T.Object3D();
  const palette=[0x537f70,0x779c87,0xa7a884,0xd3b68c].map(c=>new T.Color(c));
  const beads=[];
@@ -29,11 +30,29 @@ export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,
   }
  }
  let time=0,visible=0;
+ function blast(point,options,debris){
+  const affected=new Set();
+  for(let i=0;i<mesh.count;i++){
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);
+   const o=offset(),dx=blastPosition.x+o.x-point.x,dy=blastPosition.y-point.y,dz=blastPosition.z+o.z-point.z;
+   if(dx*dx+dy*dy+dz*dz<=options.radius*options.radius)affected.add(visibleOwners[i]);
+  }
+  if(!affected.size)return 0;
+  const items=[];
+  for(let i=0;i<mesh.count;i++){
+   if(!affected.has(visibleOwners[i]))continue;
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
+   const o=offset();items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x*0.048,color:blastColor.clone()});
+  }
+  const emitted=debris.emit(items,point,options.impulse);
+  for(const id of affected)stems[id].destroyed=true;
+  return emitted;
+ }
  function update(dt){
   time+=dt;
   const {x:ox=0,z:oz=0}=offset();
   const occupants=characters();
-  for(const st of stems){
+  for(const st of stems){if(st.destroyed)continue;
    const px=st.x-ox,pz=st.z-oz,height=st.height;
    const rimClear=radius-.16-Math.sqrt(px*px+pz*pz+Math.max(0,st.ground+height)**2);
    const threshold=.12+(Math.sin(st.x*3.7+st.z*2.9)+1)*.11;
@@ -43,7 +62,7 @@ export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,
   }
   visible=0;
   for(const b of beads){
-   const st=stems[b.stem],t=b.t;
+   const st=stems[b.stem];if(st.destroyed)continue;const t=b.t;
    if(st.growth<.025||t>st.growth)continue;
    const wave=Math.sin(time*1.15+st.phase)*.09*t*t;
    const x=st.x-ox+st.lean*t+wave+b.side;
@@ -53,12 +72,12 @@ export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,
    dummy.position.set(x,y,z);
    dummy.scale.setScalar((b.head?1.38:(t<.2?.75:1))*Math.min(1,st.growth*9));
    dummy.updateMatrix();
-   mesh.setMatrixAt(visible,dummy.matrix);
+   visibleOwners[visible]=b.stem;mesh.setMatrixAt(visible,dummy.matrix);
    mesh.setColorAt(visible,palette[b.head?3:(b.stem%2)]);
    visible++;
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;
   if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,mesh,update,inspect:()=>({name:'Mists Reeds',stems:stems.length,beads:beads.length,visible}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
+ return {group,mesh,update,blast,inspect:()=>({name:'Mists Reeds',stems:stems.length,beads:beads.length,visible}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
 }
