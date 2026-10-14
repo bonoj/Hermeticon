@@ -1,3 +1,4 @@
+import {createRockMaterials} from './rock-materials.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 // Signed field, tetrahedral chunk extraction and aperture shader migrated from Wanderer Separated.
 export function createTerrain(){
@@ -25,60 +26,6 @@ export function createTerrain(){
 
  const apertureEyes={compileCount:0,vertexHook:false,fragmentHook:false,compileFailures:[],lastCompiledAt:null};
  const terrainMaterial=new T.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.92,metalness:.02,side:T.DoubleSide,flatShading:true,onBeforeCompile:shader=>{shader.uniforms.apertureRadius={value:activeAperture};apertureUniform=shader.uniforms.apertureRadius;shader.uniforms.apertureOffset={value:sharedApertureOffset};apertureEyes.compileCount++;apertureEyes.lastCompiledAt=performance.now();apertureEyes.vertexHook=shader.vertexShader.includes('#include <begin_vertex>');apertureEyes.fragmentHook=shader.fragmentShader.includes('#include <clipping_planes_fragment>');if(!apertureEyes.vertexHook||!apertureEyes.fragmentHook)apertureEyes.compileFailures.push('Missing shader injection anchor');shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform vec3 apertureOffset;');shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAperturePosition=position-apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform float apertureRadius;\nuniform vec3 apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vAperturePosition,vAperturePosition)>apertureRadius*apertureRadius) discard;');shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat apertureFog=smoothstep(7.1,9.70,length(vAperturePosition));\ngl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.045,0.115,0.16),apertureFog);')}});
- // Rock laboratory: shader-only geological treatments. No terrain rebuilds or new topology.
- const rockNames=['Original mortar','Midnight basalt','Layered slate','Ironstone','Obsidian','Ancient limestone'];
- let rockMode=0;
- const rockUniform={value:0};
- const rockShader=(shader)=>{
-  shader.uniforms.rockMode=rockUniform;
-  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vRockPosition;');
-  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvRockPosition=position;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
-varying vec3 vRockPosition;
-uniform float rockMode;
-float rockHash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
-float rockNoise(vec3 p){
- vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
- return mix(mix(mix(rockHash(i),rockHash(i+vec3(1,0,0)),f.x),mix(rockHash(i+vec3(0,1,0)),rockHash(i+vec3(1,1,0)),f.x),f.y),
- mix(mix(rockHash(i+vec3(0,0,1)),rockHash(i+vec3(1,0,1)),f.x),mix(rockHash(i+vec3(0,1,1)),rockHash(i+vec3(1,1,1)),f.x),f.y),f.z);
-}`);
-  shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-if(rockMode>0.5){
- vec3 p=vRockPosition;
- float coarse=rockNoise(p*0.72);
- float grain=rockNoise(p*4.8);
- float fine=rockNoise(p*15.0);
- float seam=abs(sin(p.y*8.5 + coarse*3.5 + p.x*0.22));
- float fracture=1.0-smoothstep(0.025,0.11,abs(sin(p.x*2.7+p.z*1.83+coarse*2.9)));
- vec3 mineral=vec3(0.12);
- if(rockMode<1.5){
-  mineral=mix(vec3(0.038,0.063,0.080),vec3(0.19,0.23,0.25),coarse);
-  mineral+=vec3(0.055,0.071,0.080)*grain;
-  mineral*=1.0-0.38*fracture;
- }else if(rockMode<2.5){
-  float layers=0.5+0.5*sin(p.y*19.0+coarse*4.0+p.x*0.35);
-  mineral=mix(vec3(0.075,0.105,0.125),vec3(0.29,0.32,0.31),layers*0.72+coarse*0.28);
-  mineral*=1.0-0.33*fracture;
- }else if(rockMode<3.5){
-  mineral=mix(vec3(0.115,0.075,0.059),vec3(0.39,0.245,0.145),coarse*0.7+grain*0.3);
-  mineral+=vec3(0.12,0.055,0.012)*pow(1.0-seam,9.0);
-  mineral*=1.0-0.32*fracture;
- }else if(rockMode<4.5){
-  mineral=mix(vec3(0.018,0.025,0.038),vec3(0.13,0.16,0.20),pow(coarse,1.6));
-  mineral+=vec3(0.075,0.105,0.125)*pow(grain,6.0);
-  mineral*=1.0-0.48*fracture;
- }else{
-  float bands=0.5+0.5*sin(p.y*13.0+coarse*3.0);
-  mineral=mix(vec3(0.16,0.16,0.14),vec3(0.34,0.33,0.26),bands*0.6+coarse*0.4);
-  mineral*=1.0-0.38*fracture;
- }
- mineral*=0.82+0.22*fine;
- diffuseColor.rgb=mineral;
-}
-`);
- };
- const previousTerrainShader=terrainMaterial.onBeforeCompile;
- terrainMaterial.onBeforeCompile=shader=>{previousTerrainShader(shader);rockShader(shader)};
  const solid=new T.Group();solid.name='terrain:signed-volume';
  const terrainChunks=[];const terrainPerf={totalChunks:CX*CZ,fullRebuilds:0,localRebuilds:0,lastDirtyChunks:0,lastRebuiltCells:0,lastRebuildMs:0,lastChangedChunks:[]};
  for(let cz=0;cz<CZ;cz++)for(let cx=0;cx<CX;cx++){const geometry=new T.BufferGeometry(),m=new T.Mesh(geometry,terrainMaterial);m.receiveShadow=true;m.frustumCulled=false;solid.add(m);terrainChunks.push({cx,cz,geometry,triangles:0})}
@@ -152,7 +99,7 @@ if(rockMode>0.5){
  // Triangles are clipped against the field's zero crossing, not bore coordinates.
  const capGroup=new T.Group();capGroup.name='terrain:aperture-cap';solid.add(capGroup);
  const capMaterial=new T.MeshStandardMaterial({color:0x7a817e,roughness:1,metalness:0,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
- capMaterial.onBeforeCompile=rockShader;
+ const rockMaterials=createRockMaterials(terrainMaterial,capMaterial);
  let capMesh=null,capTriangles=0,capBuildMs=0,capRebuilds=0,capEnabled=true;
  function rebuildCap(){
   const start=performance.now(),positions=[],latitude=80,longitude=240,r=activeAperture-0.012;
@@ -182,5 +129,5 @@ if(rockMode>0.5){
  }
  regenerate();
  rebuildCap();
- return {group:solid,rockNames,setRockMode:index=>{rockMode=((index%rockNames.length)+rockNames.length)%rockNames.length;rockUniform.value=rockMode;return rockNames[rockMode]},getRockMode:()=>rockMode,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),rockTreatment:{index:rockMode,name:rockNames[rockMode]},apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
+ return {group:solid,rockNames:rockMaterials.rockNames,setRockMode:rockMaterials.setRockMode,getRockMode:rockMaterials.getRockMode,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),rockTreatment:{index:rockMaterials.getRockMode(),name:rockMaterials.rockNames[rockMaterials.getRockMode()]},apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
 }
