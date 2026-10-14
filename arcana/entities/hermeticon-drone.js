@@ -250,15 +250,58 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  // Wanderer scrolls the terrain under a fixed Hermeticon boundary.
  // Preserve the eye's terrain/world coordinates across that rebase. Only
  // boundary encroachment may subsequently displace the eye physically.
+ let constrainedRebases=0,unresolvedRebases=0;
  const rebase=()=>{
   const next=offset(),dx=next.x-lastOffset.x,dz=next.z-lastOffset.z;
   if(!dx&&!dz)return;
-  root.position.x-=dx;root.position.z-=dz;
-  destination.x-=dx;destination.z-=dz;
-  stationAnchor.x-=dx;stationAnchor.z-=dz;
-  stationTarget.x-=dx;stationTarget.z-=dz;
-  crossingPoint.x-=dx;crossingPoint.z-=dz;
-  if(focus)focus={...focus,position:[focus.position[0]-dx,focus.position[1],focus.position[2]-dz]};
+  // Terrain-frame compensation is kinematic, not an intention to follow
+  // the player. Process wall encroachment before each intermediate rebase.
+  // The terrain is stationary in world coordinates throughout this operation.
+  const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.08));
+  const old=root.position.clone();
+  const correction=new T.Vector3();
+  for(let i=1;i<=steps;i++){
+   const delta=new T.Vector3(-dx/steps,0,-dz/steps);
+   const proposed=root.position.clone().add(delta);
+   if(proposed.length()>FREE_RADIUS){
+    // Wall would enter the body: first seek a local tangential path.
+    // Every candidate movement must be swept against current terrain.
+    const radial=proposed.clone().normalize();
+    const normalComponent=Math.max(0,proposed.length()-FREE_RADIUS);
+    const inward=radial.clone().multiplyScalar(-normalComponent-.0001);
+    const axis=Math.abs(radial.y)<.85?new T.Vector3(0,1,0):new T.Vector3(1,0,0);
+    const tangent=new T.Vector3().crossVectors(radial,axis).normalize();
+    const bitangent=new T.Vector3().crossVectors(radial,tangent).normalize();
+    let accepted=false;
+    for(const lateral of [0,.025,.05,.1,.2,.35]){
+     for(let j=0;j<(lateral?16:1);j++){
+      const angle=j*Math.PI*2/16;
+      correction.copy(inward).addScaledVector(tangent,lateral*Math.cos(angle)).addScaledVector(bitangent,lateral*Math.sin(angle));
+      const candidate=proposed.clone().add(correction);
+      // Candidate must be wall-clear and swept from the terrain-frame
+      // translated position. No invalid endpoint is silently accepted.
+      if(candidate.length()>FREE_RADIUS||!body.valid(candidate))continue;
+      // The rebase itself is a coordinate transform; physical correction
+      // alone is checked against terrain in the matching translated frame.
+      if(terrain?.sphereClearance){
+       const radius=EYE_RADIUS+.13;
+       let safe=true;
+       for(let k=0;k<=8;k++){
+        const p=proposed.clone().addScaledVector(correction,k/8);
+        if(terrain.sphereClearance(p,radius)<0){safe=false;break}
+       }
+       if(!safe)continue;
+      }
+      root.position.copy(candidate);accepted=true;constrainedRebases++;break;
+     }
+     if(accepted)break;
+    }
+    if(!accepted){root.position.copy(proposed);unresolvedRebases++}
+   }else root.position.copy(proposed);
+  }
+  const actual=root.position.clone().sub(old);
+  destination.add(actual);stationAnchor.add(actual);stationTarget.add(actual);crossingPoint.add(actual);
+  if(focus)focus={...focus,position:[focus.position[0]+actual.x,focus.position[1],focus.position[2]+actual.z]};
   lastOffset={x:next.x,z:next.z};frameRebases++;
  };
  const enforceWall=()=>{
@@ -346,5 +389,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,constrainedRebases,unresolvedRebases,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
 }
