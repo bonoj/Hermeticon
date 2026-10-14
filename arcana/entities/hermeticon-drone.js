@@ -116,6 +116,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const lookPoint=new T.Vector3();
  const cameraPosition=new T.Vector3(),trial=new T.Vector3(),probe=new T.Vector3(),direction=new T.Vector3();
  const targetQuat=new T.Quaternion(),lookMatrix=new T.Matrix4();
+ const stationAnchor=new T.Vector3(),stationTarget=new T.Vector3(),stationVelocity=new T.Vector3();
  const meridianMount=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),Math.PI/2);
  const UP=new T.Vector3(0,1,0);
  let cameraRef=null,mode='observe',pause=0,routeAge=25;
@@ -253,6 +254,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   beads.instanceMatrix.needsUpdate=true;
  };
  root.position.set(0,5.2,5.1);
+ stationAnchor.copy(root.position);
  const update=(dt,camera)=>{
   const step=Math.max(0,Math.min(dt,.06));time+=step;
   if(camera?.position)cameraRef=camera;
@@ -291,6 +293,21 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
     else{blocked++;velocity.set(0,0,0);mode='observe';routeAge=25;}
    }
   }
+  // Constant low-energy station keeping, independent of attention or travel.
+  // Anchor follows deliberate travel but not every oscillation, preventing drift.
+  stationAnchor.lerp(root.position,Math.min(1,step*.32));
+  stationTarget.copy(stationAnchor).add(new T.Vector3(
+   .16*Math.sin(time*.73)+.09*Math.sin(time*1.19+1.2),
+   .19*Math.sin(time*.91+.5)+.07*Math.sin(time*1.67),
+   .14*Math.cos(time*.61+.8)+.08*Math.sin(time*1.31)
+  ));
+  // While traveling, hover around the moving body; while idle, hover around anchor.
+  direction.copy(stationTarget).sub(root.position).multiplyScalar(1.2);
+  stationVelocity.addScaledVector(direction,step);
+  stationVelocity.multiplyScalar(Math.exp(-step*1.9));
+  trial.copy(root.position).addScaledVector(stationVelocity,step);
+  if(clearSegment(root.position,trial))root.position.copy(trial);
+  else stationVelocity.set(0,0,0);
   // The meridian is the eye's forward-bearing hardware: rotate the entire
   // vessel and iris as one, never the anatomy independently.
   if(focus)lookPoint.fromArray(focus.position);
