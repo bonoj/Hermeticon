@@ -136,7 +136,7 @@ globalThis.BaubleInspect=inspectWorld;
 const edgeNames=['OFF','SOBEL','DEPTH','HYBRID'];
 let edgeMode=0,edgeFrames=0,edgeLastMs=0,edgePeakMs=0;
 const edgeTarget=new T.WebGLRenderTarget(1,1,{depthBuffer:true});
-edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
+edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedShortType);
 edgeTarget.depthTexture.format=T.DepthFormat;
 const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
 const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
@@ -178,6 +178,6 @@ for(const entry of mounts.values()){
  if(!entry.active||entry.error||typeof entry.source.update!=='function')continue;
  try{entry.source.update(elapsed/1000,now/1000)}catch(error){entry.error=String(error&&error.stack||error);console.error('World update failed: '+entry.id,error)}
 }
-camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);if(edgeMode===0){renderer.render(scene,camera)}else{const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++}}
+camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);if(edgeMode===0){renderer.render(scene,camera)}else{const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.clearDepth();renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++}}
 requestAnimationFrame(frame);
 }catch(e){window.BaubleFatal(e);console.error(e)}
