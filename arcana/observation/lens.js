@@ -78,7 +78,7 @@ return Object.freeze({
  const previousMask=camera.layers.mask,previousBackground=scene.background,previousFog=scene.fog;
  try{
   camera.layers.set(terrainLayer);scene.background=null;
-  renderer.setRenderTarget(terrainTarget);renderer.setClearColor(0x000000,0);renderer.clear(true,true,true);
+  renderer.setRenderTarget(terrainTarget);renderer.clear(true,true,true);
   renderer.render(scene,camera);
  }finally{
   renderer.setRenderTarget(null);camera.layers.mask=previousMask;scene.background=previousBackground;scene.fog=previousFog;
