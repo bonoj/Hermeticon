@@ -49,3 +49,7 @@ Moving-wall continuous displacement, actual regression execution, and browser ve
 ## 2026-10-14 wall recovery: terrain-certified radial path
 
 Removed the discrete neighborhood candidate search entirely. `resolveBoundary` now refuses to correct any existing terrain overlap; for wall-only encroachment it tests the minimum radial inward segment against terrain clearance with conservative advancement and rejects blocked or uncertifiable corrections. This avoids silently teleporting across terrain. It is still a post-rebase correction, not continuous collision response to the changing boundary. When no safe radial path exists the body remains unresolved; a future time-dependent constrained solver must handle tangential escape **before** the wall penetrates. No automated or browser runtime tests have been executed for this commit.
+
+## Executable regression fixture
+
+Open [spherical-body-regression.html](./spherical-body-regression.html) in the deployed Arcana directory to run the deterministic browser regression suite. It exercises static terrain-plane collision, sphere contact, swept crossings, wall exit, wall-only correction, conflicting terrain/wall constraints, and embedded-body fail-closed behavior. It is a harness, **not a recorded passing test run**; the tests use an analytic half-space rather than the actual terrain extraction. Additional moving-wall trajectories and terrain mesh fixtures remain mandatory before certification.
