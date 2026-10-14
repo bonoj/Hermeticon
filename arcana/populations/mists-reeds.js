@@ -1,0 +1,64 @@
+// Extracted from examples/wanderer-separated/world.js (Mists Reeds, gallery index 0).
+// Independent population: no DOM, global world state, or gallery dependencies.
+export function createMistsReeds(T,{surface,center={x:-2,z:-1},offset=()=>({x:0,z:0}),characters=()=>[],radius=9.92,parent=null}={}){
+ if(typeof surface!=='function')throw Error('Mists Reeds requires surface(x,z)');
+ const seed=n=>{const v=Math.sin(n*127.1+41.7)*43758.5453;return v-Math.floor(v)};
+ const stems=[];
+ for(let k=0;k<76;k++){
+  const angle=seed(k*3+1)*Math.PI*2,r=.55+Math.sqrt(seed(k*3+2))*2.2;
+  const x=center.x+Math.cos(angle)*r,z=center.z+Math.sin(angle)*r;
+  if(x>center.x+1.2&&z<center.z+.35)continue;
+  const ground=surface(x,z);if(ground==null)continue;
+  stems.push({x,z,ground,height:.42+seed(k*5+3)*.95,lean:(seed(k*7+4)-.5)*.18,phase:seed(k*11+5)*6.28,growth:0});
+ }
+ const geometry=new T.IcosahedronGeometry(.048,0);
+ const material=new T.MeshStandardMaterial({vertexColors:false,roughness:.88});
+ const mesh=new T.InstancedMesh(geometry,material,8000);
+ mesh.count=0;mesh.frustumCulled=false;
+ const group=new T.Group();group.name='Mists Reeds';group.add(mesh);if(parent)parent.add(group);
+ const dummy=new T.Object3D();
+ const palette=[0x537f70,0x779c87,0xa7a884,0xd3b68c].map(c=>new T.Color(c));
+ const beads=[];
+ for(let k=0;k<stems.length;k++){
+  const st=stems[k],count=5+Math.floor(st.height*6);
+  for(let j=0;j<count;j++){
+   const t=j/(count-1);
+   let side=0;
+   if(k%3===0&&j>=Math.floor(count*.45)&&j<count-1)side=(j%2?1:-1)*.14;
+   beads.push({stem:k,t,side,depth:0,height:t,head:j>=count-2});
+  }
+ }
+ let time=0,visible=0;
+ function update(dt){
+  time+=dt;
+  const {x:ox=0,z:oz=0}=offset();
+  const occupants=characters();
+  for(const st of stems){
+   const px=st.x-ox,pz=st.z-oz,height=st.height;
+   const rimClear=radius-.16-Math.sqrt(px*px+pz*pz+Math.max(0,st.ground+height)**2);
+   const threshold=.12+(Math.sin(st.x*3.7+st.z*2.9)+1)*.11;
+   const occupied=occupants.some(c=>Math.hypot(st.x-c.x,st.z-c.z)<.55);
+   const target=!occupied?T.MathUtils.smoothstep(rimClear,-.08,threshold+.42):0;
+   st.growth+=(target-st.growth)*Math.min(1,dt*(target>st.growth?3.6:7.5));
+  }
+  visible=0;
+  for(const b of beads){
+   const st=stems[b.stem],t=b.t;
+   if(st.growth<.025||t>st.growth)continue;
+   const wave=Math.sin(time*1.15+st.phase)*.09*t*t;
+   const x=st.x-ox+st.lean*t+wave+b.side;
+   const y=st.ground+st.height*b.height;
+   const z=st.z-oz+Math.cos(time*1.3+st.phase)*.075*t*t;
+   if(x*x+y*y+z*z>(radius-.08)**2)continue;
+   dummy.position.set(x,y,z);
+   dummy.scale.setScalar((b.head?1.38:(t<.2?.75:1))*Math.min(1,st.growth*9));
+   dummy.updateMatrix();
+   mesh.setMatrixAt(visible,dummy.matrix);
+   mesh.setColorAt(visible,palette[b.head?3:(b.stem%2)]);
+   visible++;
+  }
+  mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;
+  if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+ }
+ return {group,mesh,update,inspect:()=>({name:'Mists Reeds',stems:stems.length,beads:beads.length,visible}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
+}
