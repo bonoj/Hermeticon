@@ -1,6 +1,6 @@
 # Arcana Populations
 
-Reusable populations and authored botanical systems. **The BB garden and original Mists Reeds are mounted in Genesis.** The older geometric prototypes are preserved under `potential/` but not mounted.
+Reusable populations and authored botanical systems. **The original Mists Reeds, BB Garden, and Second Garden are mounted in Genesis.** The older geometric prototypes are preserved under `potential/` but not mounted.
 
 ## Mists Reeds
 
@@ -33,7 +33,7 @@ The extracted reeds preserve the original Wanderer gallery-index-0 behavior (sou
 
 ## Second Garden — six additional BB species (ACCEPTED CANON)
 
-- [second-garden.js](second-garden.js) exports `createSecondGarden(T,{terrain,surface,offset,characters,parent,radius,seed})` and returns `{group,update,inspect,dispose}`.
+- [second-garden.js](second-garden.js) exports `createSecondGarden(T,{terrain,surface,offset,characters,parent,radius,seed})` and returns `{group,update,blast,inspect,dispose}`.
 - **Mycelial Lace:** surface-sampled branching bead chains.
 - **Glassfall:** underside-seeking inverted bead chains; candidate placement requires actual signed-field underside crossings and may yield no roots at unsuitable coordinates.
 - **Star Anemones:** radial bead arms and central BB clusters.
@@ -42,3 +42,7 @@ The extracted reeds preserve the original Wanderer gallery-index-0 behavior (sou
 - **Tumble Orbs:** spherical bead-loop lattices; rocking/sway only, **no locomotion**.
 - All use deterministic roots, instanced BBs, per-plant growth and actor clearance, aperture culling, and inspection. No material exchange, condensation, terrain modification, or wind simulation is implemented.
 - **Status: AUTHOR-ACCEPTED CANON, 2026-10-14.** All six species approved. Both gardens are accepted and mounted in Genesis. Independent live runtime/performance verification is not claimed. Preserve both accepted compositions.
+
+## Meteor transfer and accounting — 2026-10-14
+
+All three botanical systems implement radial `blast(point,options,debris)` and transfer destroyed stems/plants into the shared detached BB system. The transfer includes clipped or currently retracted anatomy; BBs not in the rendered instance list use approximate authored coordinates rather than exact animation poses. Inspectors expose `activeBeads` separately from original `beads`/`descriptors` and currently `visible` instances. Sum active authored BBs and detached BBs for material inventory; never sum historical descriptors after disassembly. The material renderer has no arbitrary fixed BB capacity. This behavior is committed, not independently verified on the live site.
