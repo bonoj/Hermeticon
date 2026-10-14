@@ -79,5 +79,5 @@ export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,blast,inspect:()=>({name:'Lantern Hermits',creatures:agents.filter(p=>!p.destroyed).map(p=>({species:'lantern-hermit',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,gesture:+p.gesture.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Lantern Hermits',creatures:agents.filter(p=>!p.destroyed).map(p=>({species:'lantern-hermit',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,gesture:+p.gesture.toFixed(2)})),beads:beads.length,activeBeads:beads.reduce((n,b)=>n+(agents[b.id].destroyed?0:1),0),visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
