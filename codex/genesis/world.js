@@ -16,6 +16,7 @@ import {createLanternHermits} from '../../arcana/creatures/lantern-hermits.js';
 import {createBeadDebris} from '../../arcana/physics/bead-debris.js';
 import {createImpactDispatcher} from '../../arcana/physics/impact-dispatcher.js';
 import {createMaterialSurvey} from '../../arcana/observation/material-survey.js';
+import {createTerrainNavigation} from '../../arcana/interaction/terrain-navigation.js';
 import {createCinderfall} from '../../arcana/spells/cinderfall.js';
 import {createEquatorialTreatment} from '../../arcana/equatorial-treatment.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
@@ -76,25 +77,14 @@ export function createGenesis(){
   parent:world.content,radius:terrain.getAperture(),seed:741,
   onImpact:impactDispatcher.dispatch});
  world.castMeteor=()=>cinderfall.cast();
- let view=null;
- const tapReport={total:0,underside:0,navigation:0,rayMiss:0,last:null,recent:[]};
- world.attachView=next=>{view=next};
- world.tap=(x,y)=>{
-  if(!view)return;
-  tapReport.total++;
-  const result=terrain.interact(x,y,view,wanderer.getWalkingHeight());
-  if(!result.hit)tapReport.rayMiss++;
-  if(result.owner==='terrain-underside')tapReport.underside++;
-  else if(result.target){tapReport.navigation++;wanderer.moveTo(result.target.x,result.target.z)}
-  const record={owner:result.owner,normalY:result.normalY,point:result.point,hit:result.hit,screen:[Math.round(x),Math.round(y)]};
-  tapReport.last=record;tapReport.recent.push(record);
-  if(tapReport.recent.length>16)tapReport.recent.shift();
- };
+ const navigation=createTerrainNavigation({terrain,actor:wanderer});
+ world.attachView=navigation.attachView;
+ world.tap=navigation.tap;
 
  world.update=dt=>{wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt)};
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
  return world;
 }
