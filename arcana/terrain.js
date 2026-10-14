@@ -27,6 +27,7 @@ export function createTerrain(){
  const terrainMaterial=new T.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.92,metalness:.02,side:T.DoubleSide,flatShading:true,onBeforeCompile:shader=>{shader.uniforms.apertureRadius={value:activeAperture};apertureUniform=shader.uniforms.apertureRadius;shader.uniforms.apertureOffset={value:sharedApertureOffset};apertureEyes.compileCount++;apertureEyes.lastCompiledAt=performance.now();apertureEyes.vertexHook=shader.vertexShader.includes('#include <begin_vertex>');apertureEyes.fragmentHook=shader.fragmentShader.includes('#include <clipping_planes_fragment>');if(!apertureEyes.vertexHook||!apertureEyes.fragmentHook)apertureEyes.compileFailures.push('Missing shader injection anchor');shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform vec3 apertureOffset;');shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAperturePosition=position-apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vAperturePosition;\nuniform float apertureRadius;\nuniform vec3 apertureOffset;');shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(dot(vAperturePosition,vAperturePosition)>apertureRadius*apertureRadius) discard;');shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat apertureFog=smoothstep(7.1,9.70,length(vAperturePosition));\ngl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(0.045,0.115,0.16),apertureFog);')}});
  const solid=new T.Group();solid.name='terrain:signed-volume';
  const terrainChunks=[];
+ const collisionStats={queries:0,triangleTests:0,chunkRejects:0};
  const collisionA=new T.Vector3(),collisionB=new T.Vector3(),collisionC=new T.Vector3(),collisionClosest=new T.Vector3(),collisionTriangle=new T.Triangle(),collisionPoint=new T.Vector3();const terrainPerf={totalChunks:CX*CZ,fullRebuilds:0,localRebuilds:0,lastDirtyChunks:0,lastRebuiltCells:0,lastRebuildMs:0,lastChangedChunks:[]};
  for(let cz=0;cz<CZ;cz++)for(let cx=0;cx<CX;cx++){const geometry=new T.BufferGeometry(),m=new T.Mesh(geometry,terrainMaterial);m.receiveShadow=true;m.frustumCulled=false;solid.add(m);terrainChunks.push({cx,cz,geometry,triangles:0})}
  let wanderX=0,wanderZ=0,cycle=0,seed=741,triangles=0,fieldMin=0,fieldMax=0,solidCount=0,voidCount=0,buildMs=0,terrainBuildCount=0;
@@ -73,6 +74,13 @@ export function createTerrain(){
    }
   }
   c.geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));c.geometry.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(pos.length).fill(.52),3));c.geometry.computeVertexNormals();c.geometry.computeBoundingSphere();c.geometry.computeBoundingBox();c.triangles=pos.length/9;
+  // Precompute triangle AABBs and vertices once per terrain rebuild, not per collision query.
+  const boxes=new Float32Array(pos.length*2),positions=new Float32Array(pos);
+  for(let i=0;i<pos.length;i+=9){for(let axis=0;axis<3;axis++){
+   boxes[i*2+axis]=Math.min(pos[i+axis],pos[i+3+axis],pos[i+6+axis]);
+   boxes[i*2+axis+3]=Math.max(pos[i+axis],pos[i+3+axis],pos[i+6+axis]);
+  }}
+  c.collision={positions,boxes};
  }
  triangles=terrainChunks.reduce((n,c)=>n+c.triangles,0);buildMs=performance.now()-start;
  terrainPerf.lastDirtyChunks=selected.length;terrainPerf.lastRebuiltCells=rebuiltCells;terrainPerf.lastRebuildMs=+buildMs.toFixed(3);terrainPerf.lastChangedChunks=selected;if(bounds)terrainPerf.localRebuilds++;else terrainPerf.fullRebuilds++;
@@ -86,20 +94,23 @@ export function createTerrain(){
  function sphereClearance(center,radius){
   collisionPoint.set(center.x+wanderX,center.y,center.z+wanderZ);
   if(fieldSample(collisionPoint.x,collisionPoint.y,collisionPoint.z)>0)return -radius;
-  let best=Infinity;
+  let best=Infinity;collisionStats.queries++;
   for(const chunk of terrainChunks){
    const g=chunk.geometry,bb=g.boundingBox;if(!bb)continue;
    const dx=Math.max(bb.min.x-collisionPoint.x,0,collisionPoint.x-bb.max.x);
    const dy=Math.max(bb.min.y-collisionPoint.y,0,collisionPoint.y-bb.max.y);
    const dz=Math.max(bb.min.z-collisionPoint.z,0,collisionPoint.z-bb.max.z);
-   if(dx*dx+dy*dy+dz*dz>=best)continue;
-   const attr=g.getAttribute('position');if(!attr)continue;
-   for(let i=0;i<attr.count;i+=3){
-    collisionA.fromBufferAttribute(attr,i);collisionB.fromBufferAttribute(attr,i+1);collisionC.fromBufferAttribute(attr,i+2);
-    const tx=Math.max(Math.min(collisionA.x,collisionB.x,collisionC.x)-collisionPoint.x,0,collisionPoint.x-Math.max(collisionA.x,collisionB.x,collisionC.x));
-    const ty=Math.max(Math.min(collisionA.y,collisionB.y,collisionC.y)-collisionPoint.y,0,collisionPoint.y-Math.max(collisionA.y,collisionB.y,collisionC.y));
-    const tz=Math.max(Math.min(collisionA.z,collisionB.z,collisionC.z)-collisionPoint.z,0,collisionPoint.z-Math.max(collisionA.z,collisionB.z,collisionC.z));
+   if(dx*dx+dy*dy+dz*dz>=best){collisionStats.chunkRejects++;continue}
+   const data=chunk.collision;if(!data)continue;
+   const {positions,boxes}=data;
+   for(let i=0;i<positions.length;i+=9){
+    const j=i*2;
+    const tx=Math.max(boxes[j]-collisionPoint.x,0,collisionPoint.x-boxes[j+3]);
+    const ty=Math.max(boxes[j+1]-collisionPoint.y,0,collisionPoint.y-boxes[j+4]);
+    const tz=Math.max(boxes[j+2]-collisionPoint.z,0,collisionPoint.z-boxes[j+5]);
     if(tx*tx+ty*ty+tz*tz>=best)continue;
+    collisionA.fromArray(positions,i);collisionB.fromArray(positions,i+3);collisionC.fromArray(positions,i+6);
+    collisionStats.triangleTests++;
     collisionTriangle.set(collisionA,collisionB,collisionC).closestPointToPoint(collisionPoint,collisionClosest);
     best=Math.min(best,collisionClosest.distanceToSquared(collisionPoint));
    }
@@ -194,5 +205,5 @@ export function createTerrain(){
   return {magnitude:e,radius,depth,rim,changed,dirtyChunks:terrainPerf.lastDirtyChunks};
  }
  regenerate();
- return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,sphereClearance,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,sphereClearance,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,collisionStats:{...collisionStats}})};
 }
