@@ -45,7 +45,7 @@ export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>fal
    new T.Vector3(0,displacement.y,0),
    new T.Vector3(0,0,displacement.z)
   ];
-  for(const d of candidates)if(d.lengthSq()>1e-12&&sweep(position,probe.copy(position).add(d))){position.add(d);return true}
+  for(const d of candidates)if(d.lengthSq()>1e-12&&sweep(position,position.clone().add(d))){position.add(d);return true}
   return false;
  };
  const resolveBoundary=(position)=>{
