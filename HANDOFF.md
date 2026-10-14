@@ -70,3 +70,8 @@ Six new BB-only species are mounted in Genesis via `arcana/populations/second-ga
 ## First Bestiary — Velvet Drifters added (2026-10-14)
 
 `arcana/creatures/velvet-drifters.js` is now mounted in Genesis beside the Pebbleback trial: up to four deterministic BB-only elongated drifters with tendrils, peristaltic idle/motion and geological support-checked wandering/avoidance. Candidate awaiting author visual inspection. Four other proposed creature species remain unimplemented. Preserve the twelve canonical botanical populations.
+
+
+## First Bestiary — Threadwyrms added (2026-10-14)
+
+`arcana/creatures/threadwyrms.js` is now mounted in Genesis, up to three BB-only 24-segment articulated terrain-followers with movement history and Wanderer avoidance. This is an unaccepted candidate awaiting visual inspection. Three of six planned species are implemented; Glasswings, Lantern Hermits and Bellwraiths remain. Existing-hole entry and emergence are not yet implemented. Preserve the twelve canonical botanical populations.
