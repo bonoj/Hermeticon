@@ -134,7 +134,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   if(!terrain||y>3.6||y< -3.6)return false;
   const o=offset();return terrain.sample(x+o.x,y,z+o.z)>0;
  };
- const body=createSphericalBody({radius:EYE_RADIUS,innerRadius:10.07,solidAt,margin:.13});
+ const body=createSphericalBody({radius:EYE_RADIUS,innerRadius:10.07,solidAt,intersectsSphere:terrain?.intersectsSphere?.bind(terrain)??null,margin:.13});
  const clearAt=p=>body.valid(p);
  const clearSegment=(a,b)=>body.sweep(a,b);
  // Crossing the slab is only legal where a whole eye fits through a bore.
