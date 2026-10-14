@@ -46,12 +46,13 @@ float center=linearDepth(texture2D(tDepth,vEdgeUv).r);
 float dx=linearDepth(texture2D(tDepth,vEdgeUv+vec2(px.x,0.)).r);
 float dy=linearDepth(texture2D(tDepth,vEdgeUv+vec2(0.,px.y)).r);
 float depthEdge=smoothstep(.012,.085,max(abs(dx-center),abs(dy-center))/max(center,.2));
-vec3 original=texture2D(tColor,vEdgeUv).rgb;
+// This is an overlay, not a replacement image: preserve the fully lit terrain and vessel.
 float terrainRaw=texture2D(tDepth,vEdgeUv).r;
 float sceneRaw=texture2D(tSceneDepth,vEdgeUv).r;
 if(terrainRaw>=.999999||terrainRaw>sceneRaw+.00005){gl_FragColor=vec4(0.);return;}
-${observationTreatments.filter(t=>t.kind==='shader').map((t,i)=>`${i?'else ':''}if(mode==${t.mode}){float strength=${t.strength};gl_FragColor=vec4(${t.color},1.);}`).join('')}
-else {gl_FragColor=vec4(original,1.);}
+float strength=mode==2?sobel:mode==3?depthEdge:max(sobel*.65,depthEdge);
+vec3 ink=mode==2?vec3(.93,.88,.72):vec3(1.,.72,.22);
+gl_FragColor=vec4(ink,clamp(strength*.9,0.,.9));
 return;
 }`});
 const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
