@@ -21,3 +21,6 @@
 /* Build identifier shares FPS typography; FPS remains the single style source. */
 #buildRow #build{font:inherit;font-size:12px;color:#e7dbb7}
 
+
+/* Explicitly requested fourth instrument: rock palette, placed to the left of globe. */
+#buttons #rockCycle{order:3;font-size:23px;touch-action:manipulation}
