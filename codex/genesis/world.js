@@ -80,13 +80,61 @@ export function createGenesis(){
  function wandererOffsetX(){return edgeWanderX}
  function wandererOffsetZ(){return edgeWanderZ}
  const originalSetOffset=terrain.setOffset;
- terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
+ terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z;ghost.position.set(-x,0,-z)};
  // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
 
  setEdgeMode(8);
+
+ // Ghost Cavern: reversible visual-only witnesses. No collision or terrain mutation.
+ const ghost=new T.Group();ghost.name='ghost-cavern-atmosphere';world.content.add(ghost);
+ const ghostMat=new T.MeshBasicMaterial({color:0x102b39,transparent:true,opacity:.72,depthWrite:false,side:T.DoubleSide,fog:true});
+ const glowMat=new T.MeshBasicMaterial({color:0x64b9bf,transparent:true,opacity:.5,depthWrite:false,blending:T.AdditiveBlending});
+ const ghostPositions=[],motePositions=[];
+ // Fixed, deterministic candidates, accepted only in genuine SDF void.
+ for(let i=0;i<120;i++){
+  const a=i*2.399963229728653,rad=3.1+6.0*Math.sqrt((i+.5)/120);
+  const x=Math.cos(a)*rad,z=Math.sin(a)*rad,y=1.7+1.9*Math.sin(i*1.73);
+  if(terrain.sample(x,y,z)>0)continue;
+  if(i%5===0){
+   const height=.7+(i%7)*.27,base=.25+(i%4)*.12;
+   const mesh=new T.Mesh(new T.ConeGeometry(base,height,5),ghostMat);
+   mesh.position.set(x,y,z);mesh.rotation.z=Math.PI;ghost.add(mesh);ghostPositions.push([x,y,z]);
+  }else motePositions.push(x,y,z);
+ }
+ const motesGeometry=new T.BufferGeometry();
+ motesGeometry.setAttribute('position',new T.Float32BufferAttribute(motePositions,3));
+ const motes=new T.Points(motesGeometry,new T.PointsMaterial({color:0x4ca4ad,size:.075,transparent:true,opacity:.46,depthWrite:false,sizeAttenuation:true}));
+ ghost.add(motes);
+ // Low-cost layered translucent veils; no volumetric raymarching.
+ const veilMat=new T.MeshBasicMaterial({color:0x0b2937,transparent:true,opacity:.18,depthWrite:false,side:T.DoubleSide});
+ for(const z of [-7,-3,2,6]){
+  const veil=new T.Mesh(new T.PlaneGeometry(17,5),veilMat);
+  veil.position.set(0,.8,z);ghost.add(veil);
+ }
+ const glows=[];
+ for(const [x,y,z] of [[-5,2.5,-6],[6,2.9,-5],[1,2.7,7]]){
+  if(terrain.sample(x,y,z)>0)continue;
+  const light=new T.Mesh(new T.SphereGeometry(.11,8,6),glowMat);
+  light.position.set(x,y,z);ghost.add(light);glows.push(light);
+ }
+ let ghostEnabled=false;
+ ghost.visible=false;
+ const ghostButton=document.createElement('button');
+ ghostButton.id='ghostCavern';ghostButton.type='button';ghostButton.textContent='☁';
+ ghostButton.title='Ghost Cavern: OFF (solid cap)';ghostButton.setAttribute('aria-label',ghostButton.title);
+ document.querySelector('#buttons').append(ghostButton);
+ function setGhost(enabled){
+  ghostEnabled=!!enabled;ghost.visible=ghostEnabled;
+  terrain.setCapEnabled(!ghostEnabled);
+  ghostButton.style.borderColor=ghostEnabled?'#6ec9cf':'#66543a';
+  ghostButton.title='Ghost Cavern: '+(ghostEnabled?'ON':'OFF (solid cap)');
+  ghostButton.setAttribute('aria-label',ghostButton.title);
+  return ghostEnabled;
+ }
+ ghostButton.onclick=()=>setGhost(!ghostEnabled);
 
  // Deliberately empty: future GPU boundary experiment supplies node positions.
  // This maker owns only instances, colors, and honest instrumentation.
@@ -126,6 +174,6 @@ export function createGenesis(){
  };
  world.update=dt=>{wanderer.update(dt)};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},ghostCavern:{enabled:ghostEnabled,silhouettes:ghostPositions.length,motes:motePositions.length/3,glows:glows.length,veils:4,capEnabled:!ghostEnabled},nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
