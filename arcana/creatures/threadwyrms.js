@@ -63,5 +63,5 @@ export function createThreadwyrms(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,blast,inspect:()=>({name:'Threadwyrms',creatures:agents.map(p=>({species:'threadwyrm',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,trail:p.trail.length})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Threadwyrms',creatures:agents.filter(p=>!p.destroyed).map(p=>({species:'threadwyrm',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,trail:p.trail.length})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
