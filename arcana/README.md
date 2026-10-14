@@ -88,3 +88,18 @@ Cinderfall has no automatic timer. New meteor taps do not cancel active projecti
 ## World-space visibility diagnostics
 
 [`observation/world-space.js`](observation/world-space.js) defines the vessel's outer/inner radii and terrain aperture and provides `inspectObjectSpace(object,camera)`. It reports actual world-space bounds, scene-graph attachment, glass containment, projected NDC coordinates, and camera-frustum intersection. The Genesis eye includes this report under `systems[].space`. Before changing an apparently missing entity's coordinates, inspect these values; do not mistake a scene-graph, build, or camera issue for placement. This does not by itself prove browser pixels or deployment.
+
+## Note to future Clara: mounting nested Hermeticons (2026-10-14)
+
+**A constructed object is not a rendered object.** `createHermeticon()` returns `{group, content}` as *separate groups*. Both links must be established: `vessel.group.add(vessel.content)`, and the **outer entity root must be attached to the actual parent** (`parent.add(root)` or an explicit caller-owned equivalent). The eye disappeared because its constructor accepted `parent` but never called `parent.add(root)`. Do not move, rotate, rescale, or rewrite a missing entity before verifying this scene-graph chain.
+
+Minimal checklist for every new nested Hermeticon:
+
+1. Verify parent → entity root → vessel.group → vessel.content → inhabitant meshes. Confirm `root.parent` is non-null and the chain reaches Genesis's rendered `world.content`.
+2. Verify visibility, world-space bounds, camera frustum and projected position with `observation/world-space.js`. A sphere fitting inside radius 10.07 is not proof of visibility.
+3. Keep glass/brass orientation distinct from the inhabitant's gaze. Vessel rotation also rotates descendants; compensate locally if necessary.
+4. Preserve the accepted Genesis composition. Add experimental entities with isolated construction/update failure boundaries; never put a fallible experiment ahead of all population updates without protection. An exception in `world.update` can halt the entire world.
+5. Inspect source **and** deployed runtime independently. A GitHub write or passing build does not prove the live browser renders the intended scene. Don't ask the user to debug our scene graph.
+6. On regression, revert only the experiment's Genesis integration to the last user-confirmed stable composition; preserve independent Arcana work. Restore populations first, then repair the experiment offline.
+
+**Failure record:** Eye was invisible because `parent.add(root)` was missing. We wasted several commits guessing camera coordinates and iris orientation. A later regression caused all populations to disappear; restoring stable Genesis (`001fc1fe` composition) brought them back. The repaired eye integration is `532118c4`, with attachment and isolated update errors. These are source-level findings; visual confirmation remains separate.
