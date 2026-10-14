@@ -13,3 +13,11 @@ The inventory of reusable composables. Before inventing a mechanism, inspect thi
 ## Optional occlusion wall (not mounted)
 
 `occlusion-wall.js` preserves the former signed-field-clipped spherical cap. It is deliberately **not** instantiated in Genesis. To restore in an authored world: `const wall=createOcclusionWall({terrain,radius:terrain.getAperture()}); world.content.add(wall.group)`. Forward terrain offset changes with `wall.setOffset(x,z)` and radius changes with `wall.setRadius(r)`; `dispose()` releases its geometry/material. Genuine signed-field voids remain open.
+
+## Equatorial edge treatments
+
+`equatorial-treatment.js` exports `createEquatorialTreatment({terrain,parent})`. It owns the ten existing equatorial comparison presets, their signed-field sampling, geometry, materials, offsets, and inspection. Genesis instantiates it and exposes its cycle and mode controls. Its default remains shader-only transition (preset 8); the optional spherical occlusion wall is separate and remains unmounted.
+
+## Observation instruments
+
+`observation/lens.js` owns the renderer and SOURCE/SOBEL/DEPTH/HYBRID modules. Athanor hosts the lens because it owns the renderer; Genesis does **not** duplicate this pipeline. Current capture is full-scene, not yet terrain-masked.
