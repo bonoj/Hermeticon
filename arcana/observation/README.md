@@ -33,3 +33,9 @@ Athanor creates and schedules the lens. Genesis declares `observationTargets().t
 - `7c74e324`: edge-ink-only alpha overlay preserved the original lit terrain; accepted by visual inspection.
 
 **Do not revert to opaque terrain-color compositing or fullscreen auto-clear.** Keep new treatments reusable and scoped to explicit observation targets rather than hardcoding Genesis.
+
+## Material observation (2026-10-14)
+
+This is distinct from the visual lens. The Athanor host exposes read-only `HermeticonSurvey()` for active mounts and the existing `Athanor.inspect()` for full inspection. Genesis exposes `world.materialSurvey()` and embeds its result under `material` in its normal inspection.
+
+The compact survey reports authored inventory, detached BB count, total logical BB inventory, visible authored/detached BB counts, terrain/vessel ownership of detached BBs, current render allocation, and per-population inventory/visibility. **Inventory is not the same as visible BBs:** destroyed authored descriptors remain historical records, while their released BBs are also in the detached population. Consequently `total` is a raw storage count, **not a conservation ledger**; avoid interpreting it as physical matter without tracking transfers. No extra HUD, frame-by-frame logging, or unsolicited lens changes. The accepted HYBRID terrain-only treatment remains untouched.
