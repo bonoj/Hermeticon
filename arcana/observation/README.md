@@ -39,3 +39,7 @@ Athanor creates and schedules the lens. Genesis declares `observationTargets().t
 This is distinct from the visual lens. The Athanor host exposes read-only `HermeticonSurvey()` for active mounts and the existing `Athanor.inspect()` for full inspection. Genesis exposes `world.materialSurvey()` and embeds its result under `material` in its normal inspection.
 
 The compact survey reports authored inventory, detached BB count, total logical BB inventory, visible authored/detached BB counts, terrain/vessel ownership of detached BBs, current render allocation, and per-population inventory/visibility. **Inventory is not the same as visible BBs:** `activeBeads` excludes descriptors belonging to destroyed organisms; detached material is counted separately. The `total` field is the sum of active authored BBs and detached BBs. Meteor transfers now include clipped and retracted anatomy, so a completed destruction should preserve that total. Historical `beads`/`descriptors` fields still report the original authored storage and must not be added to detached counts. No extra HUD, frame-by-frame logging, or unsolicited lens changes. The accepted HYBRID terrain-only treatment remains untouched.
+
+## Default on world launch
+
+Athanor explicitly initializes the lens with `setMode('HYBRID')` (commit `d134f50e`). Users can still cycle OFF, SOURCE, SOBEL, DEPTH, HYBRID. This changes the startup selection only; the accepted terrain-only ink treatment and foreground occlusion contract are unchanged. Inspect the live build SHA separately from the source commit.
