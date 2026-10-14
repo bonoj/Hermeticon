@@ -1,56 +1,50 @@
-// Cinderfall phase one: BB meteor, delayed turbulent ember wake, terrain contact event.
-// No deformation, blast damage, or changes to organism ownership.
-export function createCinderfall(T,{surface,targets=()=>[],offset=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
- if(typeof surface!=='function')throw Error('Cinderfall requires surface');
+// Adapted from the established Betwixt Crucible createMeteorSystem.
+// Small glowing meteor, short-lived additive BB wake, impact callback.
+// Genesis owns targeting; terrain remains immutable.
+export function createCinderfall(T,{surface,targets=()=>[],offset=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72,onImpact=()=>{}}={}){
+ if(typeof surface!=='function')throw Error('Cinderfall requires surface(x,z)');
  const group=new T.Group();group.name='Cinderfall';parent?.add(group);
- const rand=n=>{const x=Math.sin(n*127.1+seed*73.7)*43758.5453;return x-Math.floor(x)};
- const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.66,metalness:.07,vertexColors:false});
- const count=73,mesh=new T.InstancedMesh(geo,mat,count);mesh.frustumCulled=false;mesh.count=0;group.add(mesh);
- const colors=[0xffd49a,0xff5a27,0xdd231a,0x8b1c22,0xffa34a].map(c=>new T.Color(c));
- const dummy=new T.Object3D(),impacts=[];let elapsed=0,serial=0,active=null,visible=0;
+ const headGeometry=new T.SphereGeometry(.145,7,5);
+ const headMaterial=new T.MeshBasicMaterial({color:0xff8a4c,transparent:true,opacity:.96});
+ const emberGeometry=new T.SphereGeometry(1,5,4);
+ const emberMaterial=new T.MeshBasicMaterial({color:0xff8a4c,transparent:true,opacity:.48,depthWrite:false,blending:T.AdditiveBlending});
+ const head=new T.Mesh(headGeometry,headMaterial);group.add(head);head.visible=false;
+ const MAX=36,embers=new T.InstancedMesh(emberGeometry,emberMaterial,MAX);embers.count=0;embers.frustumCulled=false;group.add(embers);
+ const dummy=new T.Object3D(),particles=[],impacts=[];let clock=0,serial=0,active=null;
+ function rand(){let x=(serial*2246822519+Math.floor(clock*1000)+seed)>>>0;x^=x<<13;x^=x>>>17;x^=x<<5;serial=x>>>0;return serial/4294967296}
  function cast(){
   const choices=targets().filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.z)&&surface(p.x,p.z)!=null);
   if(!choices.length)return false;
-  const target=choices[Math.floor(rand(++serial*17)*choices.length)],ground=surface(target.x,target.z);
-  // Target fixed on cast; the creature can move away before impact.
-  const theta=rand(serial*23)*Math.PI*2,drift=2.2;
-  const x=target.x+Math.cos(theta)*drift,z=target.z+Math.sin(theta)*drift;
-  active={target:{species:target.species||target.name||'creature',x:target.x,z:target.z},start:{x,y:ground+5.8,z},end:{x:target.x,y:ground+.12,z:target.z},age:0,duration:1.65,phase:'fall',impactAge:0};
-  return true;
+  const target=choices[Math.floor(rand()*choices.length)],ground=surface(target.x,target.z);
+  const start={x:target.x+(rand()-.5)*2.4,y:ground+10+rand()*3.2,z:target.z+(rand()-.5)*2.4};
+  active={start,target:{x:target.x,y:ground+.12,z:target.z},species:target.species||'creature',age:0,life:.35,lastEmit:0};
+  particles.length=0;return true;
  }
  function update(dt){
-  dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;visible=0;
-  if(!active){mesh.count=0;return}
-  const a=active;a.age+=dt;
-  if(a.phase==='fall'&&a.age>=a.duration){a.phase='burst';a.impactAge=0;
-   impacts.push({at:+elapsed.toFixed(2),target:a.target,point:{...a.end},kind:'visual-only'});if(impacts.length>12)impacts.shift();
-  }
-  if(a.phase==='burst')a.impactAge+=dt;
-  const t=Math.min(1,a.age/a.duration),smooth=t*t,p={x:a.start.x+(a.end.x-a.start.x)*smooth,y:a.start.y+(a.end.y-a.start.y)*smooth,z:a.start.z+(a.end.z-a.start.z)*smooth};
-  const {x:ox=0,z:oz=0}=offset();
-  function place(x,y,z,r,color){const px=x-ox,pz=z-oz;if(px*px+y*y+pz*pz>(radius+.8)**2)return;
-   dummy.position.set(px,y,pz);dummy.scale.setScalar(r);dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,colors[color]);visible++}
-  if(a.phase==='fall'){
-   place(p.x,p.y,p.z,.135,0);
-   const dx=a.start.x-a.end.x,dy=a.start.y-a.end.y,dz=a.start.z-a.end.z,len=Math.hypot(dx,dy,dz);
-   for(let i=0;i<count-1;i++){
-    const back=.025+(i/(count-1))*.34,spread=.018+.12*(i/(count-1));
-    const swirl=elapsed*3.2+i*2.399;
-    const turbulence=Math.sin(i*3.7+elapsed*8)*.012;
-    const xx=p.x+dx/len*back*1.25+Math.cos(swirl)*(spread+turbulence);
-    const yy=p.y+dy/len*back*1.25+Math.sin(swirl*.7)*spread;
-    const zz=p.z+dz/len*back*1.25+Math.sin(swirl)*(spread+turbulence);
-    place(xx,yy,zz,(.017+rand(i*7)*.027)*(1-.68*i/(count-1)),1+i%4);
+  dt=Math.min(.1,Math.max(0,dt));clock+=dt;const {x:ox=0,z:oz=0}=offset();
+  if(active){
+   const a=active;a.age+=dt;
+   // Betwixt's original quadratic ease-out: fast entry, no acceleration gimmick.
+   const u=Math.min(1,a.age/a.life),e=1-(1-u)*(1-u);
+   const x=a.start.x+(a.target.x-a.start.x)*e,y=a.start.y+(a.target.y-a.start.y)*e,z=a.start.z+(a.target.z-a.start.z)*e;
+   head.visible=true;head.position.set(x-ox,y,z-oz);
+   if(a.age-a.lastEmit>=.034&&u<.94){
+    const steps=Math.min(3,Math.floor((a.age-a.lastEmit)/.034));
+    for(let k=0;k<steps;k++){a.lastEmit+=.034;particles.push({x:x+(rand()-.5)*.08,y:y+(rand()-.5)*.08,z:z+(rand()-.5)*.08,r:.025+.035*rand(),born:clock,life:.125+rand()*.095})}
    }
-  }else{
-   for(let i=0;i<count;i++){const age=a.impactAge,angle=i*2.399,velocity=.6+rand(i*11)*1.4;
-    const xx=a.end.x+Math.cos(angle)*velocity*age,zz=a.end.z+Math.sin(angle)*velocity*age;
-    const yy=a.end.y+Math.sin(angle*1.3)*velocity*age+.65*age-2.3*age*age;
-    place(xx,yy,zz,Math.max(.001,(.024+rand(i*3)*.028)*(1-age/1.3)),1+i%4);
+   if(u>=1){
+    const point={...a.target};impacts.push({at:clock,point,species:a.species});if(impacts.length>12)impacts.shift();
+    onImpact({point,magnitude:1,species:a.species,terrainChanged:false});
+    active=null;head.visible=false;
    }
-   if(a.impactAge>1.3)active=null;
+  }else head.visible=false;
+  let n=0;for(let i=particles.length-1;i>=0;i--){
+   const p=particles[i],age=(clock-p.born)/p.life;
+   if(age>=1){particles.splice(i,1);continue}
+   if(n>=MAX)continue;
+   dummy.position.set(p.x-ox,p.y,p.z-oz);dummy.scale.setScalar(p.r*(1-age*.55));dummy.updateMatrix();embers.setMatrixAt(n++,dummy.matrix);
   }
-  mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+  embers.count=n;embers.instanceMatrix.needsUpdate=true;
  }
- return {group,cast,update,inspect:()=>({name:'Cinderfall',active:active?{phase:active.phase,target:active.target,age:+active.age.toFixed(2)}:null,visible,impacts:[...impacts],deformation:false,damage:false}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,cast,update,inspect:()=>({name:'Cinderfall — Betwixt Crucible meteor',falling:active?1:0,embers:embers.count,impacts:[...impacts],terrainChanged:false}),dispose(){group.removeFromParent();headGeometry.dispose();headMaterial.dispose();emberGeometry.dispose();emberMaterial.dispose()}};
 }
