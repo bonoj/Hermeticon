@@ -34,14 +34,13 @@ export function createCinderfall(T,{surface,targets=()=>[],offset=()=>({x:0,z:0}
    place(p.x,p.y,p.z,.135,0);
    const dx=a.start.x-a.end.x,dy=a.start.y-a.end.y,dz=a.start.z-a.end.z,len=Math.hypot(dx,dy,dz);
    for(let i=0;i<count-1;i++){
-    const lag=.06+(i/(count-1))*.48;
-    const back=Math.min(1,t+lag),spread=.025+.22*i/(count-1);
-    const swirl=elapsed*(3.8+rand(i*9)*2)+i*2.399;
-    const turbulence=Math.sin(i*3.7+elapsed*8)*.035;
-    const xx=p.x+dx/len*back*2.5+Math.cos(swirl)*(spread+turbulence);
-    const yy=p.y+dy/len*back*2.5+Math.sin(swirl*.7)*spread;
-    const zz=p.z+dz/len*back*2.5+Math.sin(swirl)*(spread+turbulence);
-    place(xx,yy,zz,.017+rand(i*7)*.027,1+i%4);
+    const back=.025+(i/(count-1))*.34,spread=.018+.12*(i/(count-1));
+    const swirl=elapsed*3.2+i*2.399;
+    const turbulence=Math.sin(i*3.7+elapsed*8)*.012;
+    const xx=p.x+dx/len*back*1.25+Math.cos(swirl)*(spread+turbulence);
+    const yy=p.y+dy/len*back*1.25+Math.sin(swirl*.7)*spread;
+    const zz=p.z+dz/len*back*1.25+Math.sin(swirl)*(spread+turbulence);
+    place(xx,yy,zz,(.017+rand(i*7)*.027)*(1-.68*i/(count-1)),1+i%4);
    }
   }else{
    for(let i=0;i<count;i++){const age=a.impactAge,angle=i*2.399,velocity=.6+rand(i*11)*1.4;
