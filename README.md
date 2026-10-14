@@ -12,7 +12,7 @@ A spherical vessel for building and exploring beautiful, perturbable, composable
 
 - `athanor/` — running host: renderer, camera, instruments and interface.
 - `codex/genesis/` — the current authored world.
-- `arcana/` — reusable world systems and instruments.
+- [`arcana/`](arcana/README.md) — **Arcana Catalog** of reusable systems, interfaces, ownership, mounts, and accepted observation treatments.
 - `examples/wanderer-separated/` — preserved independent Wanderer fixture ([handoff](examples/wanderer-separated/HANDOFF.md)).
 - `archive/` — historical implementations and previous documentation ([handoffs](archive/handoffs/)).
 
