@@ -8,7 +8,7 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.modul
  * backed by actual geometry or a metric distance query.
  * No behavioral/player knowledge belongs here.
  */
-export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>false,intersectsSphere=null,margin=.04}={}){
+export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>false,intersectsSphere=null,clearance=null,margin=.04}={}){
  if(!(radius>0))throw new Error('Spherical body requires positive radius');
  const maxCenter=innerRadius-radius-margin;
  const samples=[[0,0,0]];
@@ -20,17 +20,39 @@ export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>fal
    samples.push([scale*h*Math.cos(a),scale*y,scale*h*Math.sin(a)]);
   }
  }
+ const wallClearance=p=>maxCenter-p.length();
+ const availableClearance=p=>Math.min(wallClearance(p),clearance?clearance(p,radius+margin):Infinity);
  const valid=p=>{
   if(p.lengthSq()>maxCenter*maxCenter)return false;
+  if(clearance)return clearance(p,radius+margin)>=0;
   if(intersectsSphere)return !intersectsSphere(p,radius+margin);
   for(const [x,y,z] of samples)if(solidAt(p.x+x*(radius+margin),p.y+y*(radius+margin),p.z+z*(radius+margin)))return false;
   return true;
  };
  const probe=new T.Vector3();
+ let sweepQueries=0,contacts=0,unresolved=0;
  const sweep=(a,b)=>{
   if(!valid(a))return false;
-  const n=Math.max(1,Math.ceil(a.distanceTo(b)/Math.min(.10,radius*.08)));
-  for(let i=1;i<=n;i++)if(!valid(probe.copy(a).lerp(b,i/n)))return false;
+  const length=a.distanceTo(b);
+  if(length<1e-10)return true;
+  if(clearance){
+   // Both distance-to-triangle and spherical wall clearance are 1-Lipschitz
+   // with respect to the sphere center. Advancing by <= available clearance
+   // cannot cross a static surface, regardless of thin geometry.
+   let traveled=0;
+   for(let i=0;i<256;i++){
+    probe.copy(a).lerp(b,traveled/length);
+    sweepQueries++;
+    const free=availableClearance(probe);
+    if(free<0){contacts++;return false}
+    if(length-traveled<=Math.max(0,free)*.8)return valid(b);
+    if(free<=1e-6){contacts++;return false}
+    traveled+=Math.min(length-traveled,free*.8);
+   }
+   unresolved++;return false; // never accept an unverified path
+  }
+  const n=Math.max(1,Math.ceil(length/Math.min(.10,radius*.08)));
+  for(let i=1;i<=n;i++)if(!valid(probe.copy(a).lerp(b,i/n))){contacts++;return false}
   return true;
  };
  const tryMove=(position,displacement)=>{
@@ -70,7 +92,7 @@ export function createSphericalBody({radius,innerRadius=Infinity,solidAt=()=>fal
     }
    }
   }
-  return {ok:false,corrected:false,reason:'No nonpenetrating candidate found'};
+  unresolved++;return {ok:false,corrected:false,reason:'No nonpenetrating candidate found'};
  };
- return {radius,valid,sweep,tryMove,resolveBoundary};
+ return {radius,valid,sweep,tryMove,resolveBoundary,inspect:()=>({sweepQueries,contacts,unresolved,clearanceBackend:!!clearance})};
 }
