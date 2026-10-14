@@ -32,6 +32,7 @@ function mountWorld(id,source,{parent=null,visible=true,active=true}={}){
  host.add(source.group);source.group.visible=visible;
  const entry={id,parent,source,active,visible,error:null};
  mounts.set(id,entry);
+ if(typeof source.observationTargets==='function')edgeDetection?.observeTerrain(source.observationTargets().terrain);
  return id;
 }
 function unmountWorld(id){
