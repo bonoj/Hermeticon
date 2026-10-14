@@ -2,6 +2,21 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.modul
 // Signed field, tetrahedral chunk extraction and aperture shader migrated from Wanderer Separated.
 export function createTerrain(){
  const NX=85,NY=21,NZ=85,MINY=-3.6,MAXY=3.6,WORLD_HALF=25.2,CHUNK=10,CX=Math.ceil((NX-1)/CHUNK),CZ=Math.ceil((NZ-1)/CHUNK);
+ const depositedMaterial=new Map();
+ const MATERIALS=[
+ {id:0,name:'neutral bedrock',color:0x747b7d},
+ {id:1,name:'warm soil',color:0xb29b75},
+ {id:2,name:'basin sediment',color:0x8b7869},
+ {id:3,name:'cold regolith',color:0xa9bdc2},
+ {id:4,name:'weathered subsoil',color:0x766958},
+ {id:5,name:'deep bedrock',color:0x505965}
+];
+
+ const atlas=(()=>{const width=85,height=85,halfExtent=25.2,size=width*height;
+ const fields={jurisdiction:new Uint8Array(size),gradientWeight:new Uint8Array(size),elevation:new Float32Array(size),substrate:new Uint8Array(size),hydrology:new Uint8Array(size),provenance:new Uint8Array(size),strata:new Uint8Array(size),population:new Uint8Array(size),features:new Uint8Array(size)};
+ return {version:2,origin:[0,0],halfExtent,resolution:[width,height],seed:741,fields,regions:{0:'unassigned',1:'summerlands',2:'winter-kings-realm',3:'gradient',4:'other'},compiled:true};})();
+ atlas.fields.elevation.fill(1.15);atlas.fields.strata.fill(1);
+ const contactProperties={standard:{restitution:.38},dissipative:{restitution:.24,friction:.86}};
  const field=new Float32Array(NX*NY*NZ),id=(x,y,z)=>x+NX*(y+NY*z);
  const xp=x=>(x/(NX-1)*2-1)*WORLD_HALF,yp=y=>MINY+y/(NY-1)*(MAXY-MINY),zp=z=>(z/(NZ-1)*2-1)*WORLD_HALF;
  const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
@@ -63,6 +78,20 @@ export function createTerrain(){
 }
 
  function fieldSample(X,Y,Z){const gx=(X/WORLD_HALF+1)*(NX-1)/2,gy=(Y-MINY)/(MAXY-MINY)*(NY-1),gz=(Z/WORLD_HALF+1)*(NZ-1)/2;if(gx<0||gy<0||gz<0||gx>=NX-1||gy>=NY-1||gz>=NZ-1)return -1;const x=Math.floor(gx),y=Math.floor(gy),z=Math.floor(gz),a=gx-x,b=gy-y,c=gz-z,lerp=(p,q,t)=>p+(q-p)*t;const layer=k=>lerp(lerp(field[id(x,y,k)],field[id(x+1,y,k)],a),lerp(field[id(x,y+1,k)],field[id(x+1,y+1,k)],a),b);return lerp(layer(z),layer(z+1),c)}
+ function materialAt(X,Y,Z){
+ if(!atlas)return null;
+ const gx=Math.round((X/WORLD_HALF+1)*(NX-1)/2),gy=Math.round((Y-MINY)/(MAXY-MINY)*(NY-1)),gz=Math.round((Z/WORLD_HALF+1)*(NZ-1)/2);
+ const deposited=depositedMaterial.get(id(gx,gy,gz));
+ if(deposited&&field[id(gx,gy,gz)]>0)return {id:deposited.materialId,depth:0,sourceSubstrate:null,material:MATERIALS[deposited.materialId],lineage:deposited.lineage};
+ const {fields:f,resolution:[w,h],halfExtent:half}=atlas;
+ const ix=Math.max(0,Math.min(w-1,Math.round((X/half+1)*(w-1)/2)));
+ const iz=Math.max(0,Math.min(h-1,Math.round((Z/half+1)*(h-1)/2)));
+ const i=ix+w*iz,depth=f.elevation[i]-Y;
+ const surface=f.substrate[i]===3?3:f.substrate[i]===2?2:f.substrate[i]===1?1:0;
+ const materialId=depth<0.28?surface:depth<0.8?4:5;
+ return {id:materialId,depth,sourceSubstrate:f.substrate[i],material:MATERIALS[materialId]};
+}
+
  regenerate();
- return {group:solid,sample:fieldSample,inspect:()=>({dimensions:[NX,NY,NZ],top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o}))})};
+ return {group:solid,sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o}))})};
 }
