@@ -16,6 +16,14 @@ export function createHermeticonDrone({parent,terrain,offset=()=>({x:0,z:0}),id=
  star.position.set(0,1.9,0);interior.add(star);
  const halo=new T.Mesh(new T.TorusGeometry(3.1,.38,6,28),new T.MeshBasicMaterial({color:0x78e7ec}));
  halo.position.y=1.9;halo.rotation.x=Math.PI/3;interior.add(halo);
+ const gems=new T.Group();gems.name='Interior luminous inhabitants';
+ const gemGeo=new T.IcosahedronGeometry(.9,1);
+ for(let i=0;i<7;i++){
+  const a=i*2.39996323;
+  const gem=new T.Mesh(gemGeo,new T.MeshBasicMaterial({color:[0xff6b9c,0x7ef0d8,0xf5d16d][i%3]}));
+  gem.position.set(Math.cos(a)*4,Math.sin(i*1.7)*2.2,Math.sin(a)*4);gems.add(gem);
+ }
+ interior.add(gems);
  vessel.content.add(interior);
  if(parent)parent.add(root);
  let time=0,phase=-1,look=false;
@@ -83,6 +91,6 @@ export function createHermeticonDrone({parent,terrain,offset=()=>({x:0,z:0}),id=
  // Initial location is below the surface, not above the gardens.
  root.position.set(0,-5.4,4);
  choose();
- const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'miniature',seed:741,landmarks:3})};
+ const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'miniature',seed:741,landmarks:10})};
  return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon drone',id,position:root.position.toArray(),mode:look?'glass-lookout':'underdark-dart',terrainContacts,beadContacts,childWorld:childWorld.inspect()})};
 }
