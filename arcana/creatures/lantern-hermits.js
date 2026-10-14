@@ -32,12 +32,28 @@ export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=
  }
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.79,metalness:.035});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
+ const visibleOwners=[];const blastMatrix=new T.Matrix4(),blastPosition=new T.Vector3(),blastScale=new T.Vector3(),blastRotation=new T.Quaternion(),blastColor=new T.Color();
  const dummy=new T.Object3D();let elapsed=0,visible=0;
- function receiveImpulse(point,options){let hits=0;for(const p of agents){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
+ function blast(point,options,debris){
+  let hits=0;const destroyed=new Set();
+  for(const p of agents){
+   if(p.destroyed)continue;
+   if(Math.hypot(p.x-point.x,p.y+.2-point.y,p.z-point.z)<options.radius){p.destroyed=true;destroyed.add(p.id);hits++;}
+  }
+  if(!hits)return 0;
+  const {x:ox=0,z:oz=0}=offset(),items=[];
+  for(let i=0;i<mesh.count;i++){
+   if(!destroyed.has(visibleOwners[i]))continue;
+   mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
+   items.push({x:blastPosition.x+ox,y:blastPosition.y,z:blastPosition.z+oz,r:blastScale.x,color:blastColor.clone()});
+  }
+  debris.emit(items,point,options.impulse);
+  return hits;
+ }
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of agents){
-   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
+   if(p.destroyed)continue;
    const close=Math.hypot(actor.x-p.x,actor.z-p.z)<1.2;
    p.timer-=dt;
    if(close){p.state='observe';p.heading=Math.atan2(actor.z-p.z,actor.x-p.x)}
@@ -52,16 +68,16 @@ export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=
   }
   visible=0;
   for(const b of beads){
-   const p=agents[b.id],co=Math.cos(p.heading),si=Math.sin(p.heading);
+   const p=agents[b.id];if(p.destroyed)continue;const co=Math.cos(p.heading),si=Math.sin(p.heading);
    let x=b.x,y=b.y,z=b.z;
    if(b.part===1){const gait=p.state==='search'?Math.sin(elapsed*9+p.phase+b.phase)*.045:0;x+=gait;y+=Math.max(0,gait)*.65}
    if(b.part===2){const g=p.gesture;x+=g*.09;y+=g*.12+Math.sin(elapsed*3+b.phase+p.phase)*.014}
    if(b.part===3){y+=Math.sin(elapsed*2+p.phase)*.016;z+=Math.sin(elapsed*1.6+p.phase)*.012}
    const xx=p.x-ox+x*co-z*si,zz=p.z-oz+x*si+z*co,yy=p.y+y;
    if(xx*xx+yy*yy+zz*zz>(radius-.1)**2)continue;
-   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,palette[b.c]);visible++;
+   dummy.position.set(xx,yy,zz);dummy.scale.setScalar(b.r);dummy.updateMatrix();visibleOwners[visible]=b.id;mesh.setMatrixAt(visible,dummy.matrix);mesh.setColorAt(visible,palette[b.c]);visible++;
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,receiveImpulse,inspect:()=>({name:'Lantern Hermits',creatures:agents.map(p=>({species:'lantern-hermit',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,gesture:+p.gesture.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'Lantern Hermits',creatures:agents.map(p=>({species:'lantern-hermit',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,gesture:+p.gesture.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
