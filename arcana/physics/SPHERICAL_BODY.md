@@ -45,3 +45,7 @@ Moving-wall continuous displacement, actual regression execution, and browser ve
 ## 2026-10-14 local emergency recovery
 
 `resolveBoundary` no longer searches up to nine units inward and six units laterally. It first attempts the shortest radial correction for a wall-only violation, then searches a <=0.5-unit neighborhood in increasing displacement order, returning an unresolved failure otherwise. This prevents arbitrarily large teleports, but it is still a **discrete penetration recovery**, not continuous moving-wall CCD; local corrections can cross intervening thin geometry, and unresolved states may remain overlapping. The proper next step is to model the wall motion as a continuous constraint and validate simultaneous terrain/wall contacts with executable regression tests.
+
+## 2026-10-14 wall recovery: terrain-certified radial path
+
+Removed the discrete neighborhood candidate search entirely. `resolveBoundary` now refuses to correct any existing terrain overlap; for wall-only encroachment it tests the minimum radial inward segment against terrain clearance with conservative advancement and rejects blocked or uncertifiable corrections. This avoids silently teleporting across terrain. It is still a post-rebase correction, not continuous collision response to the changing boundary. When no safe radial path exists the body remains unresolved; a future time-dependent constrained solver must handle tangential escape **before** the wall penetrates. No automated or browser runtime tests have been executed for this commit.
