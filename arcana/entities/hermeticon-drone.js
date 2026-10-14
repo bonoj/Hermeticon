@@ -44,20 +44,45 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
   const x=Math.cos(a)*h,z=Math.sin(a)*h;
   const rho=Math.hypot(x,y),front=z>0;
   let color=0xf1e8df,r=.17,kind=0;
+  // Projected iris radius must match raised fiber geometry: no white BBs underneath.
   if(front&&rho<.23){color=0x080e1a;r=.15;kind=2}
-  else if(front&&rho<.66){
+  else if(front&&rho<.69){
    const theta=Math.atan2(y,x),fiber=Math.sin(theta*73+rho*39)+Math.sin(theta*117-rho*27);
    color=fiber>1?0x95e5df:fiber>0?0x43a6b7:fiber>-.8?0x23667d:0x183c5b;
    r=.155;kind=1;
-  }else if(front&&rho<.71){color=0x172b3c;kind=1}
-  // Fine branching capillaries on the visible sclera, strongest toward the sides.
-  else if(front&&rho>.75){
-   const theta=Math.atan2(y,x);
-   const branch=Math.sin(theta*13+rho*14+Math.sin(theta*7)*.65);
-   const twig=Math.sin(theta*29-rho*33);
-   if(Math.abs(branch)<.105||Math.abs(twig)<.06&&rho>.86){color=0xb8404b;r=.105;kind=3}
-  }
+  }else if(front&&rho<.73){color=0x172b3c;kind=1}
+  // Capillary veins are drawn below as coherent branching paths rather than
+  // random red speckles selected from the Fibonacci globe.
+
   push(x*7.25,y*7.25,z*7.25,r,color,kind,i*2.399963);
+ }
+ // Branching scleral vessels: continuous dotted polylines following the globe.
+ // Roots start at the rim, travel inward, and split into finer capillaries.
+ // Each bead follows a spherical surface point so the veins remain anatomical.
+ const vesselPoint=(rho,a)=>{
+  const rr=Math.min(.9999,rho),z=Math.sqrt(1-rr*rr)*7.25+.11;
+  return [Math.cos(a)*rr*7.25,Math.sin(a)*rr*7.25,z];
+ };
+ const vesselBranch=(startR,endR,startA,curve,thickness,seed)=>{
+  const steps=Math.ceil((startR-endR)*115);
+  for(let j=0;j<=steps;j++){
+   const t=j/steps,rho=startR+(endR-startR)*t;
+   const angle=startA+curve*t+.035*Math.sin(t*9+seed)+.015*Math.sin(t*21+seed*3);
+   const [x,y,z]=vesselPoint(rho,angle);
+   push(x,y,z,thickness*(.9-.45*t),t>.7?0xb95562:0xa42f42,3,seed+j);
+  }
+ };
+ for(let k=0;k<21;k++){
+  const a=k*Math.PI*2/21+.16*Math.sin(k*4.7);
+  const inner=.76+.035*Math.sin(k*3.2);
+  const bend=.12*Math.sin(k*2.6);
+  vesselBranch(.985,inner,a,bend,.088,k);
+  for(let b=0;b<2;b++){
+   const fork=.35+b*.27;
+   const r=.985+(inner-.985)*fork;
+   const branchA=a+bend*fork+.035*Math.sin(fork*9+k);
+   vesselBranch(r,Math.min(r-.045,inner+.035),branchA,(b?1:-1)*(.075+.035*Math.sin(k+b)),.055,k*3+b+1);
+  }
  }
  // Raised iris radial fibers and dark, deep pupil give a human eye readable depth.
  for(let i=0;i<650;i++){
