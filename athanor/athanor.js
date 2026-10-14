@@ -1,5 +1,6 @@
 
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createEdgeDetection} from '../arcana/edge-detection.js';
 
 // Build metadata is stamped by the Pages workflow from the deployed commit.
 // Never display the inherited JIT source revision as the current build.
@@ -102,7 +103,7 @@ const detailsButton=document.querySelector('#detailsProbe'),copyButton=document.
 let probeFrames=0,probeFrameMs=0,probeLast=performance.now(),displayFps=null;
 const fpsLabel=document.querySelector('#fps');
 function inspectWorld(){
- const report={identity:{build:BUILD,fps:displayFps},mount:{name:mounts.size?'worlds':'empty',children:world.children.length,count:mounts.size,worlds:[...mounts.values()].map(inspectMount)},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()},edgeDetection:edgeInspect()};
+ const report={identity:{build:BUILD,fps:displayFps},mount:{name:mounts.size?'worlds':'empty',children:world.children.length,count:mounts.size,worlds:[...mounts.values()].map(inspectMount)},camera:{azimuth:angle,elevation:elev,distance:dist,targetY,fov:camera.fov,position:camera.position.toArray(),aspect:camera.aspect,near:camera.near,far:camera.far},lighting:{hemisphere:{intensity:scene.children.find(o=>o.isHemisphereLight)?.intensity??null},directional:{intensity:sun.intensity,position:sun.position.toArray()},point:{intensity:blue.intensity,position:blue.position.toArray()}},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()},edgeDetection:edgeDetection.inspect()};
  probeText.value=JSON.stringify(report,null,2);return report;
 }
 probeButton.onclick=()=>{
@@ -131,54 +132,8 @@ copyButton.onclick=()=>{
 };
 globalThis.BaubleInspect=inspectWorld;
 
-// Screen-space edge laboratory: one scene render, selectable fullscreen GPU filters.
-// Color Sobel is artistic; depth discontinuities are geometric evidence, not yet terrain-only witnesses.
-const edgeNames=['OFF','SOURCE','SOBEL','DEPTH','HYBRID'];
-let edgeMode=0,edgeFrames=0,edgeLastMs=0,edgePeakMs=0;
-const edgeTarget=new T.WebGLRenderTarget(1,1,{depthBuffer:true});
-edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedShortType);
-edgeTarget.depthTexture.format=T.DepthFormat;
-const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
-const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.depthTexture},resolution:{value:new T.Vector2(1,1)},mode:{value:0},nearPlane:{value:camera.near},farPlane:{value:camera.far}};
-const edgeShaderErrors=[];
-renderer.debug.onShaderError=(gl,program,vertexShader,fragmentShader)=>{
- const report={at:performance.now(),program:gl.getProgramInfoLog(program)||'',vertex:gl.getShaderInfoLog(vertexShader)||'',fragment:gl.getShaderInfoLog(fragmentShader)||''};
- edgeShaderErrors.push(report);if(edgeShaderErrors.length>5)edgeShaderErrors.shift();console.error('Hermeticon shader compilation',report);
-};
-const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:edgeUniforms,
- vertexShader:`varying vec2 vEdgeUv;void main(){vEdgeUv=position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
- fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 vEdgeUv;
-float lum(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
-float linearDepth(float d){float z=d*2.-1.;return 2.*nearPlane*farPlane/(farPlane+nearPlane-z*(farPlane-nearPlane));}
-void main(){
-vec2 px=1./resolution;
-float tl=lum(texture2D(tColor,vEdgeUv+px*vec2(-1.,1.)).rgb);
-float tc=lum(texture2D(tColor,vEdgeUv+px*vec2(0.,1.)).rgb);
-float tr=lum(texture2D(tColor,vEdgeUv+px*vec2(1.,1.)).rgb);
-float ml=lum(texture2D(tColor,vEdgeUv+px*vec2(-1.,0.)).rgb);
-float mr=lum(texture2D(tColor,vEdgeUv+px*vec2(1.,0.)).rgb);
-float bl=lum(texture2D(tColor,vEdgeUv+px*vec2(-1.,-1.)).rgb);
-float bc=lum(texture2D(tColor,vEdgeUv+px*vec2(0.,-1.)).rgb);
-float br=lum(texture2D(tColor,vEdgeUv+px*vec2(1.,-1.)).rgb);
-float sx=-tl+tr-2.*ml+2.*mr-bl+br;
-float sy=-tl-2.*tc-tr+bl+2.*bc+br;
-float sobel=clamp(length(vec2(sx,sy))*1.6,0.,1.);
-float center=linearDepth(texture2D(tDepth,vEdgeUv).r);
-float dx=linearDepth(texture2D(tDepth,vEdgeUv+vec2(px.x,0.)).r);
-float dy=linearDepth(texture2D(tDepth,vEdgeUv+vec2(0.,px.y)).r);
-float depthEdge=smoothstep(.012,.085,max(abs(dx-center),abs(dy-center))/max(center,.2));
-float strength=mode==2?sobel:mode==3?depthEdge:max(sobel*.65,depthEdge);
-vec3 original=texture2D(tColor,vEdgeUv).rgb;
-vec3 result=mode==2?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
-gl_FragColor=vec4(result,1.);
-}`});
-const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
-const sourceMaterial=new T.MeshBasicMaterial({map:edgeTarget.texture,depthTest:false,depthWrite:false,toneMapped:false});
-const edgeButton=document.createElement('button');edgeButton.textContent='EDGES: OFF';
-edgeButton.style.cssText='position:fixed;right:12px;bottom:108px;z-index:30;padding:11px 13px;border-radius:9px;border:1px solid #aa986e;background:#101b29;color:#f2d9a2;font:700 12px monospace;touch-action:manipulation';
-edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='EDGES: '+edgeNames[edgeMode]};
-document.body.append(edgeButton);
-const edgeInspect=()=>({shaderErrors:[...edgeShaderErrors],shaderProgramCount:renderer.info.programs?.length??null,mode:edgeNames[edgeMode],source:'full-scene color + depth',terrainOnly:false,normalBuffer:false,maskReadback:false,frames:edgeFrames,lastRenderMs:+edgeLastMs.toFixed(2),peakRenderMs:+edgePeakMs.toFixed(2),target:[edgeTarget.width,edgeTarget.height],note:'visual experiment; edges not yet 3D witnesses'});
+// First-class observational lens; Athanor owns scheduling, the tool owns rendering.
+const edgeDetection=createEdgeDetection(T,renderer,camera);
 let last=performance.now();
 document.addEventListener('visibilitychange',()=>{last=performance.now();probeLast=last;probeFrames=0;probeFrameMs=0});
 function frame(now){requestAnimationFrame(frame);
@@ -192,6 +147,6 @@ for(const entry of mounts.values()){
  if(!entry.active||entry.error||typeof entry.source.update!=='function')continue;
  try{entry.source.update(elapsed/1000,now/1000)}catch(error){entry.error=String(error&&error.stack||error);console.error('World update failed: '+entry.id,error)}
 }
-camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);if(edgeMode===0){renderer.render(scene,camera)}else{const start=performance.now();const w=renderer.domElement.width,h=renderer.domElement.height;if(edgeTarget.width!==w||edgeTarget.height!==h){edgeTarget.setSize(w,h);edgeUniforms.resolution.value.set(w,h)}renderer.setRenderTarget(edgeTarget);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.clearDepth();edgeQuad.material=edgeMode===1?sourceMaterial:edgeShader;renderer.render(edgeScene,edgeCamera);edgeLastMs=performance.now()-start;edgePeakMs=Math.max(edgePeakMs,edgeLastMs);edgeFrames++}}
+camera.position.set(Math.sin(angle)*Math.cos(elev)*dist,Math.sin(elev)*dist+targetY,Math.cos(angle)*Math.cos(elev)*dist);camera.lookAt(0,targetY,0);edgeDetection.render(scene,camera)}
 requestAnimationFrame(frame);
 }catch(e){window.BaubleFatal(e);console.error(e)}
