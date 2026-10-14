@@ -1,7 +1,7 @@
 // Genesis is an authored composition, not a reusable Arcana definition.
 import {createHermeticon} from '../../arcana/hermeticon.js';
 import {createTerrain} from '../../arcana/terrain.js?v=mountains-20261014';
-import {surveyFourSurfaces} from '../../arcana/four-surfaces.js?v=1';
+import {surveyFourSurfaces} from '../../arcana/four-surfaces.js?v=2';
 import {createWanderer} from '../../arcana/wanderer.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
@@ -89,11 +89,11 @@ export function createGenesis(){
  setEdgeMode(8);
 
  const latticeGroup=new T.Group();latticeGroup.name='four-geological-populations';world.content.add(latticeGroup);
- const witnessGeo=new T.SphereGeometry(.075,7,6);
- const palette={surfaceTerrain:0xffd04d,sdfSurface:0x36e8e3,sdfUndersurface:0x9b75ff,undersurfaceTerrain:0xff658e};
+ const witnessGeo=new T.SphereGeometry(.085,12,9);
+ const palette={surfaceTerrain:0x18df83,sdfSurface:0x37c9ff,sdfUndersurface:0xc15bff,undersurfaceTerrain:0xff465e};
  const meshes={},dummy=new T.Object3D();
  for(const [kind,color] of Object.entries(palette)){
-  const mesh=new T.InstancedMesh(witnessGeo,new T.MeshBasicMaterial({color,depthTest:false}),256);
+  const mesh=new T.InstancedMesh(witnessGeo,new T.MeshStandardMaterial({color,metalness:.72,roughness:.18,emissive:color,emissiveIntensity:.24,depthTest:true}),256);
   mesh.frustumCulled=false;mesh.renderOrder=8;latticeGroup.add(mesh);meshes[kind]=mesh;
  }
  let offsetX=0,offsetZ=0,lastX=Infinity,lastZ=Infinity,scans=0,buildMs=0,report=null;
@@ -109,7 +109,7 @@ export function createGenesis(){
  const previousSetOffset=terrain.setOffset;
  terrain.setOffset=(x,z)=>{previousSetOffset(x,z);offsetX=x;offsetZ=z;if(Math.hypot(x-lastX,z-lastZ)>.24)rebuildRim()};
  rebuildRim();
- const inspectLattice=()=>({kind:'four-geological-populations',colors:palette,counts:Object.fromEntries(Object.entries(report.arrays).map(([k,v])=>[k,v.length])),...report.stats,rebuilds:scans,buildMs,drawCalls:4,offset:[offsetX,offsetZ],method:'territory-local extrema and signed-field rim witnesses',note:'Experimental nodes; mesh extrema not yet verified'});
+ const inspectLattice=()=>({kind:'four-geological-populations',colors:palette,counts:Object.fromEntries(Object.entries(report.arrays).map(([k,v])=>[k,v.length])),...report.stats,rebuilds:scans,buildMs,drawCalls:4,offset:[offsetX,offsetZ],method:report.stats.method,note:'Audited spherical rim extrema; interior mountain silhouettes are outside this domain'});
  const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
 
  const wanderer=createWanderer({terrain});
