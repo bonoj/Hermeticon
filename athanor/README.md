@@ -1,3 +1,19 @@
+# Athanor — Hermeticon host
+
+**Current authoritative orientation:** [root handoff](../HANDOFF.md) · [Arcana Catalog](../arcana/README.md) · [Observation lens](../arcana/observation/README.md).
+
+Athanor is the running **host**, not the authored world. `athanor.js` owns the Three.js renderer, camera, render loop, mounting and inspection. `compose.js` creates and mounts `codex/genesis/world.js`. `interface.css` owns host presentation. The root entry and `/athanor/` must remain functional.
+
+The observation lens is reusable Arcana, imported through `arcana/edge-detection.js`. Athanor schedules rendering and passes Genesis's `observationTargets().terrain` to `observeTerrain()`. The **terrain-only HYBRID** treatment was visually accepted at `7c74e324`: preserve the normally shaded terrain and the unprocessed glass/brass vessel, Wanderer, and background. The lens overlays transparent edge ink; it must not clear the rendered scene or replace terrain colors. See the [observation regression contract](../arcana/observation/README.md).
+
+Publishing is through `.github/workflows/pages.yml` with public SHA verification. Consult [Gate](https://github.com/bonoj/Gate/blob/main/README.md). Do not confuse a successful build with verified live behavior.
+
+## Historical notes (preserved; not current implementation guidance)
+
+The material below describes the older Wanderer-Separated lineage, earlier experiments, and encounter plans. **It is not a current Athanor architecture description.** Use the root handoff and current source for today's behavior.
+
+---
+
 # Wanderer — shared implementation and retained example
 
 This directory began as a mechanical extraction of the original Hermeticon monolith. It is **now the authoritative application source** for both the root Hermeticon entrance and this preserved example. The original monolith is archived at `archive/legacy-monolith/index.html`.
