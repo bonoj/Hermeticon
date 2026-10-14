@@ -1,6 +1,6 @@
 // Genesis is an authored composition, not a reusable Arcana definition.
 import {createHermeticon} from '../../arcana/hermeticon.js';
-import {createTerrain} from '../../arcana/terrain.js?v=54453925';
+import {createTerrain} from '../../arcana/terrain.js?v=a3d31996';
 import {createWanderer} from '../../arcana/wanderer.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
@@ -27,6 +27,65 @@ export function createGenesis(){
    })
   };
  })();
+
+ // Equatorial comparison fixture: one batched signed-field skin, rebuilt only on mode change.
+ const edgeModes=['Geological curtain','Pin toy','Twin waterfalls','Equifog','Brass occlusion','Curtain + equifog','Curtain + brass','Surface stitching','Shader-only transition','Full intersection'];
+ const edgeGroup=new T.Group();edgeGroup.name='equatorial-treatment';world.content.add(edgeGroup);
+ let edgeIndex=0,edgeMesh=null,edgeBuildMs=0,edgeTriangles=0,edgeSolid=0,edgeVoid=0,edgeRebuilds=0;
+ const edgeMaterial=new T.MeshStandardMaterial({color:0xb3b3aa,roughness:.88,metalness:0,side:T.DoubleSide,vertexColors:true});
+ const edgeBrass=new T.MeshStandardMaterial({color:0xc99b50,metalness:.8,roughness:.3,side:T.DoubleSide});
+ let edgeTrim=null;
+ function setEdgeMode(index){
+  edgeIndex=(index+edgeModes.length)%edgeModes.length;
+  const t0=performance.now();
+  if(edgeMesh){edgeGroup.remove(edgeMesh);edgeMesh.geometry.dispose();edgeMesh=null}
+  if(edgeTrim){edgeGroup.remove(edgeTrim);edgeTrim.geometry.dispose();edgeTrim=null}
+  const mode=edgeIndex,full=mode===9,shaderOnly=mode===8;
+  terrain.setAperture(full?10.04:mode===7?9.83:mode===8?9.92:9.72);
+  const segments=mode===1?160:mode===2?192:128,levels=mode===1?10:mode===2?18:12;
+  const pos=[],colors=[];edgeSolid=0;edgeVoid=0;
+  const color=new T.Color();
+  const radius=mode===7?9.82:9.68;
+  const emit=(a,b,c,shade)=>{for(const p of [a,b,c]){pos.push(...p);color.setRGB(shade[0],shade[1],shade[2]);colors.push(color.r,color.g,color.b)}};
+  if(!full&&!shaderOnly){
+   for(let i=0;i<segments;i++){
+    const a0=i*2*Math.PI/segments,a1=(i+1)*2*Math.PI/segments;
+    for(let j=0;j<levels;j++){
+     const y0=-1.15+j*2.3/levels,y1=-1.15+(j+1)*2.3/levels;
+     const ym=(y0+y1)/2,am=(a0+a1)/2;
+     const geologicalX=radius*Math.cos(am)+wandererOffsetX(),geologicalZ=radius*Math.sin(am)+wandererOffsetZ();
+     if(terrain.sample(geologicalX,ym,geologicalZ)<=0){edgeVoid++;continue}
+     edgeSolid++;
+     const warp=mode===1?0.035*Math.sin(i*2.4):mode===2?0.07*Math.sin(j*.9+i*.21):0;
+     const vertex=(a,y)=>[(radius+warp)*Math.cos(a),y,(radius+warp)*Math.sin(a)];
+     const p0=vertex(a0,y0),p1=vertex(a1,y0),p2=vertex(a0,y1),p3=vertex(a1,y1);
+     const fog=mode===3||mode===5;
+     const brass=mode===4;
+     const shade=brass?[.48,.30,.12]:fog?[.14,.25,.28]:mode===2?[.39,.44,.45]:mode===1?[.48,.49,.46]:[.52,.51,.48];
+     emit(p0,p1,p2,shade);emit(p2,p1,p3,shade);
+    }
+   }
+   const geometry=new T.BufferGeometry();
+   geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+   geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+   geometry.computeVertexNormals();geometry.computeBoundingSphere();
+   const mat=edgeMaterial.clone();mat.transparent=mode===3||mode===5;mat.opacity=mode===3?.24:mode===5?.58:1;mat.depthWrite=!(mode===3||mode===5);mat.metalness=mode===4?.7:0;
+   edgeMesh=new T.Mesh(geometry,mat);edgeMesh.frustumCulled=false;edgeGroup.add(edgeMesh);
+   if(mode===6||mode===4){edgeTrim=new T.Mesh(new T.TorusGeometry(9.69,.035,6,128),edgeBrass);edgeTrim.rotation.x=Math.PI/2;edgeGroup.add(edgeTrim)}
+  }
+  edgeTriangles=pos.length/9;edgeRebuilds++;edgeBuildMs=+(performance.now()-t0).toFixed(2);
+ }
+ let edgeWanderX=0,edgeWanderZ=0;
+ function wandererOffsetX(){return edgeWanderX}
+ function wandererOffsetZ(){return edgeWanderZ}
+ const originalSetOffset=terrain.setOffset;
+ terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z;edgeGroup.position.set(-x,0,-z)};
+ // Edge skin follows terrain displacement; geological sampling is fixed at initial construction.
+ setEdgeMode(0);
+ world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
+ world.edgeMode=()=>edgeModes[edgeIndex];
+ const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
+
  const wanderer=createWanderer({terrain});
  world.content.add(wanderer.group);
  const raycaster=new T.Raycaster(),pointer=new T.Vector2();
@@ -61,6 +120,6 @@ export function createGenesis(){
  };
  world.update=dt=>wanderer.update(dt);
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
