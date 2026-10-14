@@ -1,98 +1,103 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {createHermeticon} from '../hermeticon.js';
 
-// The drone is a world-bearing Hermeticon; its small interior is a visual proxy.
-export function createHermeticonDrone({parent,terrain,offset=()=>({x:0,z:0}),id='drone-1'}={}){
- const root=new T.Group();root.name='Hermeticon drone '+id;
+// A world-bearing eye: miniature BB anatomy inside a real Hermeticon vessel.
+// Local +Z is the gaze axis. The eye looks toward Athanor's camera.
+export function createHermeticonDrone({parent,id='drone-1'}={}){
+ const root=new T.Group();root.name='Hermeticon eye '+id;
  const vessel=createHermeticon();
- vessel.group.scale.setScalar(.075);
- vessel.group.rotation.x=Math.PI/2;
+ vessel.group.scale.setScalar(.125);
+ vessel.group.rotation.x=Math.PI/2; // upright brass meridian, unchanged hardware
  root.add(vessel.group);
- const interior=new T.Group();interior.name='Interior '+id;
- // Interior landmarks are deliberately bold enough to survive miniature scale.
- const rock=new T.Mesh(new T.IcosahedronGeometry(4.5,1),new T.MeshStandardMaterial({color:0x39b7a6,flatShading:true,emissive:0x14584e,emissiveIntensity:.55}));
- rock.scale.set(1,.45,.85);rock.position.y=-2.3;interior.add(rock);
- const star=new T.Mesh(new T.IcosahedronGeometry(2.1,1),new T.MeshBasicMaterial({color:0xffcb67}));
- star.position.set(0,1.9,0);interior.add(star);
- const halo=new T.Mesh(new T.TorusGeometry(3.1,.38,6,28),new T.MeshBasicMaterial({color:0x78e7ec}));
- halo.position.y=1.9;halo.rotation.x=Math.PI/3;interior.add(halo);
- const gems=new T.Group();gems.name='Interior luminous inhabitants';
- const gemGeo=new T.IcosahedronGeometry(.9,1);
- for(let i=0;i<7;i++){
-  const a=i*2.39996323;
-  const gem=new T.Mesh(gemGeo,new T.MeshBasicMaterial({color:[0xff6b9c,0x7ef0d8,0xf5d16d][i%3]}));
-  gem.position.set(Math.cos(a)*4,Math.sin(i*1.7)*2.2,Math.sin(a)*4);gems.add(gem);
- }
- interior.add(gems);
- vessel.content.add(interior);
- // createHermeticon returns content detached; mount it explicitly, as Genesis does.
  vessel.group.add(vessel.content);
- if(parent)parent.add(root);
- let time=0,phase=-1,look=false;
- const target=new T.Vector3(),start=new T.Vector3();
- const cameraPoint=new T.Vector3();
- const velocity=new T.Vector3(),desired=new T.Vector3(),candidate=new T.Vector3();
- let terrainContacts=0,beadContacts=0;
- const droneRadius=.77,innerRadius=9.9;
- const clear=p=>{
-  const o=offset();
-  for(const [x,y,z] of [[0,0,0],[droneRadius,0,0],[-droneRadius,0,0],[0,droneRadius,0],[0,-droneRadius,0],[0,0,droneRadius],[0,0,-droneRadius]])
-   if(terrain.sample(p.x+x+o.x,p.y+y,p.z+z+o.z)>0)return false;
-  return true;
+ const interior=new T.Group();interior.name='BB eye interior '+id;
+ vessel.content.add(interior);
+ const geometry=new T.IcosahedronGeometry(1,1);
+ const material=new T.MeshStandardMaterial({roughness:.45,metalness:.03,emissive:0x161b24,emissiveIntensity:.12});
+ const points=[],colors=[],base=[];
+ const push=(x,y,z,r,color,kind=0,phase=0)=>{
+  points.push([x,y,z,r,kind,phase]);colors.push(new T.Color(color));base.push([x,y,z]);
+ };
+ // The globe is white sclera; the iris and pupil are built into its forward surface.
+ // Fibonacci distribution avoids latitude clustering and is cheap to animate.
+ const N=2700,gr=(1+Math.sqrt(5))/2;
+ for(let i=0;i<N;i++){
+  const y=1-2*(i+.5)/N,a=2*Math.PI*i/gr,h=Math.sqrt(1-y*y);
+  const x=Math.cos(a)*h,z=Math.sin(a)*h;
+  const rho=Math.hypot(x,y),front=z>0;
+  let color=0xf1e8df,r=.17,kind=0;
+  if(front&&rho<.23){color=0x080e1a;r=.15;kind=2}
+  else if(front&&rho<.66){
+   const theta=Math.atan2(y,x),fiber=Math.sin(theta*73+rho*39)+Math.sin(theta*117-rho*27);
+   color=fiber>1?0x95e5df:fiber>0?0x43a6b7:fiber>-.8?0x23667d:0x183c5b;
+   r=.155;kind=1;
+  }else if(front&&rho<.71){color=0x172b3c;kind=1}
+  // Fine branching capillaries on the visible sclera, strongest toward the sides.
+  else if(front&&rho>.75){
+   const theta=Math.atan2(y,x);
+   const branch=Math.sin(theta*13+rho*14+Math.sin(theta*7)*.65);
+   const twig=Math.sin(theta*29-rho*33);
+   if(Math.abs(branch)<.105||Math.abs(twig)<.06&&rho>.86){color=0xb8404b;r=.105;kind=3}
+  }
+  push(x*7.25,y*7.25,z*7.25,r,color,kind,i*2.399963);
+ }
+ // Raised iris radial fibers and dark, deep pupil give a human eye readable depth.
+ for(let i=0;i<650;i++){
+  const a=i*2.399963,rad=.25+.4*((i*37)%653)/653;
+  const x=Math.cos(a)*rad*7.25,y=Math.sin(a)*rad*7.25;
+  const z=Math.sqrt(1-rad*rad)*7.25+.17;
+  const stripe=Math.sin(a*67+rad*40);
+  push(x,y,z,.105,stripe>.25?0x9cdbd2:stripe<-.3?0x174257:0x3d9fb2,1,i);
+ }
+ // Subtle wet catchlight, assembled from small pale BBs.
+ for(let i=0;i<45;i++){
+  const a=i*2.399963,rad=Math.sqrt((i+.5)/45)*.11;
+  const x=(-.23+Math.cos(a)*rad)*7.25,y=(.31+Math.sin(a)*rad)*7.25;
+  const d=Math.hypot(x/7.25,y/7.25);
+  push(x,y,Math.sqrt(1-d*d)*7.25+.35,.13,0xf9ffff,4,i);
+ }
+ const beads=new T.InstancedMesh(geometry,material,points.length);
+ beads.name='Moving anatomical BBs';beads.frustumCulled=false;
+ beads.instanceMatrix.setUsage(T.DynamicDrawUsage);
+ const dummy=new T.Object3D();
+ for(let i=0;i<points.length;i++)beads.setColorAt(i,colors[i]);
+ if(beads.instanceColor)beads.instanceColor.needsUpdate=true;
+ interior.add(beads);
+ let time=0,beadContacts=0;
+ const gaze=new T.Vector3(),desired=new T.Vector3(),velocity=new T.Vector3();
+ const render=()=>{
+  for(let i=0;i<points.length;i++){
+   const [x,y,z,r,kind,phase]=points[i];
+   const pulse=kind===1?.035*Math.sin(time*2.1+phase*.017):kind===3?.025*Math.sin(time*1.4+phase):.012*Math.sin(time*1.2+phase);
+   dummy.position.set(x*(1+pulse/7.25),y*(1+pulse/7.25),z*(1+pulse/7.25));
+   dummy.scale.setScalar(r*(1+.09*Math.sin(time*2.3+phase)));
+   dummy.updateMatrix();beads.setMatrixAt(i,dummy.matrix);
+  }
+  beads.instanceMatrix.needsUpdate=true;
+ };
+ root.position.set(0,5.8,0);
+ const update=(dt,camera)=>{
+  const step=Math.max(0,Math.min(dt,.1));time+=step;
+  if(camera?.position){
+   camera.getWorldPosition(gaze);
+   desired.copy(gaze).sub(root.position);
+   // Orient the eye's own +Z axis toward the viewer; brass remains upright.
+   root.quaternion.setFromRotationMatrix(new T.Matrix4().lookAt(root.position,gaze,new T.Vector3(0,1,0)));
+  }
+  // BB impacts may jostle the vessel, but it returns gently to its perch.
+  root.position.addScaledVector(velocity,step);
+  root.position.lerp(new T.Vector3(0,5.8,0),Math.min(1,step*2));
+  velocity.multiplyScalar(Math.exp(-step*4));
+  render();
  };
  const contactBead=(x,y,z,r,vx,vy,vz)=>{
-  const delta=new T.Vector3(root.position.x-x,root.position.y-y,root.position.z-z);
-  const d=delta.length(),limit=droneRadius+r;
+  const delta=root.position.clone().sub(new T.Vector3(x,y,z));
+  const d=delta.length(),limit=1.29+r;
   if(d>=limit)return false;
-  if(d<.0001)delta.set(0,1,0);else delta.divideScalar(d);
-  const relative=new T.Vector3(vx,vy,vz).sub(velocity);
-  const closing=Math.max(0,relative.dot(delta));
-  velocity.addScaledVector(delta,Math.min(3.5,.3+closing*.22));
-  root.position.addScaledVector(delta,Math.min(.15,limit-d));
+  delta.normalize();velocity.addScaledVector(delta,Math.min(2,Math.hypot(vx,vy,vz)*.15+.15));
   beadContacts++;return true;
  };
- const choose=()=>{
-  phase=Math.floor(time/1.7);
-  start.copy(root.position);
-  // Mostly underside, with occasional visits to the outer glass.
-  look=phase%5===4;
-  const a=phase*2.399963229728653;
-  const radius=look?8.5:3.5+((phase*7)%5)*.75;
-  target.set(Math.cos(a)*radius,look?-1.6:-3.7-(phase%3)*1.35,Math.sin(a)*radius);
- };
- const update=(dt,camera)=>{
-  const step=Math.max(0,Math.min(dt,.1));
-  time+=step;
-  const nextPhase=Math.floor(time/1.7);
-  if(nextPhase!==phase)choose();
-  const u=(time%1.7)/1.7;
-  // Fast departure, deliberate pause at the destination.
-  const t=1-Math.pow(1-Math.min(1,u/.58),3);
-  desired.lerpVectors(start,target,t);
-  // Swept, substepped motion against the authoritative positive-solid field.
-  const travel=desired.clone().sub(root.position);
-  const count=Math.max(1,Math.ceil(travel.length()/.24));
-  for(let i=0;i<count;i++){
-   candidate.copy(root.position).addScaledVector(travel,1/count);
-   if(candidate.length()>innerRadius-droneRadius)candidate.setLength(innerRadius-droneRadius);
-   if(clear(candidate))root.position.copy(candidate);
-   else{terrainContacts++;break}
-  }
-  root.position.addScaledVector(velocity,step);
-  if(!clear(root.position))root.position.addScaledVector(velocity,-step);
-  velocity.multiplyScalar(Math.exp(-step*3));
-  if(look&&camera?.position){
-   cameraPoint.copy(camera.position);
-   root.lookAt(cameraPoint);
-  }else{
-   root.rotation.y+=step*1.6;
-  }
-  star.rotation.y+=step*.7;
-  halo.rotation.z+=step*.6;
- };
- // Initial location is below the surface, not above the gardens.
- root.position.set(0,-5.4,4);
- choose();
- const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'miniature',seed:741,landmarks:10})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon drone',id,position:root.position.toArray(),mode:look?'glass-lookout':'underdark-dart',terrainContacts,beadContacts,childWorld:childWorld.inspect()})};
+ render();
+ const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode:'high-dome-observer',beadContacts,childWorld:childWorld.inspect()})};
 }
