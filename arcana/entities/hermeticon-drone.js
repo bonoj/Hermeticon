@@ -331,7 +331,17 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const update=(dt,camera)=>{
   const step=Math.max(0,Math.min(dt,.06));time+=step;
   rebase();enforceWall();
-  if(mode==='collision-unresolved'&&!body.valid(root.position)){render();return}
+  if(mode==='collision-unresolved'&&!body.valid(root.position)){
+   // The world may scroll back over a stranded eye. Keep rendering and
+   // retrying wall resolution each frame; do not advance voluntary motion.
+   render();return;
+  }
+  if(mode==='collision-unresolved'&&body.valid(root.position)){
+   // Once the eye is physically inside the current vessel again, resume
+   // normal behavior without inventing a player-following displacement.
+   mode='observe';destination.copy(root.position);stationAnchor.copy(root.position);
+   velocity.set(0,0,0);stationVelocity.set(0,0,0);routeAge=0;pause=0;
+  }
   if(camera?.position)cameraRef=camera;
   sense();
   if(root.position.y< -1.4)belowSeconds+=step;
