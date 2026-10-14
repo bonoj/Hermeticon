@@ -10,6 +10,9 @@ Arcana is Hermeticon's inventory of **reusable mechanisms**. Before implementing
 | --- | --- | --- | --- |
 | Vessel | [`hermeticon.js`](hermeticon.js) — `createHermeticon()` | Spherical glass/brass vessel and content mounting | **Mounted** |
 | Signed terrain | [`terrain.js`](terrain.js) — `createTerrain()` | Signed field, terrain mesh, aperture, offset, terrain-owned tap interpretation | **Mounted** |
+| BB botanical populations | [`populations/bb-garden.js`](populations/bb-garden.js) — `createBBGarden(T,opts)` | **Canonical** five-species BB-only garden; deterministic roots, bead arrangements, idle sway, reversible actor-triggered growth | **Mounted and author-accepted** |
+| Mists Reeds | [`populations/mists-reeds.js`](populations/mists-reeds.js) — `createMistsReeds(T,opts)` | Original bead-lattice reeds, preserved actor clearance and sway | **Mounted** |
+| Geometric botanical prototypes | [`populations/potential/`](populations/potential/) | Preserved pre-BB species and swaying behavior | **Archived, not mounted** |
 | Wanderer | [`wanderer.js`](wanderer.js) — `createWanderer({terrain})` | Supported navigation, movement, inspection | **Mounted** |
 | Equatorial treatments | [`equatorial-treatment.js`](equatorial-treatment.js) — `createEquatorialTreatment({terrain,parent})` | Ten comparative equatorial signed-field treatments and shader-only transition | **Mounted**, preset 8 |
 | Observation lens | [`observation/lens.js`](observation/lens.js) — `createObservationLens(T,renderer,camera)` | SOURCE, SOBEL, DEPTH, HYBRID; isolated terrain observation and edge overlay | **Hosted by Athanor**, targets Genesis terrain |
@@ -36,7 +39,7 @@ The renderer must not clear the already rendered scene while compositing the ove
 
 ## Composition and lifecycle
 
-**Genesis** ([`codex/genesis/world.js`](../codex/genesis/world.js)) instantiates vessel, terrain, equatorial treatment, node maker, and Wanderer. Terrain owns tap hit classification and navigation target selection; Wanderer receives `moveTo(x,z)`. Genesis exposes observation targets rather than owning the renderer or shader pass.
+**Genesis** ([`codex/genesis/world.js`](../codex/genesis/world.js)) instantiates vessel, terrain, equatorial treatment, node maker, Wanderer, Mists Reeds and the canonical BB botanical garden. Terrain owns tap hit classification and navigation target selection; Wanderer receives `moveTo(x,z)`. Genesis exposes observation targets rather than owning the renderer or shader pass.
 
 **Athanor** ([`athanor/athanor.js`](../athanor/athanor.js)) owns the renderer and lens scheduling. It discovers observation targets on world mount. The compatibility import `edge-detection.js` intentionally remains stable.
 
