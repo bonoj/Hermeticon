@@ -48,7 +48,7 @@ export function createObserverSwarm({parent,terrain=null,offset=()=>({x:0,z:0}),
    binding.rotation.x=Math.PI/2;seat.add(binding);
   }
   const angle=i*Math.PI*2/12,rad=1.5+(i%3)*.45;
-  node.position.set(Math.cos(angle)*rad,home.y+(i%4)*.16,Math.sin(angle)*rad);
+  node.position.set(home.x,home.y-(i%4)*.16,home.z);
   swarm.push({node,eye,seat,phase:rand()*Math.PI*2,mode:'descending',until:0,target:lower,speed:2+rand()*1.4});
  }
  let time=0,updates=0,traveling=0,blocked=0,arrivals=0;
