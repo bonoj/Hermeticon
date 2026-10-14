@@ -57,3 +57,7 @@ Open [spherical-body-regression.html](./spherical-body-regression.html) in the d
 ## 2026-10-14 scroll solver review
 
 Genesis eye scroll handling now uses explicit-frame terrain clearance and increments `scrollConstraintContacts` and `scrollUnresolved`. On unresolved collision, normal eye locomotion is suppressed while the body remains invalid. **Important:** the current scroll handler still applies the final viewport rebase after an unresolved contact, so it does not guarantee nonpenetration. The solver also has no executed integration tests for moving wall plus ground, and the candidate path evaluation needs review for contact continuity across scroll substeps. Do not mark the moving-wall milestone complete or claim a verified no-clipping guarantee.
+
+## 2026-10-14 unresolved scroll position preservation
+
+Eye scroll handling now retains `lastSafeWorld` during intermediate offset steps. On an unresolved contact, the final render-frame position is reconstructed from that last terrain-clear world point instead of blindly using the full-scroll target. This prevents the rebase itself from introducing an unverified terrain displacement. **Not a full solution:** the final glass wall can still overlap the eye when a collision is geometrically impossible to resolve; candidate corrections and moving-wall sweeps need stronger certification. Browser and integrated moving-wall regression results remain unverified.
