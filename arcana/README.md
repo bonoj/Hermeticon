@@ -1,23 +1,53 @@
-# Arcana
+# Arcana — Composable Systems Catalog
 
-The inventory of reusable composables. Before inventing a mechanism, inspect this directory and existing working specimens. Keep world-specific behavior with its owner; Athanor remains independent.
+Arcana is Hermeticon's inventory of **reusable mechanisms**. Before implementing a system in an authored world, look here. An Arcana module owns its mechanism; the Codex owns world composition; Athanor owns hosting, renderer, camera, scheduling, and UI. No world should have to copy an Arcana implementation.
 
-## Rock materials
+**Accepted visual baseline:** observation lens terrain-only HYBRID, commit `7c74e324`, confirmed visually accepted on 2026-10-14. This is a behavioral baseline, not a claim that every future deployment is verified. Preserve the original lit terrain and the untouched vessel, Wanderer, and background. Do not replace the terrain's color with an offscreen image.
 
-`rock-materials.js` exports `createRockMaterials(terrainMaterial, capMaterial)`. It attaches shared, reversible shader-only geological treatments to supplied Three.js MeshStandardMaterials and returns `{rockNames, setRockMode, getRockMode}`. Presets: Original mortar (control), Midnight basalt, Layered slate, Ironstone, Obsidian, Ancient limestone. Does not create geometry, modify signed fields, fill voids, or trigger mesh rebuilding. Both terrain and its signed-field cap use the same palette. Genesis selects basalt initially and 🪨 cycles modes.
+## Catalog
 
-## Cavern smoke
+| Arcana | Entry point | Responsibility | Genesis |
+| --- | --- | --- | --- |
+| Vessel | [`hermeticon.js`](hermeticon.js) — `createHermeticon()` | Spherical glass/brass vessel and content mounting | **Mounted** |
+| Signed terrain | [`terrain.js`](terrain.js) — `createTerrain()` | Signed field, terrain mesh, aperture, offset, terrain-owned tap interpretation | **Mounted** |
+| Wanderer | [`wanderer.js`](wanderer.js) — `createWanderer({terrain})` | Supported navigation, movement, inspection | **Mounted** |
+| Equatorial treatments | [`equatorial-treatment.js`](equatorial-treatment.js) — `createEquatorialTreatment({terrain,parent})` | Ten comparative equatorial signed-field treatments and shader-only transition | **Mounted**, preset 8 |
+| Observation lens | [`observation/lens.js`](observation/lens.js) — `createObservationLens(T,renderer,camera)` | SOURCE, SOBEL, DEPTH, HYBRID; isolated terrain observation and edge overlay | **Hosted by Athanor**, targets Genesis terrain |
+| Witness nodes | [`node-maker.js`](node-maker.js) — `createNodeMaker(T,parent)` | Instrumented node display; supplied points only | **Mounted, empty** |
+| Boundary extraction | [`boundary.js`](boundary.js) — `extractIntervals(...)` | Pure signed-field interval/crossing extraction | **Available**; not directly imported by Genesis |
+| Rock materials | [`rock-materials.js`](rock-materials.js) — `createRockMaterials(terrainMaterial,capMaterial)` | Reversible shader-only rock palettes | **Available**, not mounted |
+| Cavern smoke | [`cavern-smoke.js`](cavern-smoke.js) — `createCavernSmoke(T,{radius,terrain})` | Lightweight depth-tested cavern haze, not volumetric fog | **Available**, not mounted |
+| Occlusion wall | [`occlusion-wall.js`](occlusion-wall.js) — `createOcclusionWall({terrain,radius})` | Optional signed-field-clipped spherical cap | **Not mounted** |
+| Edge-detection compatibility | [`edge-detection.js`](edge-detection.js) | Re-exports the observation lens under the former `createEdgeDetection` name | Used by Athanor |
 
-`cavern-smoke.js` exports `createCavernSmoke(THREE,{radius})`: three animated, depth-tested horizontal smoke layers with radial edge feathering. Layers remain below Genesis's nominal upper terrain surface, and opaque terrain occludes them. No geometry or signed-field edits; not a true volumetric solver. `update(dt)` advances smoke and `inspect()` reports parameters.
+## Observation lens — accepted terrain-only Hybrid
 
-## Optional occlusion wall (not mounted)
+See [observation/README.md](observation/README.md) for the treatment catalog and pipeline.
 
-`occlusion-wall.js` preserves the former signed-field-clipped spherical cap. It is deliberately **not** instantiated in Genesis. To restore in an authored world: `const wall=createOcclusionWall({terrain,radius:terrain.getAperture()}); world.content.add(wall.group)`. Forward terrain offset changes with `wall.setOffset(x,z)` and radius changes with `wall.setRadius(r)`; `dispose()` releases its geometry/material. Genuine signed-field voids remain open.
+- **OFF**: normal scene rendering; not a treatment.
+- **SOURCE**: unmodified scene reference.
+- **SOBEL**: screen-space terrain intensity edges.
+- **DEPTH**: terrain depth discontinuities.
+- **HYBRID**: combined Sobel and depth edge ink; **accepted visual baseline**.
 
-## Equatorial edge treatments
+Genesis exposes `observationTargets().terrain`; Athanor passes that group to the Arcana lens via `observeTerrain(group)`. For SOBEL/DEPTH/HYBRID, the lens captures terrain on a dedicated layer, compares against full-scene depth for occlusion, and overlays **edge ink only** on the normally rendered scene. The underlying lit terrain is never replaced. The vessel, glass, brass, Wanderer, and space outside the vessel are not processed by the lens. The observation lens itself remains independent of Genesis.
 
-`equatorial-treatment.js` exports `createEquatorialTreatment({terrain,parent})`. It owns the ten existing equatorial comparison presets, their signed-field sampling, geometry, materials, offsets, and inspection. Genesis instantiates it and exposes its cycle and mode controls. Its default remains shader-only transition (preset 8); the optional spherical occlusion wall is separate and remains unmounted.
+The renderer must not clear the already rendered scene while compositing the overlay. This was the source of the black-background/vessel regression; opaque replacement with offscreen terrain color was the source of the black-terrain regression. Both failures are guarded by the accepted overlay design. Do not silently restore either approach.
 
-## Observation instruments
+## Composition and lifecycle
 
-`observation/lens.js` owns the renderer and SOURCE/SOBEL/DEPTH/HYBRID modules. Athanor hosts the lens because it owns the renderer; Genesis does **not** duplicate this pipeline. Current capture is full-scene, not yet terrain-masked.
+**Genesis** ([`codex/genesis/world.js`](../codex/genesis/world.js)) instantiates vessel, terrain, equatorial treatment, node maker, and Wanderer. Terrain owns tap hit classification and navigation target selection; Wanderer receives `moveTo(x,z)`. Genesis exposes observation targets rather than owning the renderer or shader pass.
+
+**Athanor** ([`athanor/athanor.js`](../athanor/athanor.js)) owns the renderer and lens scheduling. It discovers observation targets on world mount. The compatibility import `edge-detection.js` intentionally remains stable.
+
+**Optional modules** are not automatically activated by their presence in Arcana. In particular, the occlusion wall stays unmounted. To use it in a different authored world, create it explicitly, add its `group`, forward offsets/radius, and dispose of it when removed.
+
+## Working rules
+
+1. Check the catalog and working specimens before inventing a new mechanism.
+2. Keep Arcana APIs composable and world-agnostic; keep authored selections in the Codex.
+3. Preserve stable visuals when extracting, moving, or refactoring modules.
+4. Inspect actual module interfaces and current mounts before documenting usage. **Available** is not **active**.
+5. Verify source commit, build workflow, displayed live SHA, and actual runtime behavior separately; a passing build alone is not visual verification.
+
+For project continuity see [Hermeticon handoff](../HANDOFF.md); for collaboration and release discipline see [Sanctum's working contract](https://github.com/bonoj/Sanctum/blob/main/CONTRACT.md).
