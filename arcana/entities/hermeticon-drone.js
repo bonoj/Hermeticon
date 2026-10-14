@@ -1,5 +1,6 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {createHermeticon} from '../hermeticon.js';
+import {inspectObjectSpace} from '../observation/world-space.js';
 
 // A world-bearing eye: miniature BB anatomy inside a real Hermeticon vessel.
 // Local +Z is the gaze axis. The eye looks toward Athanor's camera.
@@ -67,7 +68,8 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  if(beads.instanceColor)beads.instanceColor.needsUpdate=true;
  interior.add(beads);
  let time=0,beadContacts=0;
- const gaze=new T.Vector3(),desired=new T.Vector3(),velocity=new T.Vector3();
+ const gaze=new T.Vector3(),velocity=new T.Vector3();
+ let cameraRef=null;
  const render=()=>{
   for(let i=0;i<points.length;i++){
    const [x,y,z,r,kind,phase]=points[i];
@@ -82,10 +84,11 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  const update=(dt,camera)=>{
   const step=Math.max(0,Math.min(dt,.1));time+=step;
   if(camera?.position){
+   cameraRef=camera;
    camera.getWorldPosition(gaze);
    desired.copy(gaze).sub(root.position);
    // Orient the eye's own +Z axis toward the viewer; brass remains upright.
-   root.quaternion.setFromRotationMatrix(new T.Matrix4().lookAt(root.position,gaze,new T.Vector3(0,1,0)));
+   root.lookAt(gaze);
   }
   // BB impacts may jostle the vessel, but it returns gently to its perch.
   root.position.addScaledVector(velocity,step);
@@ -102,5 +105,5 @@ export function createHermeticonDrone({parent,id='drone-1'}={}){
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode:'high-dome-observer',visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,beadContacts,childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode:'high-dome-observer',visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
 }
