@@ -109,7 +109,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const EYE_RADIUS=1.30,FREE_RADIUS=10.07-EYE_RADIUS-.13;
  const gaze=new T.Vector3(),velocity=new T.Vector3(),destination=new T.Vector3(0,5.2,5.1);
  const lookPoint=new T.Vector3();
- const cameraPosition=new T.Vector3(),trial=new T.Vector3(),direction=new T.Vector3();
+ const cameraPosition=new T.Vector3(),trial=new T.Vector3(),probe=new T.Vector3(),direction=new T.Vector3();
  const targetQuat=new T.Quaternion(),lookMatrix=new T.Matrix4();
  const UP=new T.Vector3(0,1,0);
  let cameraRef=null,mode='wander',pause=0,routeAge=25;
@@ -134,7 +134,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  const clearSegment=(a,b)=>{
   const length=a.distanceTo(b),steps=Math.max(1,Math.ceil(length/.38));
-  for(let i=1;i<=steps;i++)if(!clearAt(trial.copy(a).lerp(b,i/steps)))return false;
+  for(let i=1;i<=steps;i++)if(!clearAt(probe.copy(a).lerp(b,i/steps)))return false;
   return true;
  };
  // Crossing the slab is only legal where a whole eye fits through a bore.
