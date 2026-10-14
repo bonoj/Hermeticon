@@ -77,7 +77,7 @@ export function createGenesis(){
  const observeEyeWorld=()=>{
   const o=botanicalOffset(),targets=[];
   const w=wanderer.inspect();
-  targets.push({id:'wanderer',position:[w.x-o.x,w.y+.5,w.z-o.z],salience:4});
+  targets.push({id:'wanderer',position:[w.x-o.x,w.y+.5,w.z-o.z],salience:1});
   for(const system of creatureSystems){
    const snapshot=system.inspect();
    for(const [index,c] of (snapshot.creatures||[]).entries()){
