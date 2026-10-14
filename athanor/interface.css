@@ -37,5 +37,10 @@
 /* Build identifier shares FPS typography; FPS remains the single style source. */
 #buildRow #build{font:inherit;font-size:12px;color:#e7dbb7}
 
-/* Globe observation lens belongs to the shared bottom instrument bar. */
+/* Three fixed instruments, right to left: refresh, inspect, globe.
+   Assign unique slots so late-appended instruments cannot displace them. */
+#buttons #fresh{order:0}
+#buttons #probe{order:1}
 #buttons #edgeLens{order:2;font-size:23px;touch-action:manipulation}
+#buttons > button{border:1px solid #66543a;border-radius:9px;outline:0;box-shadow:none}
+#buttons > button:focus-visible{outline:2px solid #d9b879;outline-offset:2px}
