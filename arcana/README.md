@@ -9,3 +9,7 @@ The inventory of reusable composables. Before inventing a mechanism, inspect thi
 ## Cavern smoke
 
 `cavern-smoke.js` exports `createCavernSmoke(THREE,{radius})`: three animated, depth-tested horizontal smoke layers with radial edge feathering. Layers remain below Genesis's nominal upper terrain surface, and opaque terrain occludes them. No geometry or signed-field edits; not a true volumetric solver. `update(dt)` advances smoke and `inspect()` reports parameters.
+
+## Optional occlusion wall (not mounted)
+
+`occlusion-wall.js` preserves the former signed-field-clipped spherical cap. It is deliberately **not** instantiated in Genesis. To restore in an authored world: `const wall=createOcclusionWall({terrain,radius:terrain.getAperture()}); world.content.add(wall.group)`. Forward terrain offset changes with `wall.setOffset(x,z)` and radius changes with `wall.setRadius(r)`; `dispose()` releases its geometry/material. Genuine signed-field voids remain open.
