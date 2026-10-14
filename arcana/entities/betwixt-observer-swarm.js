@@ -53,7 +53,7 @@ export function createObserverSwarm({parent,terrain=null,offset=()=>({x:0,z:0}),
   }
   const angle=i*Math.PI*2/12,rad=1.5+(i%3)*.45;
   node.position.set(Math.cos(angle)*rad,home.y+(i%4)*.32,Math.sin(angle)*rad);
-  swarm.push({node,eye,seat,phase:rand()*Math.PI*2,mode:'hover',until:1.5+rand()*7,target:pick(true),speed:2+rand()*1.4});
+  swarm.push({node,eye,seat,phase:rand()*Math.PI*2,mode:'wander',until:3+rand()*5,target:pick(false),speed:2+rand()*1.4});
  }
  let time=0,updates=0,traveling=0,curiosity='idle',separations=0;
  const forward=new T.Vector3(0,0,1),focus=new T.Vector3(0,4.8,0);
@@ -67,7 +67,7 @@ export function createObserverSwarm({parent,terrain=null,offset=()=>({x:0,z:0}),
     const a=swarm[i];
     if(phase==='investigate'){a.mode='investigate';a.until=Infinity}
     else if(phase==='dismiss'){a.mode='return';a.target=pick(true);a.until=Infinity;a.speed=7}
-    else{a.mode='hover';a.until=time+2+rand()*4;a.speed=2.5}
+    else{a.mode='wander';a.target=pick();a.until=time+6+rand()*9;a.speed=2.5}
    }
   }
   for(let i=1;i<swarm.length;i++)if(phase==='investigate'){
@@ -82,17 +82,17 @@ export function createObserverSwarm({parent,terrain=null,offset=()=>({x:0,z:0}),
    if(time>=a.until&&i!==0&&a.mode!=='investigate'){
     if(a.mode==='hover'){a.mode='wander';a.target=pick();a.until=time+6+rand()*9}
     else if(a.mode==='wander'){a.mode='return';a.target=pick(true);a.until=Infinity}
-    else{a.mode='hover';a.until=time+4+rand()*5}
+    else{a.mode='wander';a.target=pick();a.until=time+6+rand()*9}
    }
    if(a.mode!=='hover'){
     const delta=a.target.clone().sub(a.node.position),distance=delta.length();
-    if(a.mode==='return'&&distance<.35){a.mode='hover';a.until=time+4+rand()*5}
+    if(a.mode==='return'&&distance<.35){a.mode='wander';a.target=pick();a.until=time+6+rand()*9}
     else if(distance>.001){
      const motion=Math.min(distance,a.speed*step);
      const next=a.node.position.clone().addScaledVector(delta,motion/distance);
      if(next.length()<9.45&&(!terrain?.intersectsSphere||!terrain.intersectsSphere(next,.55,offset()))){
       a.node.position.copy(next);traveling++;
-     }else{a.mode='hover';a.until=time+1+rand()*2}
+     }else{a.target=pick();a.until=time+3+rand()*3}
     }
    }else a.node.position.y+=Math.sin(time*1.1+a.phase)*step*.12;
    a.node.position.y=Math.min(9.4,safeY(a.node.position.x,a.node.position.z,a.node.position.y));
