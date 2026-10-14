@@ -85,48 +85,58 @@ export function createGenesis(){
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
 
- // Diagnostic signed-field lattice: nodes and links, not a geological replacement mesh.
- const latticeGroup=new T.Group();latticeGroup.name='signed-density-lattice';world.content.add(latticeGroup);
- const latticeStats={radialLayers:3,angularSamples:96,verticalSamples:13,solid:0,void:0,surface:0,links:0,beads:0,buildMs:0,drawCalls:2};
- const latticeNodes=[],latticePositions=[],latticeLines=[];
- const nA=latticeStats.angularSamples,nY=latticeStats.verticalSamples,nR=latticeStats.radialLayers;
- const idx=(k,j,i)=>(k*nY+j)*nA+i;
- const tStart=performance.now();
- for(let k=0;k<nR;k++)for(let j=0;j<nY;j++)for(let i=0;i<nA;i++){
-  const a=i*Math.PI*2/nA,r=8.65+k*.49,y=-1.5+j*.25;
-  const x=r*Math.cos(a),z=r*Math.sin(a),density=terrain.sample(x,y,z);
-  const kind=Math.abs(density)<.24?'surface':density>0?'solid':'void';
-  latticeNodes[idx(k,j,i)]={x,y,z,density,kind};
-  latticeStats[kind]++;
- }
- const beadGeo=new T.SphereGeometry(.045,5,4);
- const beadMat=new T.MeshStandardMaterial({color:0xe4b55f,metalness:.8,roughness:.3});
- const beads=new T.InstancedMesh(beadGeo,beadMat,latticeNodes.length);
- const dummy=new T.Object3D(),nodeColor=new T.Color();
- latticeNodes.forEach((node,n)=>{
-  dummy.position.set(node.x,node.y,node.z);
-  const scale=node.kind==='surface'?1.65:node.kind==='solid'?1:.55;
-  dummy.scale.setScalar(scale);dummy.updateMatrix();beads.setMatrixAt(n,dummy.matrix);
-  nodeColor.setHex(node.kind==='surface'?0xffe4a0:node.kind==='solid'?0xc99b50:0x584b35);
-  beads.setColorAt(n,nodeColor);
- });
- beads.instanceMatrix.needsUpdate=true;beads.frustumCulled=false;
- latticeGroup.add(beads);latticeStats.beads=latticeNodes.length;
- const link=(a,b)=>{if(a.kind==='void'||b.kind==='void')return;latticeLines.push(a.x,a.y,a.z,b.x,b.y,b.z);latticeStats.links++};
- for(let k=0;k<nR;k++)for(let j=0;j<nY;j++)for(let i=0;i<nA;i++){
-  const node=latticeNodes[idx(k,j,i)];
-  link(node,latticeNodes[idx(k,j,(i+1)%nA)]);
-  if(j+1<nY)link(node,latticeNodes[idx(k,j+1,i)]);
-  if(k+1<nR)link(node,latticeNodes[idx(k+1,j,i)]);
- }
- const lineGeo=new T.BufferGeometry();
- lineGeo.setAttribute('position',new T.Float32BufferAttribute(latticeLines,3));
- const links=new T.LineSegments(lineGeo,new T.LineBasicMaterial({color:0xa77b3d,transparent:true,opacity:.72,depthWrite:false}));
- links.frustumCulled=false;latticeGroup.add(links);
- latticeStats.buildMs=+(performance.now()-tStart).toFixed(2);
- // Expose actual density classes without claiming a solid node is an extracted surface.
- const inspectLattice=()=>({...latticeStats,kindLegend:{solid:'density > +0.24',surface:'absolute density <= 0.24',void:'density < -0.24'},scope:'fixed vessel-centered annulus',geometry:'instanced beads + batched line segments',static:true});
  setEdgeMode(8);
+ // Brass beads mark signed-field zero crossings on the actual spherical draw rim.
+ // No links, no cylindrical cage, no interior beads.
+ const latticeGroup=new T.Group();latticeGroup.name='rim-zero-crossings';world.content.add(latticeGroup);
+ const rimAngles=192,rimSteps=96,rimMinY=-3.35,rimMaxY=3.35;
+ const maxBeads=rimAngles*16;
+ const beadGeo=new T.SphereGeometry(.055,6,5);
+ const beadMat=new T.MeshStandardMaterial({color:0xe2b65c,metalness:.82,roughness:.28,depthTest:true});
+ const beads=new T.InstancedMesh(beadGeo,beadMat,maxBeads);
+ beads.frustumCulled=false;latticeGroup.add(beads);
+ const dummy=new T.Object3D(),nodeColor=new T.Color();
+ let beadCount=0,upper=0,lower=0,bore=0,other=0,scans=0,buildMs=0,offsetX=0,offsetZ=0,lastX=Infinity,lastZ=Infinity;
+ const crossingSamples=[];
+ function rebuildRim(){
+  const t0=performance.now();beadCount=upper=lower=bore=other=0;crossingSamples.length=0;
+  const radius=terrain.getAperture();
+  for(let i=0;i<rimAngles;i++){
+   const angle=2*Math.PI*i/rimAngles,c=Math.cos(angle),sn=Math.sin(angle);
+   const point=y=>{const r=Math.sqrt(Math.max(0,radius*radius-y*y));return [r*c,r*sn]};
+   let py=rimMinY,p=point(py),pv=terrain.sample(p[0]+offsetX,py,p[1]+offsetZ);
+   for(let j=1;j<=rimSteps;j++){
+    const y=rimMinY+(rimMaxY-rimMinY)*j/rimSteps,q=point(y);
+    const v=terrain.sample(q[0]+offsetX,y,q[1]+offsetZ);
+    if((pv>0)!==(v>0)){
+     let lo=py,hi=y,sign=pv>0;
+     for(let k=0;k<6;k++){const mid=(lo+hi)/2,m=point(mid),mv=terrain.sample(m[0]+offsetX,mid,m[1]+offsetZ);if((mv>0)===sign)lo=mid;else hi=mid}
+     const hitY=(lo+hi)/2,h=point(hitY);
+     const eps=.09;
+     const inX=h[0]+offsetX,inZ=h[1]+offsetZ;
+     const horizontalVoid=terrain.sample(inX+eps,hitY,inZ)<0||terrain.sample(inX-eps,hitY,inZ)<0||terrain.sample(inX,hitY,inZ+eps)<0||terrain.sample(inX,hitY,inZ-eps)<0;
+     const kind=horizontalVoid?'bore':(pv>0?'upper':'lower');
+     if(kind==='bore')bore++;else if(kind==='upper')upper++;else lower++;
+     if(beadCount<maxBeads){
+      dummy.position.set(h[0]*1.003,hitY,h[1]*1.003);dummy.scale.setScalar(1);dummy.updateMatrix();
+      beads.setMatrixAt(beadCount,dummy.matrix);
+      nodeColor.setHex(kind==='bore'?0x69d2de:kind==='upper'?0xffd37c:0xc18a41);
+      beads.setColorAt(beadCount,nodeColor);
+      if(crossingSamples.length<24)crossingSamples.push({angle:+angle.toFixed(3),y:+hitY.toFixed(3),kind});
+      beadCount++;
+     }
+    }
+    py=y;pv=v;
+   }
+  }
+  beads.count=beadCount;beads.instanceMatrix.needsUpdate=true;
+  if(beads.instanceColor)beads.instanceColor.needsUpdate=true;
+  scans++;buildMs=+(performance.now()-t0).toFixed(2);lastX=offsetX;lastZ=offsetZ;
+ }
+ const previousSetOffset=terrain.setOffset;
+ terrain.setOffset=(x,z)=>{previousSetOffset(x,z);offsetX=x;offsetZ=z;if(Math.hypot(x-lastX,z-lastZ)>.24)rebuildRim()};
+ rebuildRim();
+ const inspectLattice=()=>({kind:'visible-rim-zero-crossings',beads:beadCount,upper,lower,bore,other,angularSamples:rimAngles,verticalSamples:rimSteps,rimRadius:terrain.getAperture(),offset:[offsetX,offsetZ],resampleDistance:.24,rebuilds:scans,buildMs,drawCalls:1,links:0,examples:crossingSamples,method:'signed-field zero crossings interpolated on spherical aperture'});
  const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
 
  const wanderer=createWanderer({terrain});
