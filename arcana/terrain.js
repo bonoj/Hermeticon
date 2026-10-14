@@ -1,4 +1,3 @@
-import {createRockMaterials} from './rock-materials.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 // Signed field, tetrahedral chunk extraction and aperture shader migrated from Wanderer Separated.
 export function createTerrain(){
@@ -99,7 +98,6 @@ export function createTerrain(){
  // Triangles are clipped against the field's zero crossing, not bore coordinates.
  const capGroup=new T.Group();capGroup.name='terrain:aperture-cap';solid.add(capGroup);
  const capMaterial=new T.MeshStandardMaterial({color:0x7a817e,roughness:1,metalness:0,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
- const rockMaterials=createRockMaterials(terrainMaterial,capMaterial);
  let capMesh=null,capTriangles=0,capBuildMs=0,capRebuilds=0,capEnabled=true;
  function rebuildCap(){
   const start=performance.now(),positions=[],latitude=80,longitude=240,r=activeAperture-0.012;
@@ -129,5 +127,5 @@ export function createTerrain(){
  }
  regenerate();
  rebuildCap();
- return {group:solid,rockNames:rockMaterials.rockNames,setRockMode:rockMaterials.setRockMode,getRockMode:rockMaterials.getRockMode,setCavernDim:rockMaterials.setCavernDim,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),rockTreatment:{index:rockMaterials.getRockMode(),name:rockMaterials.rockNames[rockMaterials.getRockMode()]},apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r;rebuildCap()}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z);rebuildCap()},setCapEnabled:enabled=>{capEnabled=!!enabled;capGroup.visible=capEnabled},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,apertureCap:{enabled:capEnabled,triangles:capTriangles,rebuilds:capRebuilds,buildMs:capBuildMs,method:'signed-field clipped spherical surface',boreExemptions:'implicit signed-field void',gpuReadback:false}})};
 }
