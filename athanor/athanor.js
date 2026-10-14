@@ -159,7 +159,7 @@ const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms
  vec3 result=mode==1?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
  gl_FragColor=vec4(result,1.);
  }`});
-edgeScene.add(new T.Mesh(new T.PlaneGeometry(2,2),edgeShader));
+const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
 const edgeButton=document.createElement('button');edgeButton.textContent='EDGES: OFF';
 edgeButton.style.cssText='position:fixed;right:12px;bottom:108px;z-index:30;padding:11px 13px;border-radius:9px;border:1px solid #aa986e;background:#101b29;color:#f2d9a2;font:700 12px monospace;touch-action:manipulation';
 edgeButton.onclick=()=>{edgeMode=(edgeMode+1)%edgeNames.length;edgeUniforms.mode.value=edgeMode;edgeButton.textContent='EDGES: '+edgeNames[edgeMode]};
