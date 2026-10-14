@@ -73,7 +73,7 @@ export function createGenesis(){
  const debris=createBeadDebris(T,{terrain,offset:botanicalOffset,innerRadius:world.inspect().vessel.innerRadius,parent:world.content});
  // Eye is independent of the established populations and terrain.
  let eye=null,eyeError=null,eyeCamera=null;
- try{eye=createHermeticonDrone({parent:world.content,id:'genesis-eye'});}catch(error){eyeError=String(error);console.error('Eye construction failed',error)}
+ try{eye=createHermeticonDrone({parent:world.content,id:'genesis-eye',terrain,offset:botanicalOffset});}catch(error){eyeError=String(error);console.error('Eye construction failed',error)}
  const creatureSystems=[bestiary,velvetDrifters,threadwyrms,glasswings,bellwraiths,lanternHermits];
  const impactDispatcher=createImpactDispatcher({debris,creatures:creatureSystems,plants:[reeds,garden,secondGarden],terrain,surface:terrainSurface});
  const cinderfall=createCinderfall(T,{surface:terrainSurface,offset:botanicalOffset,
