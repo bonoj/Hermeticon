@@ -1,0 +1,1 @@
+// Reusable radial velocity impulse.
