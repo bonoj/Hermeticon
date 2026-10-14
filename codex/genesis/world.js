@@ -13,6 +13,7 @@ export function createGenesis(){
  world.group.add(world.content);
  const terrain=createTerrain();
  world.content.add(terrain.group);
+ world.observationTargets=()=>({terrain:terrain.group});
  const equatorial=createEquatorialTreatment({terrain,parent:world.content});
  world.cycleEdge=equatorial.cycle;
  world.edgeMode=equatorial.getMode;
