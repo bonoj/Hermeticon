@@ -106,7 +106,7 @@ export function createTerrain(){
   material.onBeforeCompile=shader=>{
    previous(shader);
    shader.uniforms.cloudTime=cloudTime;
-   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\\nvarying vec3 vCloudPosition;');
+   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloudPosition;');
    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\\nvCloudPosition=position;');
    shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
 varying vec3 vCloudPosition;
