@@ -21,3 +21,19 @@ The extracted reeds preserve the original Wanderer gallery-index-0 behavior (sou
 - Sway is sinusoidal and stem-phased; the original five-to-thirteen-bead silhouettes and muted four-color palette are retained.
 - `offset()` translates geology into the current view; do not feed screen-relative actor coordinates into `characters()`.
 - No runtime parity test has yet been performed. The module remains unmounted in Genesis.
+
+## Alien Garden — five additional populations
+
+The following are composable Arcana modules, mounted as an authored garden near Genesis spawn:
+
+| Species | Entry point | Geometry | Idle |
+| --- | --- | --- | --- |
+| Amethyst Parasols | `amethyst-parasols.js` | Layered violet radial discs on pale stalks | Asynchronous stalk flex and subtle scaling |
+| Amber Gourds | `amber-gourds.js` | Faceted orange fruits, pointed sage sepals | Slow breathing |
+| Crown Lanterns | `crown-lanterns.js` | Branching dark stems, golden faceted lantern fruits and crowns | Gentle whole-plant oscillation |
+| Chalice Succulents | `chalice-succulents.js` | Sage polygonal cups, radial petals, pale nodules | Slow opening-like scaling |
+| Ruby Pendants | `ruby-pendants.js` | Dark branching stalks and hanging faceted magenta fruits | Gentle whole-plant oscillation |
+
+All five use `botanical-population.js` for seeded geological placement, shared primitives, world-offset translation, aperture culling, lifecycle and inspection. Entry points accept `(T,{surface,center,offset,parent,seed,count,radius})` and return `{group,update(dt),inspect(),dispose()}`. Species have deliberately simple first-pass idle motion; wind, fruit articulation, material transactions and actor responses beyond the original reeds are **not implemented**. The authored planting centers and counts live in `codex/genesis/world.js`, not Arcana.
+
+**Verification:** Source committed; no runtime screenshot comparison or mobile performance verification yet. Existing accepted terrain Hybrid and Athanor are unchanged.
