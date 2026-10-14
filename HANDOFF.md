@@ -60,3 +60,8 @@ The observation modes are OFF, SOURCE, SOBEL, DEPTH, HYBRID. HYBRID is accepted.
 ## Second Garden — ACCEPTED CANON (2026-10-14)
 
 Six new BB-only species are mounted in Genesis via `arcana/populations/second-garden.js`: Mycelial Lace, Glassfall, Star Anemones, Cinder Chimneys, Geode Hearts and Tumble Orbs. **Author explicitly accepted all six species on 2026-10-14.** Source committed; independent live runtime verification is not claimed. All six share one instanced BB mesh, deterministic geological roots, idle sway, reversible growth, and actor clearance. Glassfall searches for signed-field underside roots and may have zero valid roots in a given placement; inspect before claiming it is visible. No functional material ports, locomotion, excavation, or condensation yet. Preserve the canonical original garden and accepted Hybrid terrain treatment.
+
+
+## First Bestiary — Pebbleback trial (2026-10-14)
+
+`arcana/creatures/first-bestiary.js` now mounts in Genesis: up to six seeded BB-only Pebblebacks, shared instanced rendering, segmented armor, six animated bead-chain legs, deterministic support-checked wandering and actor-triggered curl. **Candidate, not yet visually accepted.** Remaining five proposed creature species are not built. See `arcana/creatures/README.md`. No changes to canonical botanical systems or Hybrid terrain.
