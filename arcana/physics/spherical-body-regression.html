@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8"><title>Spherical body collision regression</title>
+<style>body{font:15px system-ui;background:#101923;color:#e6eef4;padding:24px}pre{white-space:pre-wrap}</style>
+<h1>Spherical body regression</h1><pre id="results">Running…</pre>
+<script type="module">
+import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createSphericalBody} from './spherical-body.js';
+const output=document.querySelector('#results'),records=[];
+function check(name,run){
+ try{const result=run();if(!result)throw new Error('Assertion failed');records.push('PASS '+name)}
+ catch(error){records.push('FAIL '+name+' — '+error.message)}
+}
+// Exact clearance for an infinite horizontal solid half-space y<=0.
+const floor=(p,r)=>p.y-r;
+const body=createSphericalBody({radius:1,innerRadius:10,margin:0,clearance:floor});
+check('sphere cannot intersect terrain plane',()=>!body.valid(new T.Vector3(0,.99,0)));
+check('sphere tangent to terrain is valid',()=>body.valid(new T.Vector3(0,1,0)));
+check('sphere can move freely above terrain',()=>{
+ const p=new T.Vector3(0,2,0);return body.tryMove(p,new T.Vector3(2,0,0))&&p.x===2;
+});
+check('continuous sweep rejects crossing the plane',()=>!body.sweep(new T.Vector3(0,2,0),new T.Vector3(0,-20,0)));
+check('sweep rejects exit through enclosing wall',()=>!body.sweep(new T.Vector3(0,2,0),new T.Vector3(0,20,0)));
+check('wall-only correction moves inward',()=>{
+ const p=new T.Vector3(0,9.2,0),r=body.resolveBoundary(p);
+ return r.ok&&r.corrected&&body.valid(p)&&p.y<9.2;
+});
+check('terrain and wall conflict fails closed',()=>{
+ const trapped=createSphericalBody({radius:1,innerRadius:3,margin:0,clearance:(p,r)=>2.5-p.y-r});
+ const p=new T.Vector3(0,2.8,0),before=p.clone(),r=trapped.resolveBoundary(p);
+ return !r.ok&&p.equals(before);
+});
+check('no long-distance teleport from embedded terrain',()=>{
+ const p=new T.Vector3(0,-3,0),before=p.clone(),r=body.resolveBoundary(p);
+ return !r.ok&&p.equals(before);
+});
+const failed=records.filter(x=>x.startsWith('FAIL')).length;
+output.textContent=records.join('\n')+'\n\n'+(records.length-failed)+'/'+records.length+' passed. '+(failed?'FAILED':'PASS');
+output.style.color=failed?'#ff9999':'#9debb1';
+</script>
