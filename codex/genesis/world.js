@@ -102,6 +102,15 @@ export function createGenesis(){
 
  world.update=dt=>{wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt)};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],meteorImpact:lastMeteorImpact,edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ // Compact material accounting: authored inventory remains distinct from detached matter.
+ const materialSurvey=()=>{
+  const populations=[reeds,garden,secondGarden,...creatureSystems].map(s=>s.inspect());
+  const loose=debris.inspect();
+  const authored=populations.reduce((n,s)=>n+(s.beads??s.descriptors??0),0);
+  const visibleAuthored=populations.reduce((n,s)=>n+(s.visible??0),0);
+  return {authored,detached:loose.count,total:authored+loose.count,visible:visibleAuthored+loose.visible,visibleAuthored,visibleDetached:loose.visible,ownership:loose.ownership,allocated:loose.allocated,populations:populations.map(s=>({name:s.name,inventory:s.beads??s.descriptors??0,visible:s.visible??0}))};
+ };
+ world.materialSurvey=materialSurvey;
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:lastMeteorImpact,edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
