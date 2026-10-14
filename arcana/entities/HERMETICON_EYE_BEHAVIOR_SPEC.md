@@ -108,3 +108,16 @@ Collect at least two snapshots while viewing the eye, one after traveling out of
 8. Meaningful observable attention and memory — **instrumented, unverified**
 
 Use this checklist to evaluate the captured report before further design changes.
+
+## 2026-10-14 capture-driven repair — `4ff58b05`
+
+User capture at build `dd4537aa` showed `inspectionError: ReferenceError: routeAge is not defined`, no perceptible motion, and partial eye rendering outside the Hermeticon.
+
+Corrections:
+- Removed stale `routeAge` inspection reference (the old waypoint timer had been deleted).
+- Render the complete eye only when `distance(center, vessel center) + eyeRadius + margin <= innerRadius`. This deliberately hides the entire eye if any part protrudes; it is **not** per-pixel clipping.
+- Restored a stable hover anchor while observing, with larger continuous 3D oscillation and damped station-keeping force. The former anchor chased the eye, reducing perceptible oscillation.
+- Exploration can initiate after observation even when a familiar target remains visible. It is no longer indefinitely suppressed by a nonempty focus.
+- Added movement instrumentation: `traveled`, `hoverTraveled`, `verticalTravel`, `verticalReversals`, and retained `belowSeconds`, `belowVisits`, `blocked`, `mode`, `lastDecision`, `visible`.
+
+**Verification:** retrieved module passed JavaScript syntax parsing. Live behavior, terrain clearance, underground crossing and report completeness require a new capture. If `inspectionError` persists, treat that as blocking and fix it before interpreting behavior.
