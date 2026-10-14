@@ -22,3 +22,8 @@ Six seeded creatures are generated near spawn (subject to valid signed-field sup
 ## Glasswings — implemented trial
 
 `glasswings.js` exports `createGlasswings(T,{surface,offset,wanderer,parent,seed,radius})`. Up to four BB-only aerial creatures with 13-span triangular bead-lattice wings, small segmented bodies, wing flex, gentle banking, deterministic bounded patrol and Wanderer evasion. Single shared instanced sphere mesh. Flight is terrain-altitude referenced; no solid wing membranes. **Limitations:** Perching on Crown Lanterns, chasm-crossing without a valid surface sample, and fully physical aerodynamic flight are not implemented. No visual acceptance or live mobile FPS verification claimed.
+
+
+## Bellwraiths — implemented trial
+
+`bellwraiths.js` exports `createBellwraiths(T,{surface,offset,wanderer,parent,seed,radius})`. Up to five BB-only floating creatures: concentric domed bell rings, ten delayed bead-chain tentacles, warm BB kernel cluster, rhythmic pulse, deterministic bounded drift, and rising/evading Wanderer. Single shared instanced BB mesh. **Limitations:** No actual emitted particles, light casting, independent physical buoyancy or cross-chasm flight. Hovering remains terrain-height referenced; no visual acceptance or mobile FPS verification claimed.
