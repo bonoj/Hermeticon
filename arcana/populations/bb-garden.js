@@ -102,5 +102,5 @@ export function createBBGarden(T,{surface,offset=()=>({x:0,z:0}),characters=()=>
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,blast,inspect:()=>({name:'BB botanical garden',plants:plants.length,descriptors:descriptors.length,visible,bySpecies:species.map((s,i)=>({name:s.name,roots:plants.filter(p=>p.s===i).length}))}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
+ return {group,update,blast,inspect:()=>({name:'BB botanical garden',plants:plants.length,descriptors:descriptors.length,activeBeads:descriptors.reduce((n,b)=>n+(plants[b.plant].destroyed?0:1),0),visible,bySpecies:species.map((s,i)=>({name:s.name,roots:plants.filter(p=>p.s===i).length}))}),dispose(){group.removeFromParent();geometry.dispose();material.dispose()}};
 }
