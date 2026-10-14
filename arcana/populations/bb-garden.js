@@ -77,7 +77,7 @@ export function createBBGarden(T,{surface,offset=()=>({x:0,z:0}),characters=()=>
    mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
    const o=offset();items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x*1,color:blastColor.clone()});
   }
-  if(!debris.canAccept(items.length))return 0;
+
   const emitted=debris.emit(items,point,options.impulse);
   for(const id of affected)plants[id].destroyed=true;
   return emitted;
