@@ -27,3 +27,12 @@ Six seeded creatures are generated near spawn (subject to valid signed-field sup
 ## Bellwraiths — implemented trial
 
 `bellwraiths.js` exports `createBellwraiths(T,{surface,offset,wanderer,parent,seed,radius})`. Up to five BB-only floating creatures: concentric domed bell rings, ten delayed bead-chain tentacles, warm BB kernel cluster, rhythmic pulse, deterministic bounded drift, and rising/evading Wanderer. Single shared instanced BB mesh. **Limitations:** No actual emitted particles, light casting, independent physical buoyancy or cross-chasm flight. Hovering remains terrain-height referenced; no visual acceptance or mobile FPS verification claimed.
+
+
+## Lantern Hermits — implemented trial
+
+`lantern-hermits.js` exports `createLanternHermits(T,{surface,offset,wanderer,parent,seed,radius})`. Up to four BB-only asymmetric shell-carriers with hollow concentric shell rings, luminous-looking BB kernels, four articulated bead-chain legs, two manipulator arms, deterministic search/collect/observe states, support-checked walking, and gesture animation. One shared instanced sphere mesh. **Limitations:** Collecting is a gesture only: no BB material transfer or inventory. Foot IK and real gripping are not implemented. Awaiting visual acceptance and mobile FPS verification.
+
+## First Bestiary status
+
+All six planned species are now implemented and mounted in Genesis: Pebblebacks, Velvet Drifters, Threadwyrms, Glasswings, Bellwraiths, Lantern Hermits. These are **candidate trials, not visually accepted canon**. Follow up with actual phone inspection, movement refinement, species-specific missing functional behaviors, and performance profiling. Preserve the accepted twelve botanical populations and Hybrid terrain.
