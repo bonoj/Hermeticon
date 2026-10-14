@@ -37,8 +37,9 @@ export function createTerrain(){
  operations=[];
  // Vertical bores pierce the complete slab; raised and lowered regions act
  // independently on upper and lower surfaces.
- for(let k=0;k<3;k++)operations.push({kind:'through-hole',x:(rand(k+2)-.5)*42,z:(rand(k+11)-.5)*42,r:1+rand(k+29)*.7});
- for(let k=0;k<8;k++)operations.push({kind:k%2?'lower':'raise',face:k%3?'top':'bottom',x:(rand(k+49)-.5)*42,z:(rand(k+61)-.5)*42,r:1.7+rand(k+73)*1.4,delta:(k%2?-1:1)*(0.65+rand(k+91)*1.25)});
+ // Temporary visible-topology fixture for the equatorial edge study.
+ for(const [x,z,r] of [[-3.6,1.8,1.25],[4.4,-2.5,1.45],[7.9,3.0,1.15]])operations.push({kind:'through-hole',x,z,r});
+ for(const [face,x,z,r,delta] of [['top',-5.0,-3.5,2.8,1.35],['top',2.2,4.4,2.5,1.55],['top',6.8,-1.0,2.1,-0.9],['bottom',-2.0,-5.3,2.7,1.2],['bottom',4.2,4.0,2.5,-0.85]])operations.push({kind:delta>=0?'raise':'lower',face,x,z,r,delta});
 
  fieldMin=Infinity;fieldMax=-Infinity;solidCount=0;voidCount=0;
  for(let z=0;z<NZ;z++)for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
