@@ -143,22 +143,30 @@ const edgeUniforms={tColor:{value:edgeTarget.texture},tDepth:{value:edgeTarget.d
 const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:edgeUniforms,
  vertexShader:`varying vec2 uv;void main(){uv=position.xy*0.5+0.5;gl_Position=vec4(position.xy,0.,1.);}`,
  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 resolution;uniform int mode;uniform float nearPlane,farPlane;varying vec2 uv;
- float luminance(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
- float linearDepth(float d){float z=d*2.-1.;return (2.*nearPlane*farPlane)/(farPlane+nearPlane-z*(farPlane-nearPlane));}
- void main(){
- vec2 stepUV=1./resolution;float c[9];float d[9];int k=0;
- for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 p=uv+vec2(float(x),float(y))*stepUV; c[k]=luminance(texture2D(tColor,p).rgb);d[k]=linearDepth(texture2D(tDepth,p).r);k++;}
- float gx=-c[0]+c[2]-2.*c[3]+2.*c[5]-c[6]+c[8];
- float gy=-c[0]-2.*c[1]-c[2]+c[6]+2.*c[7]+c[8];
- float sobel=clamp(length(vec2(gx,gy))*1.6,0.,1.);
- float center=d[4];float discontinuity=0.;
- for(int i=0;i<9;i++){float delta=abs(d[i]-center)/max(center,.2);discontinuity=max(discontinuity,delta);}
- float depthEdge=smoothstep(.012,.085,discontinuity);
- float strength=mode==2?sobel:mode==3?depthEdge:max(sobel*.65,depthEdge);
- vec3 original=texture2D(tColor,uv).rgb;
- vec3 result=mode==1?original:mode==2?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
- gl_FragColor=vec4(result,1.);
- }`});
+float lum(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
+float linearDepth(float d){float z=d*2.-1.;return 2.*nearPlane*farPlane/(farPlane+nearPlane-z*(farPlane-nearPlane));}
+void main(){
+vec2 px=1./resolution;
+float tl=lum(texture2D(tColor,uv+px*vec2(-1.,1.)).rgb);
+float tc=lum(texture2D(tColor,uv+px*vec2(0.,1.)).rgb);
+float tr=lum(texture2D(tColor,uv+px*vec2(1.,1.)).rgb);
+float ml=lum(texture2D(tColor,uv+px*vec2(-1.,0.)).rgb);
+float mr=lum(texture2D(tColor,uv+px*vec2(1.,0.)).rgb);
+float bl=lum(texture2D(tColor,uv+px*vec2(-1.,-1.)).rgb);
+float bc=lum(texture2D(tColor,uv+px*vec2(0.,-1.)).rgb);
+float br=lum(texture2D(tColor,uv+px*vec2(1.,-1.)).rgb);
+float sx=-tl+tr-2.*ml+2.*mr-bl+br;
+float sy=-tl-2.*tc-tr+bl+2.*bc+br;
+float sobel=clamp(length(vec2(sx,sy))*1.6,0.,1.);
+float center=linearDepth(texture2D(tDepth,uv).r);
+float dx=linearDepth(texture2D(tDepth,uv+vec2(px.x,0.)).r);
+float dy=linearDepth(texture2D(tDepth,uv+vec2(0.,px.y)).r);
+float depthEdge=smoothstep(.012,.085,max(abs(dx-center),abs(dy-center))/max(center,.2));
+float strength=mode==2?sobel:mode==3?depthEdge:max(sobel*.65,depthEdge);
+vec3 original=texture2D(tColor,uv).rgb;
+vec3 result=mode==2?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
+gl_FragColor=vec4(result,1.);
+}`});
 const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
 const sourceMaterial=new T.MeshBasicMaterial({map:edgeTarget.texture,depthTest:false,depthWrite:false,toneMapped:false});
 const edgeButton=document.createElement('button');edgeButton.textContent='EDGES: OFF';
