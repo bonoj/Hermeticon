@@ -31,7 +31,7 @@ The extracted reeds preserve the original Wanderer gallery-index-0 behavior (sou
 - **Status:** author explicitly promoted the BB garden to canon on 2026-10-14. Preserve the all-BB construction language, idle sway and reversible growth. Automated performance testing remains unclaimed. Accepted terrain Hybrid and Athanor were not modified. **Hermeticoneer** is the emerging nickname for this worldbuilding direction.
 
 
-## Second Garden — six additional BB species (implementation candidate)
+## Second Garden — six additional BB species (ACCEPTED CANON)
 
 - [second-garden.js](second-garden.js) exports `createSecondGarden(T,{terrain,surface,offset,characters,parent,radius,seed})` and returns `{group,update,inspect,dispose}`.
 - **Mycelial Lace:** surface-sampled branching bead chains.
@@ -41,4 +41,4 @@ The extracted reeds preserve the original Wanderer gallery-index-0 behavior (sou
 - **Geode Hearts:** mineral BB rings and clusters on existing terrain, **no excavation**.
 - **Tumble Orbs:** spherical bead-loop lattices; rocking/sway only, **no locomotion**.
 - All use deterministic roots, instanced BBs, per-plant growth and actor clearance, aperture culling, and inspection. No material exchange, condensation, terrain modification, or wind simulation is implemented.
-- **Status:** committed and mounted in Genesis; not yet visually or performance verified. The first BB garden remains the accepted canon; the Second Garden is a candidate pending author inspection.
+- **Status: AUTHOR-ACCEPTED CANON, 2026-10-14.** All six species approved. Both gardens are accepted and mounted in Genesis. Independent live runtime/performance verification is not claimed. Preserve both accepted compositions.
