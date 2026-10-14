@@ -1,7 +1,6 @@
 // Genesis is an authored composition, not a reusable Arcana definition.
 import {createHermeticon} from '../../arcana/hermeticon.js';
 import {createTerrain} from '../../arcana/terrain.js?v=stable-20bd541b-restore';
-import {createCavernSmoke} from '../../arcana/cavern-smoke.js';
 import {createNodeMaker} from '../../arcana/node-maker.js?v=1';
 import {createWanderer} from '../../arcana/wanderer.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
@@ -13,8 +12,6 @@ export function createGenesis(){
  world.group.add(world.content);
  const terrain=createTerrain();
  world.content.add(terrain.group);
- const cavernSmoke=createCavernSmoke(T,{radius:9.92,terrain});
- world.content.add(cavernSmoke.group);
  const edgeGeometry=(()=>{
   const innerRadius=10.07, apertureRadius=9.72;
   const heights=[-1.15,-0.575,0,0.575,1.15], angles=32, radialSamples=24;
@@ -83,7 +80,7 @@ export function createGenesis(){
  function wandererOffsetX(){return edgeWanderX}
  function wandererOffsetZ(){return edgeWanderZ}
  const originalSetOffset=terrain.setOffset;
- terrain.setOffset=(x,z)=>{originalSetOffset(x,z);cavernSmoke.setOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
+ terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
  // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
  let wallEnabled=true;
@@ -130,8 +127,8 @@ export function createGenesis(){
   tapReport.last=record;tapReport.recent.push(record);
   if(tapReport.recent.length>16)tapReport.recent.shift();
  };
- world.update=dt=>{wanderer.update(dt);cavernSmoke.update(dt)};
+ world.update=dt=>{wanderer.update(dt)};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'cavern-smoke',...cavernSmoke.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:{mode:edgeModes[edgeIndex],index:edgeIndex,triangles:edgeTriangles,rebuilds:edgeRebuilds,buildMs:edgeBuildMs,solid:edgeSolid,void:edgeVoid},nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
