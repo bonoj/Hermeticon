@@ -1,4 +1,6 @@
-// Composition belongs at the entrance, never inside Athanor.
+// Athanor hosts; the Codex composes; Arcana supplies reusable parts.
 import './athanor.js';
-import {hermeticon} from '../arcana/hermeticon.js';
-globalThis.Athanor.mount('hermeticon',hermeticon);
+import {createGenesis} from '../codex/genesis/world.js';
+
+const genesis=createGenesis();
+globalThis.Athanor.mount('genesis',genesis);
