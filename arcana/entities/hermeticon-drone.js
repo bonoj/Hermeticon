@@ -121,6 +121,9 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  const meridianMount=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),Math.PI/2);
  const UP=new T.Vector3(0,1,0);
  let cameraRef=null,mode='observe',pause=0,routeAge=25;
+ let decisions=0,observedChanges=0,investigations=0,explorationAttempts=0,successfulBoreRoutes=0;
+ let lastInterest=0,quietSince=0,focusScore=0,attentionReason='none',lastDecision='initial';
+ const knownPositions=new Map();
  let wallCorrections=0,frameRebases=0;
  let lastOffset={...offset()};
  const crossingPoint=new T.Vector3();
@@ -166,74 +169,87 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   nextSense=time+.35;
   try{observations=(observe()||[]).filter(visibleTarget)}catch(error){observations=[];console.warn('Eye observation unavailable',error)}
   lastObservationCount=observations.length;
-  for(const c of observations)seen.set(c.id,{position:c.position.slice(),time});
+  for(const c of observations){
+   const prior=seen.get(c.id),delta=prior?new T.Vector3(...c.position).distanceTo(new T.Vector3(...prior.position)):0;
+   if(prior&&delta>.15)observedChanges++;
+   seen.set(c.id,{position:c.position.slice(),time,delta});
+  }
   for(const [id,m] of seen)if(time-m.time>18)seen.delete(id);
   if(focus){const fresh=observations.find(c=>c.id===focus.id);
    if(fresh)focus=fresh;
    else if(time-focusSince>1.2)focus=null;
   }
  };
- const chooseDestination=()=>{
-  sense();
-  const candidates=observations;
-  // Retain attention unless its subject disappears or becomes occluded.
-  const current=candidates.find(c=>c.id===focus?.id);
-  const best=candidates.reduce((a,b)=>{
-   const score=c=>(c.salience||1)/(1+.11*root.position.distanceTo(new T.Vector3(...c.position)))+(c.id===focus?.id?0.7:0)-(memories.get(c.id)||0)*.32;
-   return !a||score(b)>score(a)?b:a;
-  },null);
-  const chosen=current&&time-focusSince<6?current:best;
-  if(chosen){
-   if(focus?.id!==chosen.id){focusSince=time;attentionChanges++}
-   focus=chosen;mode='investigate';
-   const p=new T.Vector3(...chosen.position);
-   // Stop at a vantage point instead of colliding with the subject.
-   const away=root.position.clone().sub(p).normalize();
-   if(away.lengthSq()<.01)away.set(0,1,0);
-   // Viewing from afar is normal; approaching is unusual.
-   destination.copy(p).addScaledVector(away,5.0);
-   if(!clearAt(destination)||!clearSegment(root.position,destination)){
-    destination.copy(root.position);mode='observe';
-   }
-   return true;
+ // Attention is evaluated independently of route completion. A target is
+ // interesting because of novelty, motion, or persistence, not a waypoint timer.
+ const chooseAttention=()=>{
+  let best=null,bestScore=-Infinity;
+  for(const c of observations){
+   const d=root.position.distanceTo(new T.Vector3(...c.position));
+   const memory=memories.get(c.id)||0,record=seen.get(c.id);
+   const novelty=memory===0?1.2:1/(1+memory);
+   const motion=Math.min(2,(record?.delta||0)*2);
+   const score=novelty+motion+(c.salience||1)*.12-d*.025+(focus?.id===c.id?2.5:0);
+   if(score>bestScore){best=c;bestScore=score}
   }
-  if(focus)memories.set(focus.id,(memories.get(focus.id)||0)+1);
-  focus=null;
-  // An occasional expedition through a genuinely sphere-sized opening.
-  // At y=0, search for a bore that fits the whole eye, not its center.
-  if(random()<.65&&root.position.y>1.5){
-   const sign=root.position.y>=0?1:-1;
-   const candidates=[];
-   for(let x=-6;x<=6;x+=1.2)for(let z=-6;z<=6;z+=1.2){
-    const middle=new T.Vector3(x,0,z);
-    if(clearAt(middle))candidates.push(middle);
+  if(!best){if(focus&&time-lastInterest>8){memories.set(focus.id,(memories.get(focus.id)||0)+1);focus=null;attentionReason='lost'}return}
+  if(focus?.id!==best.id){
+   if(focus&&bestScore<focusScore+1.2)return;
+   if(focus)memories.set(focus.id,(memories.get(focus.id)||0)+1);
+   focus=best;focusSince=time;attentionChanges++;attentionReason='novelty-or-motion';
+  }else focus=best;
+  focusScore=bestScore;lastInterest=time;
+ };
+ // Sample candidate viewing locations, including genuine full-body bore
+ // crossings. No movement occurs merely because a timer elapsed.
+ const planExploration=()=>{
+  explorationAttempts++;
+  const sign=root.position.y>=0?1:-1;
+  // Scan progressively outward around our current world location, rather
+  // than repeatedly probing the viewport's fixed origin.
+  const origin=root.position;
+  const mids=[];
+  for(let ring=0;ring<=5;ring++)for(let j=0;j<16;j++){
+   const angle=j*Math.PI/8,dist=ring*2;
+   const p=new T.Vector3(origin.x+Math.cos(angle)*dist,0,origin.z+Math.sin(angle)*dist);
+   if(clearAt(p))mids.push(p);
+  }
+  for(const middle of mids){
+   const entry=middle.clone().setY(sign*2.8);
+   const exit=middle.clone().setY(-sign*2.8);
+   if(clearAt(entry)&&clearAt(exit)&&clearSegment(origin,entry)&&clearSegment(entry,middle)&&clearSegment(middle,exit)){
+    destination.copy(entry);crossingPoint.copy(exit);desiredHemisphere=-sign;
+    mode='find-bore';lastDecision='bore-route';successfulBoreRoutes++;return true;
    }
-   candidates.sort((a,b)=>a.distanceToSquared(root.position)-b.distanceToSquared(root.position));
-   for(const middle of candidates){
-    const entry=middle.clone().setY(sign*2.8);
-    if(clearAt(entry)&&clearSegment(root.position,entry)&&clearSegment(entry,middle)){
-     destination.copy(entry);mode='find-bore';desiredHemisphere=-sign;
-     crossingPoint.copy(middle);return true;
+  }
+  // Explore nearby reachable vantage points, with vertical variety.
+  for(let ring=1;ring<=5;ring++)for(let j=0;j<12;j++){
+   const angle=j*Math.PI/6+ring*.31;
+   const candidate=origin.clone().add(new T.Vector3(Math.cos(angle)*ring*1.5,Math.sin(ring*1.7+j)*2,Math.sin(angle)*ring*1.5));
+   if(clearAt(candidate)&&clearSegment(origin,candidate)){
+    destination.copy(candidate);mode='explore';lastDecision='explore-vantage';return true;
+   }
+  }
+  return false;
+ };
+ const decide=()=>{
+  decisions++;
+  chooseAttention();
+  if(focus){
+   const p=new T.Vector3(...focus.position),distance=root.position.distanceTo(p);
+   // Watching is the normal response. Reposition only for a meaningful
+   // vantage improvement, never automatically pursue every observation.
+   if(distance>10&&time-focusSince>4){
+    const toward=p.clone().sub(root.position).normalize();
+    const candidate=root.position.clone().addScaledVector(toward,Math.min(4,distance-7));
+    if(clearAt(candidate)&&clearSegment(root.position,candidate)){
+     destination.copy(candidate);mode='investigate';investigations++;lastDecision='improve-vantage';return;
     }
    }
+   destination.copy(root.position);mode='observe';lastDecision='watch';return;
   }
-  if(cameraRef&&random()<.08){
-   cameraRef.getWorldPosition(cameraPosition);
-   destination.copy(cameraPosition).normalize().multiplyScalar(FREE_RADIUS-.25);
-   mode='inspect-glass';glassVisits++;
-   if(clearAt(destination)&&clearSegment(root.position,destination))return true;
-  }
-  // Below the slab, linger instead of immediately seeking the surface.
-  if(root.position.y< -1.5&&random()<.85){mode='observe';destination.copy(root.position);return true}
-  // No perceptible subject: idle scanning and short exploratory movement.
-  mode='drift';
-  if(random()<.75){destination.copy(root.position);mode='observe';return true}
-  for(let i=0;i<28;i++){
-   const angle=random()*Math.PI*2,r=2+random()*5;
-   const candidate=root.position.clone().add(new T.Vector3(Math.cos(angle)*r,(random()-.5)*4,Math.sin(angle)*r));
-   if(clearAt(candidate)&&clearSegment(root.position,candidate)){destination.copy(candidate);return true}
-  }
-  destination.copy(root.position);return false;
+  if(planExploration())return;
+  destination.copy(root.position);mode='observe';lastDecision='station-keep';
  };
  const render=()=>{
   for(let i=0;i<points.length;i++){
@@ -271,39 +287,41 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   if(camera?.position)cameraRef=camera;
   sense();
   if(root.position.y< -1.4)belowSeconds+=step;
-  if(mode==='cross-bore'&&root.position.distanceTo(destination)<.35){
-   mode='observe';pause=12+random()*15;routeAge=0;
+  chooseAttention();
+  if(mode==='find-bore'&&root.position.distanceTo(destination)<.4){
+   destination.copy(crossingPoint);mode='cross-bore';lastDecision='cross-bore';
+   if(desiredHemisphere<0)belowVisits++;
   }
-  if(mode==='find-bore'&&root.position.distanceTo(destination)<.35){
-   destination.copy(crossingPoint).setY(desiredHemisphere*2.8);
-   if(clearAt(destination)&&clearSegment(root.position,destination)){
-    mode='cross-bore';if(desiredHemisphere<0)belowVisits++;
-    routeAge=0;
-   }else{mode='observe';routeAge=25}
+  if(mode==='cross-bore'&&root.position.distanceTo(destination)<.4){
+   mode='observe';destination.copy(root.position);lastDecision='underground-arrival';
   }
-  if(focus&&mode==='investigate'&&time-focusSince>7){
-   memories.set(focus.id,(memories.get(focus.id)||0)+1);
-   focus=null;routeAge=25;
+  if(mode==='investigate'&&root.position.distanceTo(destination)<.4){
+   mode='observe';destination.copy(root.position);lastDecision='vantage-arrival';
   }
-  if(pause>0){pause-=step;velocity.multiplyScalar(Math.exp(-step*6));}
-  else{
-   routeAge+=step;
-   if((routeAge>24||root.position.distanceTo(destination)<.28)&&mode!=='find-bore'&&mode!=='cross-bore'){
-    {arrivals++;pause=3+random()*7;routeAge=0;chooseDestination();}
-   }
+  if(mode==='explore'&&root.position.distanceTo(destination)<.4){
+   mode='observe';destination.copy(root.position);lastDecision='exploration-arrival';
+  }
+  if(mode==='observe'){
+   if(focus){quietSince=time;lastDecision='watch'}
+   else if(!quietSince)quietSince=time;
+   // Exploration follows sustained lack of perceptible interests, not
+   // a random idle roll or an obligatory route timer.
+   if(!focus&&time-quietSince>6){decide();quietSince=time}
+  }
+  if(mode!=='observe'){
    direction.copy(destination).sub(root.position);
    const distance=direction.length();
    if(distance>.001){
     direction.divideScalar(distance);
-    // Acceleration and braking: slow at start/end, cruise in between.
-    const desiredSpeed=Math.min(.65,Math.sqrt(2*.55*distance));
-    const blend=Math.min(1,step*.8);
-    velocity.lerp(direction.multiplyScalar(desiredSpeed),blend);
+    const desiredSpeed=Math.min(mode==='explore'||mode==='cross-bore'?2.2:1.4,Math.sqrt(2*1.5*distance));
+    velocity.lerp(direction.multiplyScalar(desiredSpeed),Math.min(1,step*2.5));
     trial.copy(root.position).addScaledVector(velocity,step);
-    if(body.tryMove(root.position,trial.clone().sub(root.position))){}
-    else{blocked++;velocity.set(0,0,0);mode='observe';routeAge=25;}
+    if(!body.tryMove(root.position,trial.clone().sub(root.position))){
+     blocked++;velocity.set(0,0,0);mode='observe';destination.copy(root.position);
+     lastDecision='blocked';quietSince=time-5;
+    }
    }
-  }
+  }else velocity.multiplyScalar(Math.exp(-step*4));
   // Constant low-energy station keeping, independent of attention or travel.
   // Anchor follows deliberate travel but not every oscillation, preventing drift.
   stationAnchor.lerp(root.position,Math.min(1,step*.32));
@@ -322,7 +340,6 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   // The meridian is the eye's forward-bearing hardware: rotate the entire
   // vessel and iris as one, never the anatomy independently.
   if(focus)lookPoint.fromArray(focus.position);
-  else if(mode==='inspect-glass'&&cameraRef)cameraRef.getWorldPosition(lookPoint);
   else if(velocity.lengthSq()>.025)lookPoint.copy(root.position).add(velocity);
   else lookPoint.copy(destination);
   lookMatrix.lookAt(lookPoint,root.position,UP);
@@ -339,5 +356,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,frameRebasesPreservingWorld,outsideVisibleVessel:root.position.length()>=10.07+EYE_RADIUS,terrainClearance:terrain?.sphereClearance(root.position,EYE_RADIUS+.13,lastOffset)??null,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,worldPosition:[root.position.x+lastOffset.x,root.position.y,root.position.z+lastOffset.z],frameRebases,frameRebasesPreservingWorld,decisions,observedChanges,investigations,explorationAttempts,successfulBoreRoutes,attentionReason,lastDecision,focusScore,quietFor:time-quietSince,outsideVisibleVessel:root.position.length()>=10.07+EYE_RADIUS,terrainClearance:terrain?.sphereClearance(root.position,EYE_RADIUS+.13,lastOffset)??null,wallCorrections,belowVisits,belowSeconds,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,remembered:seen.size,visited:memories.size,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,physics:body.inspect(),childWorld:childWorld.inspect()})};
 }
