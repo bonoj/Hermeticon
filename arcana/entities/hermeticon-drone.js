@@ -17,7 +17,7 @@ import {inspectObjectSpace} from '../observation/world-space.js';
  * If invisible: inspect attachment and world-space diagnostics FIRST,
  * then deployed runtime; do not randomly move the eye or alter terrain.
  */
-export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=()=>({x:0,z:0})}={}){
+export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=()=>({x:0,z:0}),observe=()=>[]}={}){
  const root=new T.Group();root.name='Hermeticon eye '+id;
  const vessel=createHermeticon();
  vessel.group.scale.setScalar(.125);
@@ -139,34 +139,56 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  // Crossing the slab is only legal where a whole eye fits through a bore.
  // The waypoint at the slab's midplane forces a real aperture crossing.
- let waypoint=null,finalTarget=null;
+
+ // Betwixt Observer inheritance: sense -> acquire -> track -> investigate.
+ // Observations are supplied by Genesis; the eye never knows species internals.
+ let focus=null,focusSince=0,attentionChanges=0,lastObservationCount=0;
+ const visibleTarget=entry=>{
+  const p=entry.position;
+  if(!p||!p.every(Number.isFinite))return false;
+  const v=new T.Vector3(...p);
+  return v.distanceTo(root.position)<14&&clearSegment(root.position,v);
+ };
  const chooseDestination=()=>{
-  const current=root.position;
-  const cameraVisit=cameraRef&&random()<.22;
-  if(cameraVisit){
-   cameraRef.getWorldPosition(cameraPosition);
-   destination.copy(cameraPosition).normalize().multiplyScalar(FREE_RADIUS-.12);
-   mode='inspect-glass';glassVisits++;
-  }else{
-   mode='wander';
-   const angle=random()*Math.PI*2,rad=Math.sqrt(random())*7.2;
-   destination.set(Math.cos(angle)*rad,(random()<.16?-Math.sign(current.y||1):Math.sign(current.y||1))*(4.6+random()*2.3),Math.sin(angle)*rad);
-  }
-  if(!clearAt(destination))return false;
-  waypoint=null;finalTarget=null;
-  if(clearSegment(current,destination))return true;
-  // Prefer the authored through-holes when crossing upper/lower terrain.
-  const holes=[[-3.6,1.8,1.25],[4.4,-2.5,1.45],[7.9,3,1.15],[0,9.55,1.25],[-4.8,8.1,.82],[4.8,8.1,.82]];
-  // All current holes are narrower than the 2.6-diameter eye: no cheating.
-  // Try a safe two-leg detour around the slab's open radial edge instead.
-  for(let i=0;i<24;i++){
-   const a=random()*Math.PI*2,r=7.1+random()*.9;
-   const mid=new T.Vector3(Math.cos(a)*r,0,Math.sin(a)*r);
-   if(clearAt(mid)&&clearSegment(current,mid)&&clearSegment(mid,destination)){
-    waypoint=mid;finalTarget=destination.clone();destination.copy(mid);return true;
+  let observations=[];
+  try{observations=observe()||[]}catch(error){console.warn('Eye observation unavailable',error)}
+  lastObservationCount=observations.length;
+  const candidates=observations.filter(visibleTarget);
+  // Retain attention unless its subject disappears or becomes occluded.
+  const current=candidates.find(c=>c.id===focus?.id);
+  const best=candidates.reduce((a,b)=>{
+   const score=c=>(c.salience||1)/(1+.11*root.position.distanceTo(new T.Vector3(...c.position)))+(c.id===focus?.id?.7:0);
+   return !a||score(b)>score(a)?b:a;
+  },null);
+  const chosen=current&&(!best||best.id===current.id||random()<.78)?current:best;
+  if(chosen){
+   if(focus?.id!==chosen.id){focusSince=time;attentionChanges++}
+   focus=chosen;mode='investigate';
+   const p=new T.Vector3(...chosen.position);
+   // Stop at a vantage point instead of colliding with the subject.
+   const away=root.position.clone().sub(p).normalize();
+   if(away.lengthSq()<.01)away.set(0,1,0);
+   destination.copy(p).addScaledVector(away,2.0);
+   if(!clearAt(destination)||!clearSegment(root.position,destination)){
+    destination.copy(root.position);mode='observe';
    }
+   return true;
   }
-  return false;
+  focus=null;
+  if(cameraRef&&random()<.32){
+   cameraRef.getWorldPosition(cameraPosition);
+   destination.copy(cameraPosition).normalize().multiplyScalar(FREE_RADIUS-.25);
+   mode='inspect-glass';glassVisits++;
+   if(clearAt(destination)&&clearSegment(root.position,destination))return true;
+  }
+  // No perceptible subject: idle scanning and short exploratory movement.
+  mode='search';
+  for(let i=0;i<28;i++){
+   const angle=random()*Math.PI*2,r=2+random()*5;
+   const candidate=root.position.clone().add(new T.Vector3(Math.cos(angle)*r,(random()-.5)*4,Math.sin(angle)*r));
+   if(clearAt(candidate)&&clearSegment(root.position,candidate)){destination.copy(candidate);return true}
+  }
+  destination.copy(root.position);return false;
  };
  const render=()=>{
   for(let i=0;i<points.length;i++){
@@ -186,10 +208,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   else{
    routeAge+=step;
    if(routeAge>20||root.position.distanceTo(destination)<.28){
-    if(waypoint&&finalTarget){destination.copy(finalTarget);waypoint=null;finalTarget=null;routeAge=0;}
-    else{arrivals++;pause=.4+random()*1.4;routeAge=0;
-     for(let attempt=0;attempt<22;attempt++)if(chooseDestination())break;
-    }
+    {arrivals++;pause=.5+random()*1.1;routeAge=0;chooseDestination();}
    }
    direction.copy(destination).sub(root.position);
    const distance=direction.length();
@@ -206,7 +225,8 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   }
   // The meridian is the eye's forward-bearing hardware: rotate the entire
   // vessel and iris as one, never the anatomy independently.
-  if(mode==='inspect-glass'&&cameraRef)cameraRef.getWorldPosition(lookPoint);
+  if(focus)lookPoint.fromArray(focus.position);
+  else if(mode==='inspect-glass'&&cameraRef)cameraRef.getWorldPosition(lookPoint);
   else if(velocity.lengthSq()>.025)lookPoint.copy(root.position).add(velocity);
   else lookPoint.copy(destination);
   lookMatrix.lookAt(lookPoint,root.position,UP);
@@ -223,5 +243,5 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
  };
  render();
  const childWorld={id:id+'-world',group:interior,seed:741,inspect:()=>({id:id+'-world',representation:'BB eye',beads:points.length})};
- return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
+ return {group:root,childWorld,update,contactBead,inspect:()=>({name:'Hermeticon eye',id,position:root.position.toArray(),mode,focus:focus?.id||null,focusAge:focus?time-focusSince:null,attentionChanges,lastObservationCount,velocity:velocity.toArray(),destination:destination.toArray(),arrivals,blocked,glassVisits,routeAge,visible:root.visible,attached:!!root.parent,vesselVisible:vessel.group.visible,beadInstances:beads.count,space:inspectObjectSpace(root,cameraRef),beadContacts,childWorld:childWorld.inspect()})};
 }
