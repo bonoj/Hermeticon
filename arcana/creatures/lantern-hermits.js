@@ -1,3 +1,4 @@
+import {applyRadialImpulse} from '../physics/impulse.js';
 import {stepGrounded} from '../locomotion/grounding.js';
 // Lantern Hermits: asymmetric BB-shell collectors, terrain-supported walking.
 export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=()=>({x:0,z:0}),parent=null,seed=741,radius=9.72}={}){
@@ -32,9 +33,11 @@ export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.79,metalness:.035});
  const mesh=new T.InstancedMesh(geo,mat,beads.length);mesh.count=0;mesh.frustumCulled=false;group.add(mesh);
  const dummy=new T.Object3D();let elapsed=0,visible=0;
+ function receiveImpulse(point,options){let hits=0;for(const p of agents){if(applyRadialImpulse(p,point,options)>0){p.grounded=false;p.blastTime=.95;hits++;}}return hits;}
  function update(dt){
   dt=Math.max(0,Math.min(.1,dt));elapsed+=dt;const actor=wanderer(),{x:ox=0,z:oz=0}=offset();
   for(const p of agents){
+   if(p.blastTime>0){p.blastTime=Math.max(0,p.blastTime-dt);p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.heading=Math.atan2(p.vz,p.vx);stepGrounded(p,dt,{surface,speed:0,radius:radius-1});continue;}
    const close=Math.hypot(actor.x-p.x,actor.z-p.z)<1.2;
    p.timer-=dt;
    if(close){p.state='observe';p.heading=Math.atan2(actor.z-p.z,actor.x-p.x)}
@@ -60,5 +63,5 @@ export function createLanternHermits(T,{surface,offset=()=>({x:0,z:0}),wanderer=
   }
   mesh.count=visible;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- return {group,update,inspect:()=>({name:'Lantern Hermits',creatures:agents.map(p=>({species:'lantern-hermit',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,gesture:+p.gesture.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
+ return {group,update,receiveImpulse,inspect:()=>({name:'Lantern Hermits',creatures:agents.map(p=>({species:'lantern-hermit',x:+p.x.toFixed(2),z:+p.z.toFixed(2),state:p.state,gesture:+p.gesture.toFixed(2)})),beads:beads.length,visible}),dispose(){group.removeFromParent();geo.dispose();mat.dispose()}};
 }
