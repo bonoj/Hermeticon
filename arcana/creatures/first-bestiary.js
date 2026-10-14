@@ -45,6 +45,7 @@ export function createFirstBestiary(T,{surface,offset=()=>({x:0,z:0}),wanderer=(
    mesh.getMatrixAt(i,blastMatrix);blastMatrix.decompose(blastPosition,blastRotation,blastScale);mesh.getColorAt(i,blastColor);
    items.push({x:blastPosition.x+ox,y:blastPosition.y,z:blastPosition.z+oz,r:blastScale.x,color:blastColor.clone()});
   }
+  if(!debris.canAccept(items.length)){for(const p of creatures)if(destroyed.has(p.id))p.destroyed=false;return 0;}
   debris.emit(items,point,options.impulse);
   return hits;
  }
