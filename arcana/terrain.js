@@ -93,5 +93,5 @@ export function createTerrain(){
 }
 
  regenerate();
- return {group:solid,sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o}))})};
+ return {group:solid,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o}))})};
 }
