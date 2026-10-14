@@ -80,3 +80,7 @@ Cinderfall has no automatic timer. New meteor taps do not cancel active projecti
 ## Material inventory observation
 
 [`observation/material-survey.js`](observation/material-survey.js) exports `createMaterialSurvey({populations,debris})`. Genesis provides live systems; the reusable observer reports active authored inventory, detached material, total conservation accounting, visible inventory, ownership, allocation, and population snapshots. Descriptor totals are not counted when `activeBeads` is available. Source verification does not establish browser runtime behavior.
+
+## Terrain navigation and tap ownership
+
+[`interaction/terrain-navigation.js`](interaction/terrain-navigation.js) exports `createTerrainNavigation({terrain,actor})`. Terrain classifies taps and supplies navigation targets; the actor executes movement. The adapter retains bounded 16-entry tap diagnostics and exposes `attachView`, `tap`, and `inspect`. Genesis wires the adapter without changing its public interfaces. Source verification is not browser verification.
