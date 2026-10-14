@@ -63,6 +63,11 @@ jobs:
               html=html.replace('compose.js',f'compose.js?v={sha}')
               entry.write_text(html)
           assert (athanor/'athanor.js').is_file()
+          instrument=athanor/'athanor.js'
+          source=instrument.read_text()
+          assert "'../arcana/edge-detection.js'" in source
+          assert (root/'arcana/edge-detection.js').is_file()
+          instrument.write_text(source.replace("'../arcana/edge-detection.js'",f"'../arcana/edge-detection.js?v={sha}'"))
           compose=athanor/'compose.js'
           content=compose.read_text()
           assert "'./athanor.js'" in content and "'../codex/genesis/world.js'" in content
