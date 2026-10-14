@@ -133,7 +133,7 @@ globalThis.BaubleInspect=inspectWorld;
 
 // Screen-space edge laboratory: one scene render, selectable fullscreen GPU filters.
 // Color Sobel is artistic; depth discontinuities are geometric evidence, not yet terrain-only witnesses.
-const edgeNames=['OFF','SOBEL','DEPTH','HYBRID'];
+const edgeNames=['OFF','SOURCE','SOBEL','DEPTH','HYBRID'];
 let edgeMode=0,edgeFrames=0,edgeLastMs=0,edgePeakMs=0;
 const edgeTarget=new T.WebGLRenderTarget(1,1,{depthBuffer:true});
 edgeTarget.depthTexture=new T.DepthTexture(1,1,T.UnsignedShortType);
@@ -154,9 +154,9 @@ const edgeShader=new T.ShaderMaterial({depthTest:false,depthWrite:false,uniforms
  float center=d[4];float discontinuity=0.;
  for(int i=0;i<9;i++){float delta=abs(d[i]-center)/max(center,.2);discontinuity=max(discontinuity,delta);}
  float depthEdge=smoothstep(.012,.085,discontinuity);
- float strength=mode==1?sobel:mode==2?depthEdge:max(sobel*.65,depthEdge);
+ float strength=mode==2?sobel:mode==3?depthEdge:max(sobel*.65,depthEdge);
  vec3 original=texture2D(tColor,uv).rgb;
- vec3 result=mode==1?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
+ vec3 result=mode==1?original:mode==2?mix(vec3(.025,.045,.065),vec3(.93,.88,.72),strength):mix(original,vec3(1.,.72,.22),strength*.9);
  gl_FragColor=vec4(result,1.);
  }`});
 const edgeQuad=new T.Mesh(new T.PlaneGeometry(2,2),edgeShader);edgeQuad.frustumCulled=false;edgeScene.add(edgeQuad);
