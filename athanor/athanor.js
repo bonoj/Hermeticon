@@ -139,6 +139,7 @@ globalThis.BaubleInspect=inspectWorld;
 
 // First-class observational lens; Athanor owns scheduling, the tool owns rendering.
 const edgeDetection=createEdgeDetection(T,renderer,camera);
+edgeDetection.setMode('HYBRID');
 let last=performance.now();
 document.addEventListener('visibilitychange',()=>{last=performance.now();probeLast=last;probeFrames=0;probeFrameMs=0});
 function frame(now){requestAnimationFrame(frame);
