@@ -83,6 +83,8 @@ export function createGenesis(){
  terrain.setOffset=(x,z)=>{originalSetOffset(x,z);edgeWanderX=x;edgeWanderZ=z};
  // Static fixture for comparison; edge skin is resampled when the treatment changes.
  setEdgeMode(0);
+ world.cycleRock=()=>terrain.setRockMode(terrain.getRockMode()+1);
+ world.rockMode=()=>terrain.rockNames[terrain.getRockMode()];
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
 
