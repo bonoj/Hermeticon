@@ -78,6 +78,12 @@ export function createBBGarden(T,{surface,offset=()=>({x:0,z:0}),characters=()=>
    const o=offset();items.push({x:blastPosition.x+o.x,y:blastPosition.y,z:blastPosition.z+o.z,r:blastScale.x*1,color:blastColor.clone()});
   }
 
+  // Every authored BB transfers exactly once, including clipped or retracted anatomy.
+  const seen=new Map();for(let i=0;i<mesh.count;i++){const id=visibleOwners[i];if(affected.has(id))seen.set(id,(seen.get(id)||0)+1);}
+  const required=new Map();for(const b of descriptors)if(affected.has(b.plant))required.set(b.plant,(required.get(b.plant)||0)+1);
+  for(const [id,total] of required){const p=plants[id],missing=total-(seen.get(id)||0);if(missing<=0)continue;
+   const hidden=descriptors.filter(b=>b.plant===id);for(let j=0;j<missing;j++){const b=hidden[j%hidden.length];items.push({x:p.x+(b.x||0),y:p.y+b.y,z:p.z+(b.z||0),r:b.r,color:(palette[p.s*3+b.color]).clone()});}
+  }
   const emitted=debris.emit(items,point,options.impulse);
   for(const id of affected)plants[id].destroyed=true;
   return emitted;
