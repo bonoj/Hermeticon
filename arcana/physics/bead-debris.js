@@ -3,7 +3,9 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.8,metalness:.04});
  const mesh=new T.InstancedMesh(geo,mat,capacity);mesh.frustumCulled=false;mesh.count=0;parent.add(mesh);
  const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0};let terrainHits=0,vesselHits=0,emitted=0;
+ function canAccept(count){return count<=capacity-beads.length;}
  function emit(items,point,impulse=18){
+  if(!canAccept(items.length))return 0;
   const o=offset();
   for(const item of items){
    if(beads.length>=capacity)break;
@@ -68,5 +70,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,capacity=9
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;
  }
 
- return {emit,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,capacity,remaining:capacity-beads.length,ownership:{...ownership}})};
 }
