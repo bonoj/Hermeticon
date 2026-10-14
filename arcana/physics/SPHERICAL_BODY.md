@@ -61,3 +61,7 @@ Genesis eye scroll handling now uses explicit-frame terrain clearance and increm
 ## 2026-10-14 unresolved scroll position preservation
 
 Eye scroll handling now retains `lastSafeWorld` during intermediate offset steps. On an unresolved contact, the final render-frame position is reconstructed from that last terrain-clear world point instead of blindly using the full-scroll target. This prevents the rebase itself from introducing an unverified terrain displacement. **Not a full solution:** the final glass wall can still overlap the eye when a collision is geometrically impossible to resolve; candidate corrections and moving-wall sweeps need stronger certification. Browser and integrated moving-wall regression results remain unverified.
+
+## Scroll collision diagnostics
+
+The eye inspector now reports `wallClearance`, `terrainClearance`, cumulative `scrollWallOverlap` and `scrollTerrainOverlap` counters. A negative clearance is a concrete overlap, not proof that the solver resolved it. Counters sample completed rebases, not all intermediate frames. The integration harness and browser execution are still outstanding.
