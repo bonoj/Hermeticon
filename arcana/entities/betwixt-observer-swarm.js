@@ -14,26 +14,22 @@ export function createObserverSwarm({parent,terrain=null,offset=()=>({x:0,z:0}),
  const ringGeo=new T.TorusGeometry(.535,.035,8,32);
  const bindingGeo=new T.CylinderGeometry(.027,.034,.11,8);
  let state=seed>>>0;const rand=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296};
- const safeY=(x,z,y)=>terrain?Math.max(y,terrainHeight(x,z)+1.25):y;
- const terrainHeight=(x,z)=>{
-  if(!terrain?.sample)return -3.6;
-  const o=offset();
-  // Find the highest solid-to-air boundary using the terrain signed field.
-  let prev=terrain.sample(x+o.x,7,z+o.z)>0;
-  for(let y=6.8;y>=-4.5;y-=.2){
-   const solid=terrain.sample(x+o.x,y,z+o.z)>0;
-   if(solid&&!prev)return y+.2;
-   prev=solid;
+ // Find a genuine vertical bore through the signed terrain, including eye clearance.
+ const clear=p=>p.length()<9.42&&(!terrain?.intersectsSphere||!terrain.intersectsSphere(p,.52,offset()));
+ const findBore=()=>{
+  for(let ring=0;ring<=7;ring++)for(let j=0;j<48;j++){
+   const theta=j*Math.PI/24,x=ring*Math.cos(theta),z=ring*Math.sin(theta);
+   let valid=true;
+   for(let y=-5.5;y<=5.5;y+=.35)if(!clear(new T.Vector3(x,y,z))){valid=false;break}
+   if(valid)return new T.Vector3(x,0,z);
   }
-  return -3.6;
+  return null;
  };
- const center=new T.Vector3(0,5.5,0);
- const home=center.clone();
- const pick=(homeward=false)=>{
-  const angle=rand()*Math.PI*2,radius=homeward?1+rand()*2:2+rand()*4;
-  const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
-  return new T.Vector3(x,safeY(x,z,homeward?home.y+rand():4+rand()*3),z);
- };
+ const bore=findBore();
+ const upper=new T.Vector3(bore?.x??0,5.7,bore?.z??0);
+ const lower=new T.Vector3(bore?.x??0,-5.7,bore?.z??0);
+ const home=upper.clone();
+ const pick=()=>upper.clone();
  const swarm=[];
  for(let i=0;i<12;i++){
   const node=new T.Group();node.name='catch:observer:'+i;root.add(node);
@@ -52,61 +48,37 @@ export function createObserverSwarm({parent,terrain=null,offset=()=>({x:0,z:0}),
    binding.rotation.x=Math.PI/2;seat.add(binding);
   }
   const angle=i*Math.PI*2/12,rad=1.5+(i%3)*.45;
-  node.position.set(Math.cos(angle)*rad,home.y+(i%4)*.32,Math.sin(angle)*rad);
-  swarm.push({node,eye,seat,phase:rand()*Math.PI*2,mode:'wander',until:3+rand()*5,target:pick(false),speed:2+rand()*1.4});
+  node.position.set(Math.cos(angle)*rad,home.y+(i%4)*.16,Math.sin(angle)*rad);
+  swarm.push({node,eye,seat,phase:rand()*Math.PI*2,mode:'descending',until:0,target:lower,speed:2+rand()*1.4});
  }
- let time=0,updates=0,traveling=0,curiosity='idle',separations=0;
- const forward=new T.Vector3(0,0,1),focus=new T.Vector3(0,4.8,0);
- const q=new T.Quaternion();
+ let time=0,updates=0,traveling=0,blocked=0,arrivals=0;
+ const forward=new T.Vector3(0,0,1),q=new T.Quaternion();
  const update=dt=>{
+  // The world's update contract is seconds; retain a bounded positive step.
   const step=Math.max(0,Math.min(.05,dt));time+=step;updates++;
-  const cycle=time%44,phase=cycle<17?'idle':cycle<34?'investigate':'dismiss';
-  if(phase!==curiosity){
-   curiosity=phase;
-   for(let i=1;i<swarm.length;i++){
-    const a=swarm[i];
-    if(phase==='investigate'){a.mode='investigate';a.until=Infinity}
-    else if(phase==='dismiss'){a.mode='return';a.target=pick(true);a.until=Infinity;a.speed=7}
-    else{a.mode='wander';a.target=pick();a.until=time+6+rand()*9;a.speed=2.5}
-   }
-  }
-  for(let i=1;i<swarm.length;i++)if(phase==='investigate'){
-   const a=swarm[i],angle=(i-1)*Math.PI*2/11+time*.23,r=1.4+(i%3)*.28;
-   const x=focus.x+Math.cos(angle)*r,z=focus.z+Math.sin(angle)*r;
-   a.target.set(x,safeY(x,z,focus.y+(i%4)*.25),z);a.speed=4.2;
-  }
-  swarm[0].mode='sentinel';swarm[0].until=Infinity;
-  swarm[0].target.set(0,6.6,0);
   for(let i=0;i<swarm.length;i++){
    const a=swarm[i];
-   if(time>=a.until&&i!==0&&a.mode!=='investigate'){
-    if(a.mode==='hover'){a.mode='wander';a.target=pick();a.until=time+6+rand()*9}
-    else if(a.mode==='wander'){a.mode='return';a.target=pick(true);a.until=Infinity}
-    else{a.mode='wander';a.target=pick();a.until=time+6+rand()*9}
+   // Two destinations only: one above the terrain and one below.
+   // Every route is constrained to the clear vertical bore.
+   if(!bore){a.mode='no-clear-bore';continue}
+   const destination=a.target;
+   const delta=destination.clone().sub(a.node.position);
+   const distance=delta.length();
+   if(distance<.12){a.target=destination===lower?upper:lower;a.mode=a.target===lower?'descending':'ascending';arrivals++}
+   else{
+    const travel=Math.min(distance,(2.2+i*.085)*step);
+    const next=a.node.position.clone().addScaledVector(delta,travel/distance);
+    if(clear(next)){a.node.position.copy(next);traveling++;a.mode=destination===lower?'descending':'ascending'}
+    else {blocked++;a.mode='blocked'}
    }
-   if(a.mode!=='hover'){
-    const delta=a.target.clone().sub(a.node.position),distance=delta.length();
-    if(a.mode==='return'&&distance<.35){a.mode='wander';a.target=pick();a.until=time+6+rand()*9}
-    else if(distance>.001){
-     const motion=Math.min(distance,a.speed*step);
-     const next=a.node.position.clone().addScaledVector(delta,motion/distance);
-     if(next.length()<9.45&&(!terrain?.intersectsSphere||!terrain.intersectsSphere(next,.55,offset()))){
-      a.node.position.copy(next);traveling++;
-     }else{a.target=pick();a.until=time+3+rand()*3}
-    }
-   }else a.node.position.y+=Math.sin(time*1.1+a.phase)*step*.12;
-   a.node.position.y=Math.min(9.4,safeY(a.node.position.x,a.node.position.z,a.node.position.y));
-   const dir=(a.mode==='investigate'||a.mode==='sentinel'?focus.clone().sub(a.node.position):a.target.clone().sub(a.node.position));
-   if(dir.lengthSq()>.0001){q.setFromUnitVectors(forward,dir.normalize());a.eye.quaternion.slerp(q,.12);a.seat.quaternion.copy(a.eye.quaternion)}
-  }
-  for(let pass=0;pass<3;pass++)for(let i=0;i<swarm.length;i++)for(let j=i+1;j<swarm.length;j++){
-   const a=swarm[i].node.position,b=swarm[j].node.position,delta=b.clone().sub(a),d=delta.length();
-   if(d>=1.12)continue;
-   if(d<.00001)delta.set(Math.cos(i+j),.5,Math.sin(i+j)).normalize();else delta.divideScalar(d);
-   const push=(1.12-d)*.5+.0001;
-   const na=a.clone().addScaledVector(delta,-push),nb=b.clone().addScaledVector(delta,push);
-   if(na.length()<9.45&&nb.length()<9.45){a.copy(na);b.copy(nb);separations++}
+   // Original Betwixt ocular axis is +Z.
+   const facing=a.target.clone().sub(a.node.position);
+   if(facing.lengthSq()>.000001){
+    q.setFromUnitVectors(forward,facing.normalize());
+    a.eye.quaternion.slerp(q,.18);
+    a.seat.quaternion.copy(a.eye.quaternion);
+   }
   }
  };
- return {group:root,update,inspect:()=>({name:'Betwixt observer swarm',count:swarm.length,updates,traveling,curiosity,separations,agents:swarm.map((a,i)=>({id:i,mode:a.mode,position:a.node.position.toArray()}))})};
+ return {group:root,update,inspect:()=>({name:'Betwixt observer swarm',count:swarm.length,updates,traveling,blocked,arrivals,bore:bore?.toArray()??null,agents:swarm.map((a,i)=>({id:i,mode:a.mode,position:a.node.position.toArray(),target:a.target.toArray()}))})};
 }
