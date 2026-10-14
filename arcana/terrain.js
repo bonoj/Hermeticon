@@ -129,9 +129,9 @@ export function createTerrain(){
   for(const chunk of terrainChunks){
    const geometry=chunk.geometry,bb=geometry.boundingBox;
    if(!bb)continue;
-   if(collisionPoint.x+r<bb.min.x||collisionPoint.x-r>bb.max.x||
-      collisionPoint.y+r<bb.min.y||collisionPoint.y-r>bb.max.y||
-      collisionPoint.z+r<bb.min.z||collisionPoint.z-r>bb.max.z)continue;
+   if(collisionPoint.x+radius<bb.min.x||collisionPoint.x-radius>bb.max.x||
+      collisionPoint.y+radius<bb.min.y||collisionPoint.y-radius>bb.max.y||
+      collisionPoint.z+radius<bb.min.z||collisionPoint.z-radius>bb.max.z)continue;
    const attr=geometry.getAttribute('position');
    if(!attr)continue;
    for(let i=0;i<attr.count;i+=3){
@@ -139,11 +139,11 @@ export function createTerrain(){
     collisionB.fromBufferAttribute(attr,i+1);
     collisionC.fromBufferAttribute(attr,i+2);
     const minX=Math.min(collisionA.x,collisionB.x,collisionC.x),maxX=Math.max(collisionA.x,collisionB.x,collisionC.x);
-    if(collisionPoint.x+r<minX||collisionPoint.x-r>maxX)continue;
+    if(collisionPoint.x+radius<minX||collisionPoint.x-radius>maxX)continue;
     const minY=Math.min(collisionA.y,collisionB.y,collisionC.y),maxY=Math.max(collisionA.y,collisionB.y,collisionC.y);
-    if(collisionPoint.y+r<minY||collisionPoint.y-r>maxY)continue;
+    if(collisionPoint.y+radius<minY||collisionPoint.y-radius>maxY)continue;
     const minZ=Math.min(collisionA.z,collisionB.z,collisionC.z),maxZ=Math.max(collisionA.z,collisionB.z,collisionC.z);
-    if(collisionPoint.z+r<minZ||collisionPoint.z-r>maxZ)continue;
+    if(collisionPoint.z+radius<minZ||collisionPoint.z-radius>maxZ)continue;
     collisionTriangle.set(collisionA,collisionB,collisionC).closestPointToPoint(collisionPoint,collisionClosest);
     if(collisionClosest.distanceToSquared(collisionPoint)<rr)return true;
    }
