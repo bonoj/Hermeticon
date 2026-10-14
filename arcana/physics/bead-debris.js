@@ -1,10 +1,11 @@
 import {WANDERER_PHYSICS as P,reflectContact,signedFieldNormal,catchVesselUnderside} from './wanderer-contacts.js';
 export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.8,metalness:.04});
- let mesh=null,allocated=0;const batches=[];
+ let mesh=null,allocated=0;
  function ensureMesh(required){if(required<=allocated)return;const next=Math.max(required,allocated?allocated*2:256);const replacement=new T.InstancedMesh(geo,mat,next);replacement.frustumCulled=false;replacement.count=0;parent.add(replacement);if(mesh)parent.remove(mesh);mesh=replacement;allocated=next;}
  ensureMesh(256);
  const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0};let terrainHits=0,vesselHits=0,emitted=0;
+ function canAccept(){return true;}
  function emit(items,point,impulse=18){
   const o=offset();
   for(const item of items){
@@ -70,5 +71,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent}){
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;
  }
 
- return {emit,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,emitted,allocated,ownership:{...ownership}})};
 }
