@@ -12,3 +12,8 @@ Six seeded creatures are generated near spawn (subject to valid signed-field sup
 ## Velvet Drifters — implemented trial
 
 `velvet-drifters.js` exports `createVelvetDrifters(T,{surface,offset,wanderer,parent,seed,radius})`. Up to four deterministic BB-only creatures, each with 17 tapering body sections, bead-chain lateral tendrils, and eye kernels. Traveling peristaltic pose waves, autonomous foraging, Wanderer avoidance and conservative geological support checks. One shared instanced sphere mesh. No actual material collection, IK, or live performance validation claimed.
+
+
+## Threadwyrms — implemented trial
+
+`threadwyrms.js` exports `createThreadwyrms(T,{surface,offset,wanderer,parent,seed,radius})`. Up to three deterministic BB-only segmented creatures with 24 body segments, lateral bead appendages, trailing geological position history, animated undulation, conservative support checks, bounded wandering and Wanderer avoidance. Single shared instanced BB mesh. **Limitations:** Existing-hole entry/emergence and true burrowing are not implemented. Trailing history is sampled per frame, not by arc length, and may need refinement to maintain consistent segment spacing across frame rates. No live visual or FPS verification yet.
