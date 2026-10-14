@@ -3,7 +3,7 @@ import {createHermeticon} from '../hermeticon.js';
 import {inspectObjectSpace} from '../observation/world-space.js';
 
 /**
- * COMPOSABLE CONTRACT — nested Hermeticon eye.
+ * DESIGN CONTRACT: see ./HERMETICON_EYE.md for character, anatomy,\n * attention, locomotion, and current implementation gaps.\n * COMPOSABLE CONTRACT — nested Hermeticon eye.
  * Inputs: {parent,id}; parent is the rendered Genesis world.content.
  * Mount chain MUST be parent -> root -> vessel.group -> vessel.content
  * -> interior -> instanced BB eye. Both parent.add(root) and
