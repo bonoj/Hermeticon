@@ -85,8 +85,21 @@ jobs:
           compose.write_text(content)
           assert (root/'arcana/hermeticon.js').is_file()
           assert (root/'codex/genesis/world.js').is_file()
+          # Stamp every relative JS dependency, not just the entry module.
+          # This prevents a cached broken transitive module surviving rollback.
+          for module in root.rglob('*.js'):
+              source=module.read_text()
+              def stamp(m):
+                  q, path=m.group(1),m.group(2)
+                  return q+path.split('?')[0]+'?v='+sha+q
+              source=re.sub(r"""(['"])(\.{1,2}/[^'"\n]+?\.js(?:\?[^'"\n]*)?)\1""",stamp,source)
+              module.write_text(source)
+          print('TRANSITIVE MODULE URLS STAMPED',sha)
           print('PUBLIC ENTRIES READY',sha)
           PY
+      - name: Reject invalid JavaScript before publication
+        run: |
+          find site -type f -name '*.js' -print0 | xargs -0 -n 1 node --check
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
