@@ -208,7 +208,7 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   focus=null;
   // An occasional expedition through a genuinely sphere-sized opening.
   // At y=0, search for a bore that fits the whole eye, not its center.
-  if(random()<.65){
+  if(random()<.65&&root.position.y>1.5){
    const sign=root.position.y>=0?1:-1;
    const candidates=[];
    for(let x=-6;x<=6;x+=1.2)for(let z=-6;z<=6;z+=1.2){
@@ -230,6 +230,8 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
    mode='inspect-glass';glassVisits++;
    if(clearAt(destination)&&clearSegment(root.position,destination))return true;
   }
+  // Below the slab, linger instead of immediately seeking the surface.
+  if(root.position.y< -1.5&&random()<.85){mode='observe';destination.copy(root.position);return true}
   // No perceptible subject: idle scanning and short exploratory movement.
   mode='drift';
   if(random()<.75){destination.copy(root.position);mode='observe';return true}
@@ -256,6 +258,9 @@ export function createHermeticonDrone({parent,id='drone-1',terrain=null,offset=(
   if(camera?.position)cameraRef=camera;
   sense();
   if(root.position.y< -1.4)belowSeconds+=step;
+  if(mode==='cross-bore'&&root.position.distanceTo(destination)<.35){
+   mode='observe';pause=12+random()*15;routeAge=0;
+  }
   if(mode==='find-bore'&&root.position.distanceTo(destination)<.35){
    destination.copy(crossingPoint).setY(desiredHemisphere*2.8);
    if(clearAt(destination)&&clearSegment(root.position,destination)){
