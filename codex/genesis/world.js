@@ -77,9 +77,11 @@ export function createGenesis(){
  const lanternHermits=createLanternHermits(T,{surface:reedSurface,offset:botanicalOffset,
   wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
  const creatureSystems=[bestiary,velvetDrifters,threadwyrms,glasswings,bellwraiths,lanternHermits];
+ let lastMeteorImpact=null;
  const cinderfall=createCinderfall(T,{surface:reedSurface,offset:botanicalOffset,
   targets:()=>creatureSystems.flatMap(s=>s.inspect().creatures||[]),
-  parent:world.content,radius:terrain.getAperture(),seed:741});
+  parent:world.content,radius:terrain.getAperture(),seed:741,
+  onImpact:({point,magnitude})=>{const crater=terrain.impact(point,{magnitude});lastMeteorImpact={point,magnitude,crater,force:{radius:3.2*magnitude,impulse:18*magnitude,receivers:0}};}});
  world.castMeteor=()=>cinderfall.cast();
  let meteorClock=0;
  let view=null;
@@ -99,6 +101,6 @@ export function createGenesis(){
 
  world.update=dt=>{wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);meteorClock+=Math.min(dt,.1);if(meteorClock>=14){meteorClock=0;cinderfall.cast()}};
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect()],edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect()],meteorImpact:lastMeteorImpact,edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
