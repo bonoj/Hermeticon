@@ -1,7 +1,7 @@
 // Genesis is an authored composition, not a reusable Arcana definition.
 import {createHermeticon} from '../../arcana/hermeticon.js';
 import {createTerrain} from '../../arcana/terrain.js?v=mountains-20261014';
-import {surveyFourSurfaces,buildHeightIndex} from '../../arcana/four-surfaces.js?v=4';
+import {surveyFourSurfaces,buildHeightIndex} from '../../arcana/four-surfaces.js?v=5';
 import {createWanderer} from '../../arcana/wanderer.js';
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
