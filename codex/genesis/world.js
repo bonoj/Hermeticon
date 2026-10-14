@@ -84,6 +84,49 @@ export function createGenesis(){
  setEdgeMode(0);
  world.cycleEdge=()=>{setEdgeMode(edgeIndex+1);return edgeModes[edgeIndex]};
  world.edgeMode=()=>edgeModes[edgeIndex];
+
+ // Diagnostic signed-field lattice: nodes and links, not a geological replacement mesh.
+ const latticeGroup=new T.Group();latticeGroup.name='signed-density-lattice';world.content.add(latticeGroup);
+ const latticeStats={radialLayers:3,angularSamples:96,verticalSamples:13,solid:0,void:0,surface:0,links:0,beads:0,buildMs:0,drawCalls:2};
+ const latticeNodes=[],latticePositions=[],latticeLines=[];
+ const nA=latticeStats.angularSamples,nY=latticeStats.verticalSamples,nR=latticeStats.radialLayers;
+ const idx=(k,j,i)=>(k*nY+j)*nA+i;
+ const tStart=performance.now();
+ for(let k=0;k<nR;k++)for(let j=0;j<nY;j++)for(let i=0;i<nA;i++){
+  const a=i*Math.PI*2/nA,r=8.65+k*.49,y=-1.5+j*.25;
+  const x=r*Math.cos(a),z=r*Math.sin(a),density=terrain.sample(x,y,z);
+  const kind=Math.abs(density)<.24?'surface':density>0?'solid':'void';
+  latticeNodes[idx(k,j,i)]={x,y,z,density,kind};
+  latticeStats[kind]++;
+ }
+ const beadGeo=new T.SphereGeometry(.045,5,4);
+ const beadMat=new T.MeshStandardMaterial({color:0xe4b55f,metalness:.8,roughness:.3});
+ const beads=new T.InstancedMesh(beadGeo,beadMat,latticeNodes.length);
+ const dummy=new T.Object3D(),nodeColor=new T.Color();
+ latticeNodes.forEach((node,n)=>{
+  dummy.position.set(node.x,node.y,node.z);
+  const scale=node.kind==='surface'?1.65:node.kind==='solid'?1:.55;
+  dummy.scale.setScalar(scale);dummy.updateMatrix();beads.setMatrixAt(n,dummy.matrix);
+  nodeColor.setHex(node.kind==='surface'?0xffe4a0:node.kind==='solid'?0xc99b50:0x584b35);
+  beads.setColorAt(n,nodeColor);
+ });
+ beads.instanceMatrix.needsUpdate=true;beads.frustumCulled=false;
+ latticeGroup.add(beads);latticeStats.beads=latticeNodes.length;
+ const link=(a,b)=>{if(a.kind==='void'||b.kind==='void')return;latticeLines.push(a.x,a.y,a.z,b.x,b.y,b.z);latticeStats.links++};
+ for(let k=0;k<nR;k++)for(let j=0;j<nY;j++)for(let i=0;i<nA;i++){
+  const node=latticeNodes[idx(k,j,i)];
+  link(node,latticeNodes[idx(k,j,(i+1)%nA)]);
+  if(j+1<nY)link(node,latticeNodes[idx(k,j+1,i)]);
+  if(k+1<nR)link(node,latticeNodes[idx(k+1,j,i)]);
+ }
+ const lineGeo=new T.BufferGeometry();
+ lineGeo.setAttribute('position',new T.Float32BufferAttribute(latticeLines,3));
+ const links=new T.LineSegments(lineGeo,new T.LineBasicMaterial({color:0xa77b3d,transparent:true,opacity:.72,depthWrite:false}));
+ links.frustumCulled=false;latticeGroup.add(links);
+ latticeStats.buildMs=+(performance.now()-tStart).toFixed(2);
+ // Expose actual density classes without claiming a solid node is an extracted surface.
+ const inspectLattice=()=>({...latticeStats,kindLegend:{solid:'density > +0.24',surface:'absolute density <= 0.24',void:'density < -0.24'},scope:'fixed vessel-centered annulus',geometry:'instanced beads + batched line segments',static:true});
+ setEdgeMode(8);
  const inspectEdge=()=>({index:edgeIndex,name:edgeModes[edgeIndex],candidates:edgeModes,apertureRadius:terrain.getAperture(),triangles:edgeTriangles,solidCells:edgeSolid,voidCells:edgeVoid,buildMs:edgeBuildMs,rebuilds:edgeRebuilds,drawCalls:edgeMesh?1:0,trimDrawCalls:edgeTrim?1:0,staticBetweenChanges:true,geologicalAuthority:'terrain.sample',note:'Prototype: skin sampled at initial offset; evaluate seams and bores visually'});
 
  const wanderer=createWanderer({terrain});
@@ -120,6 +163,6 @@ export function createGenesis(){
  };
  world.update=dt=>wanderer.update(dt);
  const inspectShell=world.inspect.bind(world);
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()}],edgeGeometry,edgeTreatment:inspectEdge(),lattice:inspectLattice(),tapOwnership:{...tapReport,recent:[...tapReport.recent]}});
  return world;
 }
