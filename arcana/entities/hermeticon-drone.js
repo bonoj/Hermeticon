@@ -2,8 +2,21 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.modul
 import {createHermeticon} from '../hermeticon.js';
 import {inspectObjectSpace} from '../observation/world-space.js';
 
-// A world-bearing eye: miniature BB anatomy inside a real Hermeticon vessel.
-// Local +Z is the gaze axis. The eye looks toward Athanor's camera.
+/**
+ * COMPOSABLE CONTRACT — nested Hermeticon eye.
+ * Inputs: {parent,id}; parent is the rendered Genesis world.content.
+ * Mount chain MUST be parent -> root -> vessel.group -> vessel.content
+ * -> interior -> instanced BB eye. Both parent.add(root) and
+ * vessel.group.add(vessel.content) are required (the missing first link
+ * caused the entire eye orb to vanish on 2026-10-14).
+ * Eye anatomy faces local +Z; cancel vessel's X rotation for the interior.
+ * World coordinates: stationary upper dome, scaled shell radius 1.28125;
+ * full parent vessel inner radius 10.07. Gaze follows camera; BBs pulse.
+ * Exposes {group,childWorld,update,contactBead,inspect}. This factory
+ * does not own Genesis updates; caller must isolate experimental failures.
+ * If invisible: inspect attachment and world-space diagnostics FIRST,
+ * then deployed runtime; do not randomly move the eye or alter terrain.
+ */
 export function createHermeticonDrone({parent,id='drone-1'}={}){
  const root=new T.Group();root.name='Hermeticon eye '+id;
  const vessel=createHermeticon();
