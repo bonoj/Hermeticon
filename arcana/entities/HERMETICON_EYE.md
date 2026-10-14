@@ -33,7 +33,7 @@ These are relative behavioral priorities, **not arbitrary mandatory percentages,
 Betwixt Observer in `bonoj/Interstice/betwixt/index.html`: sensor range, terrain line-of-sight, acquisition dwell, target retention, smooth ocular tracking, brass carriage quaternion copied from eye. Betwixt Foundry drones also had obstacle-aware pursuit/return routing. Reuse the principles, not the combat mission or relentless target pursuit.
 
 ## Implementation warning (as of 2026-10-14)
-Current `hermeticon-drone.js` is a **transitional implementation**, not this contract fulfilled: attention still triggers close approach, idle locomotion is too active, meridian/glass articulation is incorrect, and body clearance is approximate. Preserve the present behavior as a baseline to replace, not as the desired character.
+The 2026-10-14 redesign (commits `31eae924`, `1e2d5c91`) separates glass rotation from iris/meridian articulation, slows travel, adds idle dwell, wider viewing standoff, and attempts traversals through sampled sphere-clear bores. **Still transitional:** whole-sphere clearance uses 26 directional probes rather than an exact signed-distance sweep; bore finding is opportunistic rather than full path planning. Live runtime behavior is not verified.\n\nPlayer/Wanderer movement does not command eye movement. The Hermeticon border and terrain constrain the eye's own motion. The eye should willingly spend substantial time below the terrain if it can fit through a hole.
 
 ## Future extensions
 Surprise, habituation, curiosity about meteor impacts, terrain changes, populations, other inhabitants, and the external observer can emerge from shared observation events and bounded memory. Favor legible systems over bespoke hardcoded scripts.
