@@ -83,7 +83,7 @@ export function createGenesis(){
  const cinderfall=createCinderfall(T,{surface:reedSurface,offset:botanicalOffset,
   targets:()=>creatureSystems.flatMap(s=>s.inspect().creatures||[]),
   parent:world.content,radius:terrain.getAperture(),seed:741,
-  onImpact:({point,magnitude})=>{const force={radius:3.2*magnitude,impulse:18*magnitude};const loose=debris.receiveImpulse(point,force);const creatures=creatureSystems.reduce((n,s)=>n+(s.blast?.(point,force,debris)||0),0);const plants=[reeds,garden,secondGarden].reduce((n,s)=>n+(s.blast?.(point,force,debris)||0),0);const received=loose+creatures+plants;const crater=terrain.impact(point,{magnitude});lastMeteorImpact={point,magnitude,crater,force:{...force,receivers:received,loose,creatures,plants}};}});
+  onImpact:({point,magnitude})=>{const force={radius:3.2*magnitude,impulse:18*magnitude};const loose=debris.receiveImpulse(point,force);const creatures=creatureSystems.reduce((n,s)=>n+(s.blast?.(point,force,debris)||0),0);const plants=[reeds,garden,secondGarden].reduce((n,s)=>n+(s.blast?.(point,force,debris)||0),0);const received=loose+creatures+plants;const ground=reedSurface(point.x,point.z);const crater=ground==null?null:terrain.impact({...point,y:ground+.12},{magnitude});lastMeteorImpact={point,magnitude,crater,force:{...force,receivers:received,loose,creatures,plants}};}});
  world.castMeteor=()=>cinderfall.cast();
  let view=null;
  const tapReport={total:0,underside:0,navigation:0,rayMiss:0,last:null,recent:[]};
