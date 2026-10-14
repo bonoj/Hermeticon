@@ -1,0 +1,1 @@
+// Reusable rock-material palette.
