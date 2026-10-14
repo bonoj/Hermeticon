@@ -47,10 +47,13 @@ Prior art: the Betwixt Observer in `bonoj/Interstice/betwixt/index.html` demonst
 ## Existence, coordinate frames, and visibility
 **Existence is independent of visibility.** The eye owns a persistent terrain/world position, identity, attention, memory, and ongoing simulation. The Wanderer scrolls the *view* over the world; scrolling does not displace the eye in terrain/world coordinates, force him to chase the viewport, or reset his intentions.
 
-- When entirely outside the visible Hermeticon, **stop rendering** the eye; **do not despawn, freeze, reset, or teleport** him.
+- **The eye cannot voluntarily fly through the Hermeticon's glass.** His entire physical spherical volume (radius and clearance margin) must remain on the permitted side of a stationary inner glass boundary. Terrain collision alone is insufficient.
+- **Do not pop the eye in or out like a population BB.** His large recognizable glass body requires geometrically coherent partial visibility/occlusion as a moving viewing boundary intersects it. Whole-object culling at a center/radius threshold is not an acceptable final presentation.
+- When outside the visible Hermeticon, **do not despawn, freeze, reset, or teleport** him. His simulation continues independently of rendering.
 - Continue perception, memory, and autonomous behavior while he is out of view.
 - If the Wanderer returns to his location, render him again (unless he has moved elsewhere under his own power).
-- The glass viewing boundary is **not a leash** or behavioral goal. Do not reintroduce moving-wall correction, forced containment, or collision-recovery behavior merely to keep him in view.
+- **Distinguish voluntary flight from viewport motion:** when the viewport is stationary, the glass is a solid obstacle that his spherical body cannot fly through. When the Wanderer moves, the viewport may sweep across his persistent world position without granting it authority over his intentions. Do not silently solve this tension by making him follow the Wanderer.
+- The glass boundary is not a behavioral goal or leash. Any moving-boundary physical response must be specified and tested separately, rather than smuggling in teleports, forced following, or frozen simulation.
 - Exact geometric clipping at the boundary versus whole-object culling is a rendering implementation question; the current whole-object cull is not exact clipping.
 - This specifies continuity **within a running session**. Save/load persistence across browser reloads has not been requested or defined.
 
@@ -71,7 +74,8 @@ Do **not** inherit arbitrary three-to-ten-second pauses, hardcoded probabilities
 - Precise sensory representation and observation sampling.
 - Navigation/path-planning method for full-body clearance and underground travel.
 - Memory capacity, habituation, and forgetting model.
-- Exact visual clipping policy at the spherical viewing boundary.
+- How the moving viewport intersects a persistent, physically embodied creature without apparent teleportation or incoherent glass collision. This is a design blocker requiring an explicit physical/presentation policy.
+- Implementation of geometrically coherent partial occlusion/clipping at the spherical viewing boundary (whole-object pop/culling is rejected).
 - Whether and how persistence across page reloads should work.
 
 ## Acceptance scenarios for the restart
@@ -79,7 +83,7 @@ Do **not** inherit arbitrary three-to-ten-second pauses, hardcoded probabilities
 2. Sustain attention through unrelated stimuli and gentle idle movement.
 3. Investigate when a better vantage is useful; demonstrate smooth acceleration and braking.
 4. Navigate a real sphere-clear opening into the underworld and spend meaningful time exploring there.
-5. Move the Wanderer far away: eye ceases rendering but continues simulating at stable terrain/world coordinates. Return: eye appears again if still nearby.
+5. Stationary Hermeticon: eye's entire sphere respects the inner glass collision boundary. Move the Wanderer away and back: eye remains a continuous world entity, with coherent partial visibility when the moving viewport intersects it; no whole-object popping, teleport, or player-follow.
 6. Look around: iris and brass articulate together while the glass remains steady.
 7. Verify terrain and obstacle collision without special Hermeticon containment rules.
 8. Expose observable evidence of perception, attention, movement, and continuity; do not substitute visual impression for validation.
@@ -121,3 +125,11 @@ Corrections:
 - Added movement instrumentation: `traveled`, `hoverTraveled`, `verticalTravel`, `verticalReversals`, and retained `belowSeconds`, `belowVisits`, `blocked`, `mode`, `lastDecision`, `visible`.
 
 **Verification:** retrieved module passed JavaScript syntax parsing. Live behavior, terrain clearance, underground crossing and report completeness require a new capture. If `inspectionError` persists, treat that as blocking and fix it before interpreting behavior.
+
+## 2026-10-14 clarification — large contained creature, not population BB
+
+The user rejected the eye leaving the Hermeticon as if the vessel glass were nonexistent, and rejected abrupt whole-object pop-in/pop-out because the eye is too large and physically contained to be presented like a population BB. **This supersedes earlier language suggesting unconstrained flight beyond the glass or accepting whole-object culling as sufficient.**
+
+Two coordinate regimes must be distinguished: (1) **self-propelled motion** relative to a stationary vessel must be constrained by the eye's full spherical volume and the vessel's inner glass; (2) **Wanderer-driven movement** changes the viewing volume over the persistent world, not the eye's chosen intentions. A consistent physical/presentation response to a moving boundary is **not yet specified**. Do not claim that clipping alone solves the physics or that pushing the eye inward preserves world autonomy.
+
+**Current code is noncompliant**: `innerRadius:Infinity` allows voluntary escape; `root.visible` uses a whole-object threshold and produces popping. Do not patch only the threshold and declare the requirement solved.
