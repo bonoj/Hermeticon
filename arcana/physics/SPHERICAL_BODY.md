@@ -23,3 +23,9 @@ Eye: `arcana/entities/hermeticon-drone.js`. Player scrolling changes the terrain
 5. World scroll with no wall contact preserves terrain/world coordinates.
 6. World scroll causing wall contact displaces only as needed, never follows the player.
 7. Large delta frames and thin features do not tunnel (requires exact geometric backend).
+
+## 2026-10-14 triangle query implementation
+
+Terrain now supplies `terrain.intersectsSphere(center,radius)`, testing the actual extracted marching-tetrahedra triangle geometry using triangle closest-point distance. Broadphase checks each chunk's bounding box and each triangle's bounding box; a positive terrain field sample at the sphere center detects fully embedded bodies. This removes the finite sphere-surface probe approximation for the eye. The test is a **static overlap test**, not a continuous swept collision test. `sweep` still samples intermediate positions at <=0.10 world units, so high-speed tunneling remains possible; dynamic moving boundaries are not yet continuous. Also note the rendered aperture shader discards some geometry beyond the visual aperture, while the extracted triangles remain in the collision mesh; near that aperture, render/collision parity needs review. Benchmark per-frame query costs before scaling to many creatures.
+
+No browser-based regression run has been completed for this change. Do not claim no-clipping certification.
