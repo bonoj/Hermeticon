@@ -1,6 +1,6 @@
 # Arcana Populations
 
-Reusable populations extracted from authored worlds. These modules are **available, not automatically mounted**.
+Reusable populations and authored botanical systems. **The BB garden and original Mists Reeds are mounted in Genesis.** The older geometric prototypes are preserved under `potential/` but not mounted.
 
 ## Mists Reeds
 
@@ -9,7 +9,7 @@ Reusable populations extracted from authored worlds. These modules are **availab
 - Deterministic sparse bead-lattice stems, original muted four-color palette, sway, growth and character clearance. Single instanced draw, soil-up geometry and spherical aperture clipping.
 - `surface(x,z)` supplies geological ground elevation or null for invalid locations. `offset()` supplies geological X/Z translation; `characters()` supplies geological X/Z positions. Optional center defaults to Mists (-2,-1), radius to 9.92.
 - Returns `{group,mesh,update(dt),inspect(),dispose()}`. Caller mounts and schedules updates. Does not create buttons or change the host.
-- This is **only the original reeds**, not the 49 later gallery alternatives. Original fixture is untouched. No Genesis mount or live visual parity verification is claimed.
+- This is **only the original reeds**, not the 49 later gallery alternatives. Original fixture is untouched. Mounted in Genesis; the author has visually inspected the reeds.
 
 ## Original behavior contract
 
@@ -20,12 +20,12 @@ The extracted reeds preserve the original Wanderer gallery-index-0 behavior (sou
 - The original rim proximity smoothstep also affects growth, while bead positions are clipped to the spherical aperture. This is **legacy visual behavior**, not a claim of persistent biology independent of visibility. Preserve for parity until explicitly asked to change it.
 - Sway is sinusoidal and stem-phased; the original five-to-thirteen-bead silhouettes and muted four-color palette are retained.
 - `offset()` translates geology into the current view; do not feed screen-relative actor coordinates into `characters()`.
-- No runtime parity test has yet been performed. The module remains unmounted in Genesis.
+- No runtime parity test has yet been performed. The module is mounted in Genesis.
 
-## BB botanical garden (current Genesis)
+## BB botanical garden — CANON (current Genesis)
 
 - Entry: [bb-garden.js](bb-garden.js), `createBBGarden(T,{surface,offset,characters,parent,radius,seed})`.
 - Five authored species: Amethyst Parasols, Amber Gourds, Crown Lanterns, Chalice Succulents, Ruby Pendants. All geometry is BB spheres; stalks are bead chains, bulbs are dense bead clumps, canopies/cups are bead rings. A single instanced sphere mesh renders the garden.
 - Deterministic geological roots, per-plant phased sway, actor-triggered retract (7.5/s) and regrow (3.6/s), ordered BB emergence, aperture clipping, and inspection counts. Growth is independent of camera offset. Wind and material transactions are not implemented.
 - Genesis mounts this BB garden and the original Mists Reeds. The previous five geometric populations, including their pleasant idle sway, remain untouched in [potential/](potential/).
-- **Verification:** committed but not visually tested on the live phone runtime. The accepted terrain lens and Athanor were not modified.
+- **Status:** author explicitly promoted the BB garden to canon on 2026-10-14. Preserve the all-BB construction language, idle sway and reversible growth. Automated performance testing remains unclaimed. Accepted terrain Hybrid and Athanor were not modified. **Hermeticoneer** is the emerging nickname for this worldbuilding direction.
