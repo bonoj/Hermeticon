@@ -1,7 +1,7 @@
 {
   "schema": "sieve-connect-deck-v1",
   "generated": "2026-10-15",
-  "source": "Public professional profile fields from private campaign; no action history",
+  "source": "Public professional fields only; 12 missing direct links excluded",
   "records": [
     {
       "id": "connect-xvii-1",
@@ -20,11 +20,27 @@
       "verification": "public-linkedin-profile-observed"
     },
     {
+      "id": "connect-xvii-3",
+      "name": "Sébastien Tessier",
+      "org": "Moment Factory",
+      "role": "Creative Director",
+      "url": "https://ca.linkedin.com/in/sebastientca",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
       "id": "connect-xvii-4",
       "name": "Justin Restaino",
       "org": "Moment Factory",
       "role": "Creative Director",
       "url": "https://www.linkedin.com/in/justinrestaino",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-5",
+      "name": "Melissa Weigel",
+      "org": "Moment Factory",
+      "role": "Creative Director",
+      "url": "https://jp.linkedin.com/in/melissa-weigel-69721335",
       "verification": "public-linkedin-profile-observed"
     },
     {
@@ -41,6 +57,14 @@
       "org": "Universal Creative",
       "role": "Creative Director",
       "url": "https://www.linkedin.com/in/chadallanjones",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-8",
+      "name": "Niksaan Bhoowabul",
+      "org": "Universal Creative",
+      "role": "Manager Creative Technology",
+      "url": "https://jp.linkedin.com/in/niksaan-bhoowabul",
       "verification": "public-linkedin-profile-observed"
     },
     {
@@ -65,6 +89,14 @@
       "org": "SideFX",
       "role": "Technical Director",
       "url": "https://www.linkedin.com/in/tobiasvfx",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-12",
+      "name": "Massimo Pasquetti",
+      "org": "Weta FX",
+      "role": "VFX Compositor",
+      "url": "https://nz.linkedin.com/in/mpasquetti",
       "verification": "public-linkedin-profile-observed"
     },
     {
@@ -121,6 +153,14 @@
       "org": "Acronym",
       "role": "Engineering Leader Creative Technologist",
       "url": "https://www.linkedin.com/in/zcsaale",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-20",
+      "name": "John Mather",
+      "org": "SideFX",
+      "role": "3D Software Developer",
+      "url": "https://ca.linkedin.com/in/matherjohn",
       "verification": "public-linkedin-profile-observed"
     },
     {
@@ -196,6 +236,30 @@
       "verification": "public-profile-web-confirmed-2026-10-15"
     },
     {
+      "id": "connect-xviii-9",
+      "name": "Pierre Corsy",
+      "org": "Moment Factory",
+      "role": "Technical director",
+      "url": "https://ca.linkedin.com/in/pierre-corsy-39283b4b",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-10",
+      "name": "Karim Fakhoury",
+      "org": "Moment Factory",
+      "role": "Multimedia director",
+      "url": "https://ca.linkedin.com/in/karim-fakhoury-44a34661",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-11",
+      "name": "Janie Giroux",
+      "org": "Moment Factory",
+      "role": "HR and recruiting",
+      "url": "https://ca.linkedin.com/in/janie-giroux-b1a30b28/en",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
       "id": "connect-xix-1",
       "name": "Sarah Turner",
       "org": "Meow Wolf",
@@ -228,6 +292,14 @@
       "verification": "public-linkedin-profile-observed-2026-10-15"
     },
     {
+      "id": "connect-xix-5",
+      "name": "Joe Dunkley",
+      "org": "Disguise",
+      "role": "Head of Customer Solutions APAC; formerly Moment Factory",
+      "url": "https://jp.linkedin.com/in/joedunkley",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
       "id": "connect-xix-6",
       "name": "Sydney Heller",
       "org": "AOA",
@@ -257,6 +329,46 @@
       "org": "SideFX Software",
       "role": "Technical Consultant, TV/Film",
       "url": "https://www.linkedin.com/in/bryanrayvfx",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-3",
+      "name": "Tarik Mikou",
+      "org": "Moment Factory",
+      "role": "Creative and show director",
+      "url": "https://ca.linkedin.com/in/tarikmikou",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-4",
+      "name": "Yu Dong",
+      "org": "Tencent Games",
+      "role": "Pipeline Architect and Technical Director",
+      "url": "https://ca.linkedin.com/in/yu-dong-6533601a5",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-5",
+      "name": "Oleksandr Panaskevych",
+      "org": "DNEG",
+      "role": "Houdini FX Technical Director",
+      "url": "https://uk.linkedin.com/in/oleksandrpanaskevych",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-6",
+      "name": "Robert Mastriano",
+      "org": "Cinesite",
+      "role": "Houdini Effects Technical Director",
+      "url": "https://ca.linkedin.com/in/robert-mastriano-b5a315145",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-7",
+      "name": "Marko Süssinger",
+      "org": "Image Engine",
+      "role": "FX Technical Director, procedural simulation",
+      "url": "https://ca.linkedin.com/in/marko-s%C3%BCssinger",
       "verification": "public-linkedin-profile-search-2026-10-15"
     },
     {
@@ -316,11 +428,35 @@
       "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
     },
     {
+      "id": "connect-xxiii-tim-straubinger",
+      "name": "Tim Straubinger",
+      "org": "Industrial Light & Magic",
+      "role": "R&D FX crowds engineering",
+      "url": "https://ca.linkedin.com/in/tim-straubinger-166a49211",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-richard-jones",
+      "name": "Richard Jones",
+      "org": "Industrial Light & Magic",
+      "role": "R&D engineering",
+      "url": "https://uk.linkedin.com/in/richhjones",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
       "id": "connect-xxiii-nick-proulx",
       "name": "Nick Proulx",
       "org": "Industrial Light & Magic",
       "role": "R&D and virtual production network",
       "url": "https://www.linkedin.com/in/nick-proulx-0ab625155",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-luca-schwarzenbach",
+      "name": "Luca Schwarzenbach",
+      "org": "Disney Research",
+      "role": "Robotics engineering",
+      "url": "https://ch.linkedin.com/in/lucaschwarzenbach",
       "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
     },
     {
@@ -332,11 +468,67 @@
       "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
     },
     {
+      "id": "connect-xxiii-espen-knoop",
+      "name": "Espen Knoop",
+      "org": "Disney Research",
+      "role": "Character robotics",
+      "url": "https://ch.linkedin.com/in/espen-knoop-47b525114",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-agon-serifi",
+      "name": "Agon Serifi",
+      "org": "Disney Research",
+      "role": "Robotic character motion",
+      "url": "https://ch.linkedin.com/in/agonserifi",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-moritz-bacher",
+      "name": "Moritz Bächer",
+      "org": "Disney Research",
+      "role": "Robotics research leadership",
+      "url": "https://ch.linkedin.com/in/baecher",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
       "id": "connect-xxiii-andreane-d-arcy-lepage",
       "name": "Andréane d'Arcy-Lepage",
       "org": "Disney Research",
       "role": "Digital characters and robotics",
       "url": "https://www.linkedin.com/in/andreane-d-arcy-lepage",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-johnathan-nixon",
+      "name": "Johnathan Nixon",
+      "org": "Weta FX",
+      "role": "Effects technical director",
+      "url": "https://nz.linkedin.com/in/johnathan-nixon-50693a16",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-aman-sandhu",
+      "name": "Aman Sandhu",
+      "org": "Weta FX",
+      "role": "Facial scan technical director",
+      "url": "https://nz.linkedin.com/in/aman-sandhu-43193a64",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-shohei-okazaki",
+      "name": "Shohei Okazaki",
+      "org": "Weta FX",
+      "role": "Effects technical director",
+      "url": "https://jp.linkedin.com/in/shoheiokazaki/en",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-oliver-ferguson",
+      "name": "Oliver Ferguson",
+      "org": "Weta FX",
+      "role": "Effects technical director",
+      "url": "https://nz.linkedin.com/in/oliver-ferguson-94b3a9110",
       "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
     },
     {
@@ -380,11 +572,83 @@
       "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
     },
     {
+      "id": "connect-xxiii-lyes-belhocine",
+      "name": "Lyes Belhocine",
+      "org": "Moment Factory",
+      "role": "Creative technologist and producer",
+      "url": "https://ca.linkedin.com/in/lyes-belhocine-94a1b315",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-joel-adria",
+      "name": "Joel Adria",
+      "org": "Moment Factory",
+      "role": "Creative technologist systems architect",
+      "url": "https://ca.linkedin.com/in/joeladria",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxviii-a-0",
+      "name": "Asger Peder Mortensen",
+      "org": "Weta FX",
+      "role": "Effects technical director",
+      "url": "https://au.linkedin.com/in/asger-peder-mortensen-567a095a",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-a-1",
+      "name": "Gianmarco Pressato",
+      "org": "Weta FX",
+      "role": "Effects technical director",
+      "url": "https://au.linkedin.com/in/gianmarco-pressato-vfx",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-a-2",
+      "name": "Hari Prakash",
+      "org": "Weta FX",
+      "role": "Effects technical director",
+      "url": "https://au.linkedin.com/in/hari-prakash-fx",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-a-3",
+      "name": "Alexander Samsonov",
+      "org": "Weta FX",
+      "role": "Pipeline technical director",
+      "url": "https://nz.linkedin.com/in/alexandersamsonov",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
       "id": "connect-xxviii-a-4",
       "name": "Kyle Nelli",
       "org": "Weta FX",
       "role": "Simulation research",
       "url": "https://www.linkedin.com/in/kyle-nelli",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-b-0",
+      "name": "Sean Flynn",
+      "org": "Weta FX",
+      "role": "Simulation research",
+      "url": "https://nz.linkedin.com/in/sean-a-flynn",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-b-1",
+      "name": "Marc Petit",
+      "org": "Moment Factory",
+      "role": "Creative technology",
+      "url": "https://ca.linkedin.com/in/marcpetit",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-b-2",
+      "name": "Moira Shooter",
+      "org": "Industrial Light & Magic",
+      "role": "Creature systems R&D",
+      "url": "https://uk.linkedin.com/in/moira-shooter-301107150",
       "verification": "public-indexed-profile-current-affiliation-unconfirmed"
     },
     {
@@ -401,6 +665,30 @@
       "org": "Walt Disney Imagineering",
       "role": "Engineering software",
       "url": "https://www.linkedin.com/in/kyletmorin",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxxi-4",
+      "name": "Mayukh Datta",
+      "org": "Wētā FX",
+      "role": "Facial Models Technical Director",
+      "url": "https://jp.linkedin.com/in/mayukhdatta",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxxi-7",
+      "name": "Téa Cosmas",
+      "org": "Wētā FX",
+      "role": "Creatures Assistant Technical Director",
+      "url": "https://au.linkedin.com/in/teacosmas",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxxi-8",
+      "name": "Aditya S.",
+      "org": "Wētā FX",
+      "role": "Lighting Technical Director",
+      "url": "https://nz.linkedin.com/in/adityasofta",
       "verification": "public-indexed-profile-current-affiliation-unconfirmed"
     },
     {
