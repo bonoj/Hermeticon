@@ -68,3 +68,7 @@ The botanical composition includes original Mists Reeds, the accepted five-speci
 **Observation default:** Athanor calls `edgeDetection.setMode('HYBRID')` at startup (commit `d134f50e`). This preserves the accepted terrain-only treatment; OFF/SOURCE/SOBEL/DEPTH remain selectable. The accepted rendering checkpoint is `7c74e324`, not a claim that the latest build was visually verified.
 
 **Current verification boundary:** source changes are committed; confirm Pages build, displayed SHA, browser startup, rapid meteor taps, flying creature impacts, and before/after BB totals before claiming the current build is live and sound. No new rules, population caps, or observation HUD should be introduced merely to test it.
+
+## Abiogenesis vacuum capture (2026-10-15)
+
+[Canonical Abiogenesis specification](codex/genesis/ABIOGENESIS.md). Genesis mounts nested Abiogenesis at L0 and toggles its vacuum through a ray-tested, consumed vessel tap before terrain navigation. `arcana/physics/bead-debris.js` implements finite-range softened inverse-square pull, vacuum-only capture, exterior bounce otherwise, persistent interior ownership, ordinary gravity, and inner-wall collisions. Captured beads remain in the **same** debris array; the material survey's detached total does not change on ownership transfer. Inspect `systems[].vacuum`, debris `ownership.abiogenesis`, `abiogenesisCaptures`, and collision counters. **Code committed; runtime, deployment, tap hit testing, physics behavior, and live conservation remain unverified.**
