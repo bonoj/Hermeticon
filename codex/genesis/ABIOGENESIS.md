@@ -18,3 +18,7 @@ Passive exterior bouncing and vacuum-tagged capture share a swept axis-aligned b
 ## Exterior collision removed (2026-10-15)
 
 Exterior Abiogenesis glass is now non-colliding. Genesis-owned BBs pass through unless marked by a vacuum pulse; only pulse-tagged BBs receive a per-substep capture check, transferring ownership on inward entry into the inner cavity. Captured BBs remain subject to inner-glass confinement and ordinary gravity. No passive exterior broadphase or exterior bounce. This supersedes the earlier exterior collision contract. FPS improvement requires observation.
+
+## Current contract (2026-10-15; supersedes vacuum sections above)
+
+Abiogenesis has **no vacuum or specialized gravity**. Tapping it no longer imparts force. Exterior glass is non-colliding; any Genesis-owned loose BB entering the inner cavity is captured and transferred to Abiogenesis ownership. A swept segment/sphere test catches crossings that pass through the cavity in one substep. Captured BBs use ordinary gravity and are confined by the inner glass. Prior vacuum pulse, range, impulse, ticket, and tap telemetry descriptions are historical only.
