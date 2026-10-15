@@ -46,3 +46,6 @@
 #sieveWorkspace p{margin:0 0 14px}
 #sieveWorkspace a{display:block;min-height:44px;padding:12px;margin:8px 0;background:#172333;border:1px solid #66543a;border-radius:9px;color:#f0d5a0;text-decoration:none;font:600 12px system-ui}
 #sieveWorkspace a:focus-visible{outline:2px solid #d9b879;outline-offset:2px}
+
+/* Native Sieve workspace must sit above the instrument HUD while leaving its reserved bottom margin untouched. */
+body:has(#sieveWorkspace) #sieveOverlay{z-index:30}
