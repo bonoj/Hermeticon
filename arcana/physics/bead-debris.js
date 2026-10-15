@@ -62,8 +62,9 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   return directed;
  }
  function update(dt){const physicsStart=performance.now();
-  const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
+  const o=offset(),sample=terrain.sample.bind(terrain);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
+  const cradle=abiogenesis?.position,cradleRadius=abiogenesis?abiogenesis.innerRadius*abiogenesis.scale:0;
   for(const b of beads){
    for(let k=0;k<count;k++){
     // Physics uses the current owner's coordinates; terrain queries always use geology.
@@ -71,8 +72,9 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
     if(b.owner==='abiogenesis'){
      const limit=abiogenesis.innerRadius*abiogenesis.scale-b.r-.003;
      b.x+=b.vx*step;b.y+=b.vy*step;b.z+=b.vz*step;
-     const rr=Math.hypot(b.x,b.y,b.z);
-     if(rr>limit&&rr>1e-7){
+     const rr2=b.x*b.x+b.y*b.y+b.z*b.z;
+     if(rr2>limit*limit&&rr2>1e-14){
+      const rr=Math.sqrt(rr2);
       const normal={x:-b.x/rr,y:-b.y/rr,z:-b.z/rr};
       b.x=-normal.x*limit;b.y=-normal.y*limit;b.z=-normal.z*limit;
       if(reflectContact(b,normal,P.vesselRestitution))abiogenesisInteriorHits++;
@@ -84,11 +86,16 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
     // Passive one-way entry: exterior glass does not bounce BBs.
     // Swept segment/sphere intersection catches fast crossings.
     if(abiogenesis){
-     const c=abiogenesis.position;
-     const dx=ox-(b.owner==='terrain'?o.x:0)-c.x;
-     const dy=oy-c.y,dz=oz-(b.owner==='terrain'?o.z:0)-c.z;
+     const dx=ox-(b.owner==='terrain'?o.x:0)-cradle.x;
+     const dy=oy-cradle.y,dz=oz-(b.owner==='terrain'?o.z:0)-cradle.z;
      const sx=b.vx*step,sy=b.vy*step,sz=b.vz*step;
-     const radius=abiogenesis.innerRadius*abiogenesis.scale-b.r-.003;
+     const radius=cradleRadius-b.r-.003;
+     // Swept AABB rejection: cannot cross the capture sphere this substep.
+     if(Math.min(dx,dx+sx)>radius||Math.max(dx,dx+sx)<-radius||
+        Math.min(dy,dy+sy)>radius||Math.max(dy,dy+sy)<-radius||
+        Math.min(dz,dz+sz)>radius||Math.max(dz,dz+sz)<-radius){
+      // Distant BB: no quadratic or square root necessary.
+     }else{
      const r2=radius*radius;
      const d2=dx*dx+dy*dy+dz*dz;
      const ex=dx+sx,ey=dy+sy,ez=dz+sz;
@@ -107,15 +114,16 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
       b.x=ex*fit;b.y=ey*fit;b.z=ez*fit;
       b.owner='abiogenesis';abiogenesisCaptures++;continue;
      }
+     }
     }
     const nx=ox+b.vx*step,ny=oy+b.vy*step,nz=oz+b.vz*step;
-    const gx=x=>x+(b.owner==='vessel'?o.x:0),gz=z=>z+(b.owner==='vessel'?o.z:0);
-    const start=sample(gx(ox),oy,gz(oz)),end=sample(gx(nx),ny,gz(nz));
+    const shiftX=b.owner==='vessel'?o.x:0,shiftZ=b.owner==='vessel'?o.z:0;
+    const start=sample(ox+shiftX,oy,oz+shiftZ),end=sample(nx+shiftX,ny,nz+shiftZ);
     if(start< -b.r&&end>=-b.r){
      let lo=0,hi=1;
-     for(let j=0;j<7;j++){const mid=(lo+hi)/2;if(sample(gx(ox+(nx-ox)*mid),oy+(ny-oy)*mid,gz(oz+(nz-oz)*mid))>=-b.r)hi=mid;else lo=mid;}
+     for(let j=0;j<7;j++){const mid=(lo+hi)/2;if(sample(ox+(nx-ox)*mid+shiftX,oy+(ny-oy)*mid,oz+(nz-oz)*mid+shiftZ)>=-b.r)hi=mid;else lo=mid;}
      const x=ox+(nx-ox)*lo,y=oy+(ny-oy)*lo,z=oz+(nz-oz)*lo;
-     const normal=signedFieldNormal(sample,gx(x),y,gz(z));
+     const normal=signedFieldNormal(sample,x+shiftX,y,z+shiftZ);
      reflectContact(b,normal,P.microRestitution,1-P.microFriction);
      b.x=x+normal.x*.004;b.y=y+normal.y*.004;b.z=z+normal.z*.004;terrainHits++;
      if(b.owner!=='terrain'){b.x+=o.x;b.z+=o.z;b.owner='terrain';}
