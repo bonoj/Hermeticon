@@ -26,3 +26,7 @@ Abiogenesis has **no vacuum or specialized gravity**. Tapping it no longer impar
 ## Underside direction command (2026-10-15)
 
 Tapping Abiogenesis performs a single O(N) scan of detached BB inventory. Any Genesis-owned BB at world y <= 0 receives velocity of magnitude 22 directed toward the cradle's instantaneous center, using proper owner-to-world coordinate conversion. No persistent steering, vacuum, gravity field, ticket, or collision override. A miss remains a loose BB; passive inward capture remains independently governed by the cavity collision rule. Inspection exposes `directionCommands` and `lastDirected`. This supersedes the earlier description that tapping is inert.
+
+## Physics optimization checkpoint (2026-10-15)
+
+Commit `d86b8a1c` introduces swept-AABB early rejection before the existing sphere capture calculation, squared-radius interior contact rejection, and simpler per-step terrain coordinate conversions. Collision semantics and material ownership are intended to remain unchanged. This is a source-level optimization, **not yet browser/runtime verified**. Compare `perf.lastPhysicsMs`, FPS, `abiogenesisCaptures`, `abiogenesisInteriorHits`, and material totals against build `7c3d62ae` before further changes. Avoid caps, sleeping, or altered capture semantics without separate approval.
