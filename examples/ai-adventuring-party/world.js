@@ -47,5 +47,5 @@ export function createPartyWorld(){
  let view=null;function attachView(v){view=v}
  function tap(x,y){if(!view)return;const {camera}=view;const ray=new T.Raycaster();ray.setFromCamera(new T.Vector2(x/window.innerWidth*2-1,1-y/window.innerHeight*2),camera);const hit=ray.intersectObject(disk);if(hit.length){const p=hit[0].point;const a=participants[beat%4];a.home.set(p.x,0,p.z);a.agent.position.x=p.x;a.agent.position.z=p.z;say('Narrator',a.name+' approaches the place you indicated.');}}
  function inspect(){return {example:'ai-adventuring-party',mode:'authored scripted demo, no live model API',characters:names,beat,world:'drowned mill',groupChildren:group.children.length}}
- return {group,update,attachView,tap,castMeteor:react,inspect,observationTargets:()=>({terrain:[]})};
+ return {group,update,attachView,tap,castMeteor:react,inspect,observationTargets:()=>({terrain:disk})};
 }
