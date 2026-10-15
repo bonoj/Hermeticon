@@ -1,5 +1,5 @@
 # John Bono
-**Conjoiner · Cybernetic Systems Architect | Executable Worlds · Interactive Systems · R&D**
+**Conjoiner · Cybernetic Systems Architect | Executable Worlds · Interactive Simulations · Experimental R&D**
 
 [Hermeticon](https://bonoj.github.io/Hermeticon/) · [GitHub](https://github.com/bonoj) · [LinkedIn](https://linkedin.com/in/bonoj)  
 (650) 207-7832 · johnlbono@gmail.com
