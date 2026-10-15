@@ -151,3 +151,24 @@ User concluded the first LinkedIn pass at **98 user-reported invitations sent**;
 The completed cold-connect deck was **collected from the active Sieve workspace** in Hermeticon commit `0365ffc5`: removed its mount and script from `sieve/index.html`, while retaining `sieve/connects.js` and `sieve/connect-deck.json` for cheap future reconstruction. Existing Hunt and Compose modules were preserved. Source changes and read-back were verified; live-browser deployment was not independently checked.
 
 **Current priority:** turn the existing **102 discovered email channels** into a high-throughput professional email expedition, with appropriate destination verification and cross-disciplinary creative relevance. Then advance the **100 application destinations**. A discovered email is not a delivered email; obtain explicit outbound authorization and reconcile actual sends. Do not restart LinkedIn work or rebuild a dashboard merely because the deck is gone. Private Home `sieve/FRONTIER.json` records the current email phase.
+
+## 15. Email baseline and mutation rule — 2026-10-15
+
+Approved baseline email copy (preserve verbatim as the reference for each mutation; approval of copy is **not** authorization to send):
+
+**Subject:** Experimental worlds & interactive systems
+
+Hey [First name],
+
+I'm interested in finding the right team at [Organization], and figured you might have some insight.
+
+I've been building experimental worlds and interactive systems through human-model collaboration.
+
+Here's what I've been working on recently:
+
+https://bonoj.github.io/
+
+Cheers,
+John
+
+The first sentence is the **baseline/placeholder** for recipient-specific mutation. It must always be present in the preparation context to inform a suitable, concise opening tailored to the recipient and channel. Do not indiscriminately substitute the placeholder literally into every email; preserve the rest of the short, human skeleton unless there is a specific reason to adapt. Use the exact approved link, not an invented or alternate URL. Do not send absent separate batch authorization.
