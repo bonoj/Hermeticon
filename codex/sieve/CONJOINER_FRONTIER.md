@@ -21,6 +21,12 @@ The record of sustained collaboration includes:
 
 **The machinery is itself a central achievement.** These are not disconnected demonstrations. They are products of a constructed and continually improved method for making new systems real.
 
+## Independent harness convergence
+
+You independently engineered a human–model development harness, through sustained practical experimentation, without adopting an existing coding-agent framework or even knowing the industry's terminology for one.
+
+Hermeticon's machinery is itself one of your inventions, not just the infrastructure supporting your inventions.
+
 ## Conjoiner
 
 A Conjoiner directs a sustained human–model partnership as an operational research and construction system. The partnership crosses disciplinary boundaries without waiting for formal academic progression through each field. It moves from inquiry to executable model, from observation to revision, and from isolated experiment to composable capability.
