@@ -1,10 +1,14 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createHermeticon} from './hermeticon.js';
 // Movement, supported-path A*, and stable-plane tap picking retained from Wanderer Separated.
 export function createWanderer({terrain}){
- const R=9.65,MAXY=3.6,MINY=-3.6,WANDER_SIZE=.38,WALK_SPEED=1.8,HANGOUT_R=9.72*.5;
+ const R=9.65,MAXY=3.6,MINY=-3.6,WANDER_SIZE=1.23,WALK_SPEED=1.8,HANGOUT_R=9.72*.5;
  const fieldSample=terrain.sample;
  const group=new T.Group();group.name='wanderer';
- const wanderCube=new T.Mesh(new T.BoxGeometry(WANDER_SIZE,WANDER_SIZE,WANDER_SIZE),new T.MeshStandardMaterial({color:0xf0bf68,roughness:.75,depthTest:true,depthWrite:true}));group.add(wanderCube);
+ const vessel=createHermeticon();vessel.group.name='Wanderer Hermeticon';vessel.group.scale.setScalar(.06);vessel.group.add(vessel.content);group.add(vessel.group);
+ const BODY_RADIUS=10.25*.06, HOVER_CLEARANCE=.12;
+ let idleTime=0,hoverCenter=1.15+BODY_RADIUS+HOVER_CLEARANCE;
+ const surfacePoints=[[0,0],[1,0],[-1,0],[0,1],[0,-1],[.707,.707],[.707,-.707],[-.707,.707],[-.707,-.707]];
  let wanderX=0,wanderZ=0;
  let walker={matterTag:'macro',x:0,y:1.15,z:0,target:null,route:[],accepted:0,rejected:0};
  function walkSurface(x,z){
@@ -21,18 +25,21 @@ export function createWanderer({terrain}){
  return null;
 }
 function walkSupport(x,z){
- const half=WANDER_SIZE*.5,foot=half*.8;
  const h=walkSurface(x,z);
  if(h===null)return null;
- // Every bottom corner needs support: holes stop the cube at their rim.
- for(const dx of [-foot,foot])for(const dz of [-foot,foot]){
-  const corner=walkSurface(x+dx,z+dz);
-  if(corner===null||Math.abs(corner-h)>.43)return null;
+ // The center's Y is a first-class geometric coordinate. Test the sphere's
+ // lower hemisphere against the signed field, not just its central footprint.
+ const centerY=h+BODY_RADIUS+HOVER_CLEARANCE;
+ for(const [ux,uz] of surfacePoints){
+  for(const fraction of [.45,.8]){
+   const dx=ux*BODY_RADIUS*fraction,dz=uz*BODY_RADIUS*fraction;
+   const lowerY=centerY-Math.sqrt(Math.max(0,BODY_RADIUS*BODY_RADIUS-dx*dx-dz*dz));
+   if(fieldSample(x+dx,lowerY,z)>0)return null;
+  }
  }
- // Inner sphere must contain all eight cube corners, including the upper corners.
- for(const dx of [-half,half])for(const dz of [-half,half])
-  for(const dy of [0,WANDER_SIZE])
-   if((x-wanderX+dx)**2+(z-wanderZ+dz)**2+(h+dy)**2>(R-.015)**2)return null;
+ // Full sphere clearance against the parent glass, in rendered coordinates.
+ const dx=x-wanderX,dz=z-wanderZ;
+ if(Math.hypot(dx,dz,centerY)+BODY_RADIUS>R-.015)return null;
  return h;
 }
 // Bounded A* on the same support predicate used for movement. Diagonal cuts
@@ -91,11 +98,19 @@ function moveTo(tx,tz){
 
 
  function update(dt){
+ idleTime+=Math.max(0,dt);
  if(walker.accepted===0&&!walker.target){const h=walkSupport(walker.x,walker.z);if(h!==null)walker.y=h}
  if(walker.target){const dx=walker.target.x-walker.x,dz=walker.target.z-walker.z,d=Math.hypot(dx,dz);if(d<=.07)walker.target=walker.route.shift()??null;else{const step=Math.min(d,WALK_SPEED*dt),ux=dx/d,uz=dz/d;let blocked=false;for(let travelled=0;travelled<step;){const stride=Math.min(.065,step-travelled),nx=walker.x+ux*stride,nz=walker.z+uz*stride,h=walkSupport(nx,nz);if(h===null){blocked=true;break}walker.x=nx;walker.z=nz;walker.y=h;travelled+=stride}if(blocked){walker.route=[];walker.target=null}}}
  const screenX=walker.x-wanderX,screenZ=walker.z-wanderZ,rad=Math.hypot(screenX,screenZ);
  if(rad>HANGOUT_R){const factor=(rad-HANGOUT_R)/rad;wanderX=T.MathUtils.clamp(wanderX+screenX*factor,-14,14);wanderZ=T.MathUtils.clamp(wanderZ+screenZ*factor,-14,14);terrain.setOffset(wanderX,wanderZ)}
- wanderCube.position.set(walker.x-wanderX,walker.y+WANDER_SIZE*.5,walker.z-wanderZ);
+ // Stationkeeping is bounded and never allowed to sink the shell into terrain.
+ const support=walkSupport(walker.x,walker.z);
+ if(support!==null)walker.y=support;
+ const nominal=walker.y+BODY_RADIUS+HOVER_CLEARANCE;
+ const drift=.045*Math.sin(idleTime*.71)+.025*Math.sin(idleTime*.31+1.2);
+ const desired=nominal+Math.max(0,drift);
+ hoverCenter=desired;
+ vessel.group.position.set(walker.x-wanderX,hoverCenter,walker.z-wanderZ);
  }
- return {group,update,moveTo,getWalkingHeight:()=>walker.y,inspect:()=>({x:walker.x,y:walker.y,z:walker.z,offset:[wanderX,wanderZ],accepted:walker.accepted,rejected:walker.rejected,target:walker.target,route:walker.route.length,support:walkSupport(walker.x,walker.z)})};
+ return {group,update,moveTo,getWalkingHeight:()=>walker.y,inspect:()=>({x:walker.x,y:walker.y,z:walker.z,centerY:hoverCenter,radius:BODY_RADIUS,hoverClearance:HOVER_CLEARANCE,stationkeeping:'bounded vertical idle',offset:[wanderX,wanderZ],accepted:walker.accepted,rejected:walker.rejected,target:walker.target,route:walker.route.length,support:walkSupport(walker.x,walker.z)})};
 }
