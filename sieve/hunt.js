@@ -20,8 +20,12 @@ function classify(c){
  const hay=(c.title+' '+c.company+' '+c.description).toLowerCase();
  const hits=TERMS.filter(t=>hay.includes(t));
  const employers=TARGETS.filter(t=>c.company.toLowerCase().includes(t));
- const exclusions=/customer support|sales development|account executive|wordpress|full.stack developer|react developer|data entry/i.test(c.title);
- return {decision:exclusions?'pass':employers.length||hits.length>=3?'investigate':'unreviewed',signals:hits,employers,uncertainties:['Employer-hosted requisition and apply link unverified','Creative authority and autonomy unverified','Work arrangement may not fit']};
+ // 👁 2026-10-15: Shopify developer falsely qualified on generic prose ("world, creative, systems").
+ // A generic description cannot by itself qualify a role. Require a domain-specific title,
+ // or a target employer with a relevant mandate still marked for investigation.
+ const exclusions=/customer support|sales development|account executive|wordpress|full.stack developer|react developer|data entry|shopify|e.?commerce|seo specialist|marketing manager/i.test(c.title);
+ const domainTitle=/simulation|procedural|research|world.?build|creative technolog|technical director|r&d|interactive systems|gameplay systems|engine architect|technical artist|tools architect/i.test(c.title);
+ return {decision:exclusions?'pass':(employers.length||domainTitle)?'investigate':'unreviewed',signals:hits,employers,uncertainties:['Employer-hosted requisition and apply link unverified','Creative authority and autonomy unverified','Work arrangement may not fit']};
 }
 function normalize(item){
  const title=clean(item.title),company=clean(item.company_name),link=url(item.url);
