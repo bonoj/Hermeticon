@@ -44,28 +44,6 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   }
   return hits;
  }
- // One spatial scan per tap; never an inverse-square field in the frame loop.
- function pulseAbiogenesis(){
-  if(!abiogenesis)return 0;
-  const o=offset(),c=abiogenesis.position,range=abiogenesis.range;
-  let affected=0;
-  for(const b of beads){
-   if(b.owner==='abiogenesis')continue;
-   const x=b.x-(b.owner==='terrain'?o.x:0)-c.x;
-   const y=b.y-c.y,z=b.z-(b.owner==='terrain'?o.z:0)-c.z;
-   const d=Math.hypot(x,y,z);
-   if(d>=range||d<1e-6)continue;
-   const ux=x/d,uy=y/d,uz=z/d;
-   const radial=b.vx*ux+b.vy*uy+b.vz*uz;
-   // Cancel outward radial velocity, then deliver a decisive inward kick.
-   const kick=abiogenesis.impulse+Math.max(0,radial);
-   b.vx-=ux*kick;b.vy-=uy*kick;b.vz-=uz*kick;
-   b.vacuumTicket=true;
-   affected++;
-  }
-  abiogenesisPulses++;abiogenesisLastAffected=affected;
-  return affected;
- }
  function update(dt){const physicsStart=performance.now();
   const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
@@ -86,24 +64,32 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
      b.ax*=.999;b.ay*=.999;b.az*=.999;
      continue;
     }
-    // Abiogenesis has no exterior collision. Only vacuum-pulsed BBs
-    // pay for a capture check; all other BBs pass through freely.
-    if(b.vacuumTicket){
+    // Passive one-way entry: exterior glass does not bounce BBs.
+    // Swept segment/sphere intersection catches fast crossings.
+    if(abiogenesis){
      const c=abiogenesis.position;
      const dx=ox-(b.owner==='terrain'?o.x:0)-c.x;
      const dy=oy-c.y,dz=oz-(b.owner==='terrain'?o.z:0)-c.z;
      const sx=b.vx*step,sy=b.vy*step,sz=b.vz*step;
      const radius=abiogenesis.innerRadius*abiogenesis.scale-b.r-.003;
      const r2=radius*radius;
-     if(dx*dx+dy*dy+dz*dz>=r2 &&
-        (dx+sx)**2+(dy+sy)**2+(dz+sz)**2<r2){
-      b.vacuumTicket=false;
-      b.x=dx+sx;b.y=dy+sy;b.z=dz+sz;
+     const d2=dx*dx+dy*dy+dz*dz;
+     const ex=dx+sx,ey=dy+sy,ez=dz+sz;
+     const e2=ex*ex+ey*ey+ez*ez;
+     // Crossing from outside, or already inside on the first encounter.
+     let captured=e2<r2;
+     if(!captured&&d2>=r2){
+      const aa=sx*sx+sy*sy+sz*sz;
+      const bb=dx*sx+dy*sy+dz*sz;
+      const disc=bb*bb-aa*(d2-r2);
+      captured=aa>0&&bb<0&&disc>=0&&(-bb-Math.sqrt(disc))/aa<=1;
+     }
+     if(captured){
+      const d=Math.sqrt(e2)||1;
+      const fit=Math.min(1,radius/d);
+      b.x=ex*fit;b.y=ey*fit;b.z=ez*fit;
       b.owner='abiogenesis';abiogenesisCaptures++;continue;
      }
-     const range=abiogenesis.range;
-     if(Math.abs(dx)>range+Math.abs(sx)||Math.abs(dy)>range+Math.abs(sy)||Math.abs(dz)>range+Math.abs(sz))
-      b.vacuumTicket=false;
     }
     const nx=ox+b.vx*step,ny=oy+b.vy*step,nz=oz+b.vz*step;
     const gx=x=>x+(b.owner==='vessel'?o.x:0),gz=z=>z+(b.owner==='vessel'?o.z:0);
@@ -145,5 +131,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;ownership.abiogenesis=abiogenesisOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,collideSphere,pulseAbiogenesis,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,collideSphere,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
