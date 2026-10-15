@@ -129,7 +129,7 @@ function moveTo(tx,tz){
  const support=walkSupport(walker.x,walker.z);
  if(support!==null)walker.y=support;
  const nominal=walker.y+BODY_RADIUS+HOVER_CLEARANCE;
- const drift=.045*Math.sin(idleTime*.71)+.025*Math.sin(idleTime*.31+1.2);
+ const drift=.52*Math.sin(idleTime*.71)+.28*Math.sin(idleTime*.31+1.2);
  const desired=nominal+Math.max(0,drift);
  hoverCenter=desired;
  vessel.group.position.set(walker.x-wanderX,hoverCenter,walker.z-wanderZ);
