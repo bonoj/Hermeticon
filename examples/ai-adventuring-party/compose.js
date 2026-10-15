@@ -1,0 +1,1 @@
+import '../../athanor/athanor.js';import {createPartyWorld} from './world.js';const party=createPartyWorld();globalThis.Athanor.mount('ai-adventuring-party',party);party.attachView(globalThis.Athanor.view());globalThis.PartyExample=party;
