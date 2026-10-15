@@ -1,14 +1,12 @@
-# Abiogenesis — L0 vacuum and ownership contract (2026-10-15)
+# Abiogenesis — L0 vacuum impulse contract (2026-10-15)
 
-Abiogenesis is the nested Hermeticon in Genesis, with its existing L0 stationkeeping.
+Supersedes the earlier continuous inverse-square vacuum implementation after observed ~30fps and insufficient pull.
 
-- Tap on Abiogenesis toggles vacuum gravity and consumes the tap before terrain navigation.
-- Vacuum uses softened inverse-square attraction with a deterministic finite cutoff and no influence on the upper Genesis world.
-- Passive exterior contact always bounces. Capture occurs **only** during vacuum-assisted inward crossing of the shell.
-- Capture transfers the existing BB, exactly once, into Abiogenesis local coordinates and material ownership. Preserve BB identity, radius, color, and velocity; no cloning or deletion.
-- Captured BBs collide against the *inner* glass. Ordinary downward gravity always applies.
-- Switching vacuum OFF stops vacuum acceleration and new captures, not ordinary gravity or confinement. Captured BBs remain inside.
-- Stationkeeping is independent of the vacuum toggle. Use a single authoritative BB inventory; Genesis-owned plus Abiogenesis-owned equals detached total.
-- Expose vacuum state, capture count, ownership, and collision counts in inspection. No arbitrary caps.
-- Preserve accepted terrain, Hybrid rendering, gardens, glass and brass.
-- A commit is not evidence of live deployment or successful visual verification.
+- Each tap on Abiogenesis fires **one** vacuum pulse, consumed before terrain navigation. No on/off state.
+- On tap, scan Genesis-owned detached BBs within radius 3 Genesis units **once**. Cancel outward radial velocity and add a strong inward impulse (initial tuning: 45 velocity units). Ordinary physics then resumes, with no per-frame attraction.
+- Mark only affected BBs as vacuum-eligible. On their subsequent inward crossing of Abiogenesis's exterior, transfer the existing BB once into Abiogenesis ownership and local coordinates. Do not clone or delete.
+- BBs without vacuum eligibility bounce from exterior glass. Captured BBs always experience ordinary gravity and collide with inner glass, regardless of subsequent pulses.
+- Captured BBs are unaffected by later pulses; L0 stationkeeping remains independent.
+- Single authoritative BB inventory. Inspect pulse count, affected count, capture count, interior/exterior hits and ownership. No population caps.
+- Preserve accepted terrain, Hybrid, gardens, glass and brass.
+- Source commits do not prove deployed runtime or visual behavior.
