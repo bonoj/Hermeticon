@@ -128,6 +128,7 @@ export function createGenesis(){
     abiogenesis.group.getWorldPosition(tapCenter);
     tapSphere.set(tapCenter,10.25*abiogenesis.group.getWorldScale(new T.Vector3()).x);
     if(tapRaycaster.ray.intersectsSphere(tapSphere)){
+     debris.directRegionToward({maxY:0,target:{x:abiogenesis.group.position.x,y:abiogenesis.group.position.y,z:abiogenesis.group.position.z},speed:22});
      return true;
     }
    }
