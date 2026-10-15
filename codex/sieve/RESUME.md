@@ -67,8 +67,18 @@ Hermeticon is an institution for the study and construction of possible worlds.
 
 ## Capabilities
 
-**World-building & R&D:** Executable worlds · Systems architecture · Creative technology · Experimental prototyping · Interactive simulation · Procedural generation · Spatial reasoning · Agent systems · Real-time graphics
+**Creative direction & world architecture:** Experimental world-building · Systems design · Creative technology · Interactive environments · Simulation architecture · Procedural generation · Generative systems · Spatial reasoning · Emergent behavior · Rapid prototyping · Research and development · Human–model collaboration
 
-**Physical & computational systems:** Deformable terrain · Material transport · Particle systems · Fluid simulation · Deterministic modeling · Persistent state · Instrumentation · Reproducibility · Human–model collaboration
+**Physics, mathematics & simulation:** Computational geometry · 3D transformations · Kinematics · Orbital mechanics · Ballistic trajectories · Collision systems · Particle simulation · Shallow-water dynamics · Fluid transport · Material conservation · Deformable height fields · Terrain generation · Accretion · Deterministic simulation · Numerical modeling · Performance optimization
 
-**Engineering:** C# · JavaScript · Three.js · WebGL · Unity · Kotlin · Java · C++ · Python · Android · REST · SQL · AWS · GCP · Firebase · Docker · BLE
+**Agents, worlds & interactions:** Autonomous agents · State machines · Entity-component systems (ECS) · Agent navigation · Route memory · Logistics systems · Procedural structures · Interactive tools · Persistent world state · Event-driven behavior · Real-time visualization · Camera and interaction systems
+
+**Graphics & interactive development:** Three.js · WebGL · Unity · C# · JavaScript · 3D scene graphs · Mesh generation · Materials and lighting · Shader effects · Raycasting · Mobile-first interactive interfaces · Real-time rendering · Frame-time and simulation profiling
+
+**Architecture & research practice:** Systems architecture · First-principles modeling · Hypothesis-driven experimentation · Instrumentation · Observability · Deterministic seeds and replay · Reproducible experiments · Evidence and provenance · Modular and composable capabilities · API design · Technical specifications · RFCs · CI and deployment · Debugging and production diagnostics
+
+**Software engineering:** Kotlin · Java · C# · JavaScript · C++ · Python · SQL · Android · Jetpack Compose · MVVM · Kotlin Coroutines · RxJava · Hilt/Dagger · Room · Retrofit · REST APIs · Backend services · Distributed clients · Offline-first systems · Synchronization · Persistent storage · Bluetooth/BLE · NFC · Firmware-update coordination · Device telemetry · Automated testing · Release engineering
+
+**Platforms & infrastructure:** Git · GitHub · GitHub Pages · Unity · Android · AWS · Google Cloud Platform · Firebase · Docker · CI pipelines · Web deployment
+
+**Analytical disciplines:** Signals intelligence · Geospatial analysis · Network analysis · Pattern recognition · Evidence synthesis · Time-sensitive analysis · Systems thinking · Technical investigation · Decision-making under uncertainty
