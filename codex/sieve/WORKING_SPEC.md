@@ -328,3 +328,29 @@ The set is editorial and replaceable, **not** a hardcoded canonical shortlist. E
 
 **Definition of first human-UI success:** John can flick a marble, immediately understand why it matters and its obstacles, reject or select it, and later see that judgment accurately reflected in Clara's private memory. A pretty marble without verified provenance and a real feedback path is **not done**.
 
+
+## 10. Campaign-mode correction — throughput, not ranking (2026-10-15)
+
+**Authoritative user direction:** “I need boom boom boom. 100 cold connects 100 applications 100 emails. I am qualified for everything worth my attention which includes enjoying the work.”
+
+Sieve's default search strategy is now **high-volume opportunity creation**, not a small ranked funnel. The human's criterion is whether the work is interesting and enjoyable, not whether a recruiter would score conventional credentials as a perfect match. Clara must not reject opportunities on the user's behalf based on a missing AAA credit, unfamiliar framework, nontraditional background, or speculative hiring preferences. Preserve constraints as context, not gatekeeping. The user is willing to code but does not want to be reduced to coding alone.
+
+### Campaign targets and semantics
+- **100 cold connections:** identify 100 distinct relevant professionals and prepare individual connection routes/messages.
+- **100 applications:** identify 100 distinct real application destinations (official roles or clearly marked general/open applications), prepare truthful tailored material and link to the actual submission path.
+- **100 emails:** identify 100 legitimate professional/team email channels where available and prepare concise relevant outreach drafts. Never invent addresses or harvest private personal contact data.
+- The three pools may overlap in organizations but track each action separately; deduplicate people and application destinations. A prospect is not a sent connection, a prepared package is not a submitted application, and a draft is not a delivered email.
+- **Only count executed actions as sent/submitted** after tool-confirmed delivery or human 👁 confirmation. Research/preparation counters must remain distinct.
+- High throughput does not authorize spam, deceptive qualifications, automated scraping against access restrictions, or messaging without human approval. The user controls actual outreach and applications; build efficient review/batch approval workflows where supported.
+- Favor fresh openings and accessible contact channels, but do not wait to verify every marginal fit before expanding the pool. Mark `verified`, `unverified`, `stale`, and `blocked` honestly.
+
+### Execution loop
+1. Expand widely across studios, labs, interactive simulation, creative technology, R&D, procedural worlds, games, experiential design, and adjacent surprising employers.
+2. Capture actionable **routes** (contact profile, application URL, public business email) and a one-sentence reason the work is interesting. Avoid executive-only research; include team leads, practitioners, recruiters, founders and general application routes.
+3. Prepare reusable core identity, portfolio evidence and short role-specific variations. No inflated credentials or fabricated accomplishments.
+4. Maintain three explicit queues: `connect`, `apply`, `email`. Track `discovered`, `verified`, `drafted`, `approved`, `sent/submitted`, `responded`, `rejected`, and `follow-up` as separate states.
+5. Work in substantial batches per ➡️; report **new actionable routes and queue progress**, not another tiny deep dive or arbitrary ranked shortlist.
+6. Persist batches and verified outcomes in private GitHub. Human UI should eventually expose high-throughput queue processing and feedback, not only seven curated marbles.
+
+### Immediate consequence
+The earlier seven-marble human UI roadmap is **a prototype for the interaction grammar**, not a cap on the campaign or the main delivery goal. The previous people-first ranking strategy is superseded by campaign-scale prospecting and preparation. No outreach is sent solely by adding this specification.
