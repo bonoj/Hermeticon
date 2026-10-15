@@ -131,3 +131,7 @@ For the implementation boundaries, lifecycle, material accounting, and eighteen-
 - **At the shared boundary:** assert zero rendered encounter primitives outside the inner dome (including shadows and secondary effects). Record cross-aperture departures separately from collisions, bowl receipts, and intentional rebounds.
 - **Lifecycle:** world-state persistence outside the aperture; bounded local updates on approach; camera orbit never changes simulation state; no eighteen-way frame tax.
 - **Release gate:** implement and inspect all eighteen in one coordinated pass, but distinguish code completion, source tests, Pages deployment, and eighteen human-observed acceptances. Preserve the four existing active locations and Wanderer's current fire/material behavior.
+
+## Current Genesis behavior pointer (2026-10-15)
+
+The current Genesis world contains two moving nested Hermeticon shells, Wanderer and Abiogenesis, with independently bounded vertical stationkeeping and shared conserved detached-BB physics. Wanderer's one-second, terrain-surface-only collection and Abiogenesis's tap-directed capture are authored/physics systems, **not Athanor host behavior**. See [current handoff](../HANDOFF.md), [Arcana Catalog](../arcana/README.md), and [Abiogenesis contract](../codex/genesis/ABIOGENESIS.md). Preserve host rendering and the accepted terrain-only HYBRID lens when editing these systems. The historical material below is not the present Genesis contract.
