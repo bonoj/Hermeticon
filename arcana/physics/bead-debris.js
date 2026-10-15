@@ -44,6 +44,23 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   }
   return hits;
  }
+ // One-shot, position-selected velocity assignment. No tracking after launch.
+ let lastDirected=0,directionCommands=0;
+ function directRegionToward({maxY=0,target,speed=22}){
+  const o=offset();let directed=0;
+  for(const b of beads){
+   if(b.owner==='abiogenesis'||b.y>maxY)continue;
+   const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
+   const dx=target.x-x,dy=target.y-b.y,dz=target.z-z;
+   const distance=Math.hypot(dx,dy,dz);
+   if(distance<1e-6)continue;
+   const factor=speed/distance;
+   b.vx=dx*factor;b.vy=dy*factor;b.vz=dz*factor;
+   directed++;
+  }
+  directionCommands++;lastDirected=directed;
+  return directed;
+ }
  function update(dt){const physicsStart=performance.now();
   const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
@@ -131,5 +148,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;ownership.abiogenesis=abiogenesisOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,collideSphere,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,collideSphere,directRegionToward,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,directionCommands,lastDirected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
