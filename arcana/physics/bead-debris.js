@@ -68,13 +68,14 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   const cradle=abiogenesis?.position,cradleRadius=abiogenesis?abiogenesis.innerRadius*abiogenesis.scale:0;
   const wi=wanderer?.inspect(),wc=wi?{x:wi.x-o.x,y:wi.centerY,z:wi.z-o.z}:null;
   wandererPulseClock+=Math.max(0,dt);
-  if(wc&&wandererPulseClock>=1.6){
-   wandererPulseClock%=1.6;wandererPulses++;wandererLastAffected=0;
+  if(wc&&wandererPulseClock>=1){
+   wandererPulseClock%=1;wandererPulses++;wandererLastAffected=0;
    for(const b of beads){
     if(b.owner==='abiogenesis'||b.owner==='wanderer')continue;
     const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
     if((x-wc.x)**2+(z-wc.z)**2>.12**2)continue;
-    if(Math.abs(terrain.sample(x+o.x,b.y,z+o.z))>.24)continue;
+    // Signed field is positive inside solid: reject buried BBs, retain surface and above-ground BBs.
+    if(terrain.sample(x+o.x,b.y,z+o.z)>.02)continue;
     const dx=wc.x-x,dy=wc.y-b.y,dz=wc.z-z,d=Math.hypot(dx,dy,dz)||1;
     b.vx=dx/d*9;b.vy=dy/d*9;b.vz=dz/d*9;wandererLastAffected++;
    }
