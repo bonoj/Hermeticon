@@ -165,13 +165,24 @@ export function createTerrain(){
 }
 
  const interactionRay=new T.Raycaster(),interactionPointer=new T.Vector2();
+ // The aperture is a fragment discard, invisible to Three.js CPU raycasting.
+ // Only accept intersections within the same world-space aperture.
+ function firstVisibleRayHit(raycaster){
+  solid.updateMatrixWorld(true);
+  const r2=activeAperture*activeAperture;
+  for(const hit of raycaster.intersectObjects(solid.children,false)){
+   const x=hit.point.x-wanderX,z=hit.point.z-wanderZ;
+   if(x*x+hit.point.y*hit.point.y+z*z<=r2)return hit;
+  }
+  return null;
+ }
  const navigationPlane=new T.Plane(new T.Vector3(0,1,0),0),navigationPoint=new T.Vector3();
  function interact(x,y,view,walkingHeight){
   const rect=view.renderer.domElement.getBoundingClientRect();
   interactionPointer.set((x-rect.left)/rect.width*2-1,-(y-rect.top)/rect.height*2+1);
   view.camera.updateMatrixWorld();solid.updateMatrixWorld(true);
   interactionRay.setFromCamera(interactionPointer,view.camera);
-  const hit=interactionRay.intersectObjects(solid.children,false)[0];
+  const hit=firstVisibleRayHit(interactionRay);
   let normalY=null,point=null;
   if(hit){const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
    if(normal.dot(interactionRay.ray.direction)>0)normal.negate();normalY=normal.y;point=hit.point.toArray();
@@ -207,5 +218,5 @@ export function createTerrain(){
   return {magnitude:e,radius,depth,rim,changed,dirtyChunks:terrainPerf.lastDirtyChunks};
  }
  regenerate();
- return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,sphereClearance,impact,interact,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,collisionStats:{...collisionStats}})};
+ return {group:solid,setAperture:r=>{if(activeAperture!==r){activeAperture=r;if(apertureUniform)apertureUniform.value=r}},getAperture:()=>activeAperture,setOffset:(x,z)=>{wanderX=x;wanderZ=z;solid.position.set(-x,0,-z);sharedApertureOffset.set(x,0,z)},sample:fieldSample,intersectsSphere,sphereClearance,impact,interact,firstVisibleRayHit,materialAt,atlas,materials:MATERIALS,contactProperties,deposits:depositedMaterial,inspect:()=>({dimensions:[NX,NY,NZ],atlasVersion:atlas.version,materialCount:MATERIALS.length,depositCount:depositedMaterial.size,contactProperties,top:1.15,bottom:-1.15,triangles,solidCount,voidCount,buildMs,terrainPerf:{...terrainPerf,lastChangedChunks:terrainPerf.lastChangedChunks.length},operations:operations.map(o=>({...o})),apertureRadius:activeAperture,collisionStats:{...collisionStats}})};
 }
