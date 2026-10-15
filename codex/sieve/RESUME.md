@@ -1,63 +1,65 @@
 # John Bono
-**Conjoiner · Cybernetic Systems Architect**  
+**Conjoiner · Cybernetic Systems Architect**
+
 [Hermeticon](https://bonoj.github.io/Hermeticon/) · [GitHub](https://github.com/bonoj) · [LinkedIn](https://linkedin.com/in/bonoj)  
 (650) 207-7832 · johnlbono@gmail.com
 
 ## Profile
 
-Systems architect and experimental world-builder working at the intersection of interactive simulation, procedural systems, spatial computing, and human–model collaboration. Turns ambiguous creative intent into executable worlds and working machinery through rapid prototyping, observation, instrumentation, and iteration.
+Experimental world-builder and systems architect creating executable environments in which materials, entities, observation, and interaction have consequences. Works across creative direction, system design, prototyping, and implementation, with an emphasis on human–model collaboration and rapidly testing ideas in running systems.
 
-Builds both the systems and the means of developing them: deterministic simulations, deformable environments, material transport, procedural construction, and composable interactive experiences. Combines hands-on engineering with creative direction, architecture, and experimental design.
+Brings together more than a decade in signals intelligence, subsequent production engineering experience, and current work on interactive simulation. Intelligence work developed an analytical practice grounded in incomplete information, evolving spatial relationships, and complex systems; engineering supplied the means to build reliable machinery; Hermeticon brings those disciplines together in possible worlds.
 
-Previously delivered production mobile and distributed systems at Xeal, Affirm, DoorDash, and R3PI, following earlier work in geospatial intelligence analysis.
-
-## Current Work — Hermeticon / Independent R&D
+## Hermeticon — Independent R&D
 **Conjoiner · Cybernetic Systems Architect | 2023–Present**
 
-- Architect and build interactive, executable worlds using Three.js/WebGL, JavaScript, Unity, and C#.
-- Develop deterministic terrain and material simulations, high-population particle systems, shallow-water dynamics, procedural construction, and interactive creatures and environments.
-- Design composable runtime capabilities, observation and inspection instruments, and rapid deployment workflows.
-- Direct human–model collaboration across experimentation, implementation, verification, and iteration, preserving working artifacts and their development history.
-- Explore systems-driven world-building in which materials, environments, inhabitants, and interactions produce meaningful consequences.
+- Conceive, architect, and build interactive worlds and experimental systems using Three.js/WebGL, JavaScript, Unity, and C#.
+- Explore deterministic terrain, material transport, deformable environments, shallow-water dynamics, high-population simulations, procedural construction, and interacting entities.
+- Build composable capabilities and instrumentation to make world behavior observable, testable, and reproducible.
+- Direct a human–model development process spanning creative intent, implementation, inspection, verification, and deployment.
+- Develop systems-driven environments in which local rules create persistent, observable consequences.
 
-**Selected work:** [Hermeticon](https://github.com/bonoj/Hermeticon), [Crucible](https://github.com/bonoj/Crucible), [SixCities](https://github.com/bonoj/SixCities), [OrbitalConstruction](https://github.com/bonoj/OrbitalConstruction), [VerticalAccretion](https://github.com/bonoj/VerticalAccretion), [Foundry](https://github.com/bonoj/Foundry).  
+**Selected executable systems:** [Hermeticon](https://github.com/bonoj/Hermeticon) · [Crucible](https://github.com/bonoj/Crucible) · [SixCities](https://github.com/bonoj/SixCities) · [OrbitalConstruction](https://github.com/bonoj/OrbitalConstruction) · [VerticalAccretion](https://github.com/bonoj/VerticalAccretion) · [Foundry](https://github.com/bonoj/Foundry)
 
-## Professional Experience
+## Signals Intelligence
+**U.S. Navy / National Security Agency | Dec 2003–Jun 2014**
 
-### Senior Software Engineer — Android | Xeal
-*Los Angeles, CA · Oct 2022–2023*
+- Conducted intelligence analysis involving complex networks, geospatial information, and changing patterns of activity.
+- Integrated incomplete, evolving information to develop situational understanding and support time-sensitive analytical work.
+- Worked across technical and analytical disciplines, applying structured reasoning, spatial interpretation, and systems-level thinking.
+- Developed a foundation in observation, uncertainty, coordination, and evidence-driven analysis that continues to inform current systems work.
 
-- Built offline-first mobile systems supporting EV charging infrastructure with high reliability requirements.
-- Developed distributed coordination mechanisms for over-the-air firmware updates and station telemetry.
-- Designed resilient client behavior for unreliable and intermittent network environments.
+*Public-facing description intentionally omits specific targets, collection methods, operational capabilities, mission details, and outcome claims.*
 
-### Senior Software Engineer — Android | Affirm
-*San Francisco, CA · Nov 2020–Feb 2022*
+## Software Engineering
+*Production systems across four employers; roles listed in reverse chronological order.*
 
-- Authored technical specifications and RFCs for major mobile features, defining architecture and implementation strategy.
-- Led release cycles from beta through production, including monitoring, triage, and rapid hotfix deployment.
-- Collaborated cross-functionally to deliver financial products used by millions of users.
+### Xeal — Senior Software Engineer, Android
+*Los Angeles, CA | Oct 2022–2023*
 
-### Software Engineer — Android | DoorDash
-*San Francisco, CA · Sep 2019–Nov 2020*
+- Built offline-first mobile systems for EV charging infrastructure.
+- Developed client coordination for firmware updates and station telemetry, including resilience to intermittent connectivity.
 
-- Integrated third-party navigation SDKs into a modular architecture for maintainability and flexibility.
-- Led migration from MVP and RxJava to MVVM with Kotlin Coroutines.
-- Built internal tooling to reduce manual QA effort and accelerate development workflows.
+### Affirm — Senior Software Engineer, Android
+*San Francisco, CA | Nov 2020–Feb 2022*
 
-### Full Stack Engineer | R3PI
-*Dallas, TX · Aug 2017–Sep 2019*
+- Wrote technical specifications and RFCs establishing feature architecture and implementation strategy.
+- Led mobile release cycles, production monitoring, triage, and hotfix delivery.
 
-- Developed mobile and web fleet-management applications spanning routing, telematics, inspections, and battery monitoring.
-- Integrated Bluetooth/BLE hardware into mobile workflows.
-- Designed and deployed secure REST microservices supporting real-time logistics systems.
+### DoorDash — Software Engineer, Android
+*San Francisco, CA | Sep 2019–Nov 2020*
 
-## Earlier Experience
+- Integrated navigation capabilities into a modular application architecture.
+- Led migration from MVP/RxJava to MVVM/Kotlin Coroutines and built internal QA tooling.
 
-**Geospatial Intelligence Analyst** — Geospatial analysis, asset tracking, spatial data interpretation, movement-pattern analysis, and software-assisted analysis of real-world environments.
+### Solera / R3PI — Full Stack Engineer
+*Dallas, TX | Aug 2017–Sep 2019*
+
+- Built fleet-management mobile and web systems for routing, telematics, inspections, and monitoring.
+- Integrated Bluetooth/BLE devices and developed REST services for logistics workflows.
 
 ## Systems & Technologies
 
-**Systems:** Interactive simulation · Agent systems · Procedural generation · Real-time graphics · Spatial computing · Human–model collaboration · Persistent state · Distributed clients · Offline-first architecture · Instrumentation and provenance
+**Systems:** Interactive simulation · Procedural generation · Spatial systems · Agent systems · Material transport · Real-time graphics · Human–model collaboration · Instrumentation · Persistent state · Distributed clients · Offline-first architecture
 
 **Technologies:** C# · JavaScript · Three.js · WebGL · Unity · Kotlin · Java · C++ · Python · Android · REST · SQL · AWS · GCP · Firebase · Docker · BLE
