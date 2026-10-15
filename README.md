@@ -2,7 +2,9 @@
 
 A spherical vessel for building and exploring beautiful, perturbable, composable executable worlds.
 
-**[Enter Hermeticon](https://bonoj.github.io/Hermeticon/)**
+**[Enter Hermeticon](https://bonoj.github.io/Hermeticon/)** · **[Enter Sieve](https://bonoj.github.io/Hermeticon/sieve/)**
+
+**Sieve working entry:** [codex/sieve/README.md](codex/sieve/README.md) — start with the Conjoiner contract and résumé chronology.
 
 **For a fresh Clara:** read [HANDOFF.md](HANDOFF.md) for the current world, established behavior, working rules and next investigation.
 
