@@ -13,7 +13,7 @@ ChatGPT is the cockpit. Sieve is the machinery that finds worthwhile work, evalu
 - [Sieve entry HTML](../../sieve/index.html), [Sieve composer](../../sieve/compose.js), [Sieve world](world.js).
 - [Hermeticon entry HTML](../../index.html), [Sieve overlay controller](../../athanor/sieve-overlay.js), [shared instrument CSS](../../athanor/interface.css).
 - [Initial Build Spec](INITIAL_BUILD_SPEC.md) is the approved implementation blueprint; its pipeline is **specified, not implemented**.
-- No actual job application, outcome registry, automated discovery service, or verified application-package compiler has yet been delivered. Do not imply otherwise.
+- Hunt v0 is implemented as an instrumented browser-side public-feed sweep (Remotive). It is not an autonomous server-side sweep, verified official careers crawler, outcome registry, or application-package compiler. Do not imply otherwise.
 
 ## Essential working links
 ### Identity, scope, evidence
@@ -47,7 +47,7 @@ ChatGPT is the cockpit. Sieve is the machinery that finds worthwhile work, evalu
 ## Build and deployment protocol
 Read source and contract before edits. Change only requested surfaces. The Pages workflow publishes on pushes to main, copies into `site/`, validates JS with `node --check`, stamps SHA onto module URLs, publishes, and checks public entries. For a runtime change, inspect Actions result, compare public `build.json` SHA with commit, and verify actual browser execution. HTTP entry checks alone do not prove the UI works. Do not assert live solely from a successful GitHub write. Never use guessed recovery URLs or force the user to clear browser cache.
 
-## Immediate next implementation
+## Hunt v0 observation loop (2026-10-15)\n- [Hunt source](../../sieve/hunt.js) is mounted in the Sieve 🗑 drawer. SWEEP PUBLIC FEED fetches Remotive public remote jobs (up to 200), normalizes and deduplicates by source ID, applies explainable heuristic signals, preserves manual passes, and records sweep failures. This feed is biased toward remote jobs and cannot establish employer-hosted application verification.\n- Candidates and bounded event history persist in the user's browser localStorage (`sieve.hunt.v1`), **not GitHub and not across devices**. EXPORT JSON downloads the state; COPY 👁 REPORT copies a bounded diagnostic report for the user to bring back to ChatGPT. If clipboard is unavailable, report text is selectable in a textarea.\n- Instrumented fields: source URL, retrieval time, source publication, title/company/location, signals, classification, uncertainty, dedup counts, last sweep result and error, last 20 events. Never present source links as verified employer applications.\n- Correction loop: user sends 👁 report; inspect false positives, misses, errors, source behavior; update heuristics or source machinery; preserve observations. A model does not autonomously retrain.\n- First live sweep and browser interaction have **not** been verified by this repository write. Public Pages workflow validates JavaScript syntax and entry availability, not CORS or successful third-party API calls.\n\n## Immediate next implementation
 Follow [Initial Build Spec](INITIAL_BUILD_SPEC.md): inspect existing machinery; establish verified evidence map, opportunity schema, private persistence plan and fit rubric; discover and verify real openings; generate application package with direct link and required documents; reconcile 👁 evidence; repeat without rebuilding. Keep private application history out of public Pages output.
 
 ## Existing UI boundaries
