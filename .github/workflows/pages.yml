@@ -57,7 +57,7 @@ jobs:
               assert 'world.js' not in html
           assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
           # Every public entrance must reference the newly deployed Athanor script.
-          for entry in (root/'index.html',athanor/'index.html'):
+          for entry in (root/'index.html',athanor/'index.html',root/'sieve/index.html'):
               html=entry.read_text()
               assert 'compose.js' in html
               # CSS must share the build identity; stale styles caused mixed-version controls.
