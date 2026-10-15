@@ -1,3 +1,5 @@
+> **Current implementation, 2026-10-15:** Abiogenesis scale 0.12 gives outer radius 1.23. Vertical stationkeeping now has terms 0.72 and 0.28 (maximum combined displacement 1.0) about y=-6.23. A shell tap directs eligible loose BBs below y=0 toward its current center once; passive cavity crossing captures material. Older vacuum sections below are retained as history. Wanderer's separate surface collector is documented in the root HANDOFF.md.
+
 # Abiogenesis — L0 vacuum impulse contract (2026-10-15)
 
 Supersedes the earlier continuous inverse-square vacuum implementation after observed ~30fps and insufficient pull.
