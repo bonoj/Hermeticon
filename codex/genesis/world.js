@@ -133,7 +133,7 @@ export function createGenesis(){
      // The visible terrain is opaque to taps: the Cradle may only receive
      // a tap if its front shell is nearer than the first terrain surface.
      const terrainHit=terrainTapRaycaster.ray.copy(tapRaycaster.ray);
-     const occluder=terrainTapRaycaster.intersectObjects(terrain.group.children,false)[0];
+     const occluder=terrain.firstVisibleRayHit(terrainTapRaycaster);
      const shellDistance=tapRaycaster.ray.origin.distanceTo(sphereDistance);
      if(occluder&&occluder.distance<=shellDistance+1e-4)return navigation.tap(x,y);
      debris.directRegionToward({maxY:0,target:{x:abiogenesis.group.position.x,y:abiogenesis.group.position.y,z:abiogenesis.group.position.z},speed:22});
