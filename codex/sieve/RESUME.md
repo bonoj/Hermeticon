@@ -6,14 +6,14 @@
 
 ## Profile
 
-Experimental world-builder and systems architect creating executable environments in which materials, entities, observation, and interaction have consequences. Works across creative direction, system design, prototyping, and implementation, with an emphasis on human–model collaboration and rapidly testing ideas in running systems.
+Conjoiner and cybernetic systems architect developing executable worlds, interactive simulation, material systems, procedural environments, and human–model collaboration. Experience spans signals intelligence, production software systems, and experimental world-building.
 
-Brings together more than a decade in signals intelligence, subsequent production engineering experience, and current work on interactive simulation. Intelligence work developed an analytical practice grounded in incomplete information, evolving spatial relationships, and complex systems; engineering supplied the means to build reliable machinery; Hermeticon brings those disciplines together in possible worlds.
+## Experience
 
-## Hermeticon — Research Services
+### Hermeticon — Research Services
 **Conjoiner · Cybernetic Systems Architect | 2023–Present**
 
-Hermeticon is an institution for the study and construction of possible worlds. We investigate executable environments, simulation, material systems, procedural worlds, and human–model collaboration. Our practice is experimental, our methods are empirical, and our ambitions are unreasonable. We build things to discover what they might become.
+Hermeticon is an institution for the study and construction of possible worlds.
 
 - Conceive, architect, and build interactive worlds and experimental systems using Three.js/WebGL, JavaScript, Unity, and C#.
 - Explore deterministic terrain, material transport, deformable environments, shallow-water dynamics, high-population simulations, procedural construction, and interacting entities.
@@ -22,19 +22,6 @@ Hermeticon is an institution for the study and construction of possible worlds. 
 - Develop systems-driven environments in which local rules create persistent, observable consequences.
 
 **Selected executable systems:** [Hermeticon](https://github.com/bonoj/Hermeticon) · [Crucible](https://github.com/bonoj/Crucible) · [SixCities](https://github.com/bonoj/SixCities) · [OrbitalConstruction](https://github.com/bonoj/OrbitalConstruction) · [VerticalAccretion](https://github.com/bonoj/VerticalAccretion) · [Foundry](https://github.com/bonoj/Foundry)
-
-## Signals Intelligence
-**U.S. Navy / National Security Agency | Dec 2003–Jun 2014**
-
-- Conducted intelligence analysis involving complex networks, geospatial information, and changing patterns of activity.
-- Integrated incomplete, evolving information to develop situational understanding and support time-sensitive analytical work.
-- Worked across technical and analytical disciplines, applying structured reasoning, spatial interpretation, and systems-level thinking.
-- Developed a foundation in observation, uncertainty, coordination, and evidence-driven analysis that continues to inform current systems work.
-
-*Public-facing description intentionally omits specific targets, collection methods, operational capabilities, mission details, and outcome claims.*
-
-## Software Engineering
-*Production systems across four employers; roles listed in reverse chronological order.*
 
 ### Xeal — Senior Software Engineer, Android
 *Los Angeles, CA | Oct 2022–2023*
@@ -59,6 +46,15 @@ Hermeticon is an institution for the study and construction of possible worlds. 
 
 - Built fleet-management mobile and web systems for routing, telematics, inspections, and monitoring.
 - Integrated Bluetooth/BLE devices and developed REST services for logistics workflows.
+
+### U.S. Navy / National Security Agency — Signals Intelligence
+*Dec 2003–Jun 2014*
+
+- Conducted intelligence analysis involving complex networks, geospatial information, and changing patterns of activity.
+- Integrated incomplete, evolving information to develop situational understanding and support time-sensitive analytical work.
+- Worked across technical and analytical disciplines, applying structured reasoning, spatial interpretation, and systems-level thinking.
+- Developed a foundation in observation, uncertainty, coordination, and evidence-driven analysis that continues to inform current systems work.
+
 
 ## Systems & Technologies
 
