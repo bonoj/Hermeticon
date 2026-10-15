@@ -135,3 +135,7 @@ For the implementation boundaries, lifecycle, material accounting, and eighteen-
 ## Current Genesis behavior pointer (2026-10-15)
 
 The current Genesis world contains two moving nested Hermeticon shells, Wanderer and Abiogenesis, with independently bounded vertical stationkeeping and shared conserved detached-BB physics. Wanderer's one-second, terrain-surface-only collection and Abiogenesis's tap-directed capture are authored/physics systems, **not Athanor host behavior**. See [current handoff](../HANDOFF.md), [Arcana Catalog](../arcana/README.md), and [Abiogenesis contract](../codex/genesis/ABIOGENESIS.md). Preserve host rendering and the accepted terrain-only HYBRID lens when editing these systems. The historical material below is not the present Genesis contract.
+
+## GitHub drawer (2026-10-15)
+
+Both `../index.html` and `index.html` contain the bottom 🐙 control and native `githubPanel`. The panel is above the button bar, and its links are **HANDOFF → COMMITS → PIPELINE**. `athanor.js` handles open/close, outside tap and Escape; `interface.css` retains the established mobile button grammar. The top SHA remains a readout, not a link. These are external GitHub destinations, **not** an embedded GitHub DOM or a native data viewer. A future BB deployment beacon is an idea, not mounted or implemented. Preserve the accepted simple drawer until explicitly directed otherwise.
