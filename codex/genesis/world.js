@@ -30,8 +30,19 @@ export function createGenesis(){
  const abiogenesis=createHermeticon();
  abiogenesis.group.name='Abiogenesis';
  abiogenesis.content.name='Abiogenesis contents';
- abiogenesis.group.position.set(0,-5,0);
- abiogenesis.group.scale.setScalar(0.24);
+ // L0 "The Cradle": deterministic bounded stationkeeping about the lower center.
+ const cradle={name:'L0 — The Cradle',center:[0,-6.23,0],time:0};
+ abiogenesis.group.position.set(...cradle.center);
+ abiogenesis.group.scale.setScalar(0.12);
+ const updateCradle=dt=>{
+  cradle.time+=Math.max(0,dt);
+  const t=cradle.time;
+  abiogenesis.group.position.set(
+   cradle.center[0]+0.38*Math.sin(t*0.19)+0.14*Math.sin(t*0.071+1.1),
+   cradle.center[1]+0.23*Math.sin(t*0.27+0.4)+0.09*Math.sin(t*0.113),
+   cradle.center[2]+0.32*Math.sin(t*0.16+2.2)+0.13*Math.sin(t*0.063)
+  );
+ };
  abiogenesis.group.add(abiogenesis.content);
  world.content.add(abiogenesis.group);
  world.abiogenesis=abiogenesis;
@@ -108,10 +119,10 @@ export function createGenesis(){
  world.attachView=view=>{navigation.attachView(view);eyeCamera=view?.camera??null};
  world.tap=navigation.tap;
 
- world.update=dt=>{wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt);if(eye&&!eyeError){try{eye.update(dt,eyeCamera)}catch(error){eyeError=String(error);console.error('Eye update disabled; Genesis continues',error)}}};
+ world.update=dt=>{updateCradle(dt);wanderer.update(dt);reeds.update(dt);garden.update(dt);secondGarden.update(dt);bestiary.update(dt);velvetDrifters.update(dt);threadwyrms.update(dt);glasswings.update(dt);bellwraiths.update(dt);lanternHermits.update(dt);cinderfall.update(dt);debris.update(dt);if(eye&&!eyeError){try{eye.update(dt,eyeCamera)}catch(error){eyeError=String(error);console.error('Eye update disabled; Genesis continues',error)}}};
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'abiogenesis',position:[0,-5,0],scale:0.24,...abiogenesis.inspect()},{name:'eye',enabled:false,instantiated:false,error:null},{name:'Betwixt observer swarm',enabled:false,instantiated:false},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'abiogenesis',stationkeeping:{name:cradle.name,center:cradle.center,position:abiogenesis.group.position.toArray()},scale:0.12,...abiogenesis.inspect()},{name:'eye',enabled:false,instantiated:false,error:null},{name:'Betwixt observer swarm',enabled:false,instantiated:false},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
  return world;
 }
