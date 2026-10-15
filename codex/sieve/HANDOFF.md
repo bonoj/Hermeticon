@@ -53,6 +53,13 @@ Clara is the hunter; the runtime is Clara's external context, evidence graph, wo
 ## Immediate next implementation
 Follow [Working Specification](WORKING_SPEC.md): first inspect real connector permissions and establish a private model-accessible read/write context path; then schema, frontier retrieval, model-led discovery, judgment, marbles, Forge, and 👁 reconciliation. Do not build a browser-only hunting engine. Keep private application history out of public Pages output.
 
+## Turn 1 — Private context transport established (2026-10-15)
+- **Private repository confirmed:** `bonoj/Home` has GitHub visibility `private` and connected push permission; Hermeticon is public. The model can use connected GitHub tools to read/write Home without user copy/paste.
+- **Private context entrance:** [Home Sieve README](https://github.com/bonoj/Home/blob/main/sieve/README.md) and [FRONTIER.json](https://github.com/bonoj/Home/blob/main/sieve/FRONTIER.json). GitHub links require authorized access; **do not mirror these files to public Pages**.
+- **Write/read-back tested:** created both files, fetched and parsed frontier, updated its status using current blob SHA, and fetched/parsed it again. Private frontier is `transport-write-and-readback-verified`. Last private commit `a15926c2`.
+- **Scope:** model↔private GitHub transport works. Browser↔private store does **not** exist; no authenticated client, automatic query API, cross-device UI sync, or model-led opportunity ingestion is implemented yet. Local Hunt browser feed remains legacy instrumentation.
+- **Next:** versioned context records, fixtures, compact frontier queries, then model-led Hunt. Avoid expanding Remotive keyword filtering as core architecture.
+
 ## Existing UI boundaries
 🗑 is a navigation instrument, not the application submission action. The user primarily works from ChatGPT, not the Sieve page. Preserve existing instrument bar, FPS/build, world rendering, and 🐙 grammar. The Sieve entrance owns a native, non-recursive workspace drawer with handoff, spec, Conjoiner, and résumé links. Genesis does not contain a Sieve drawer. Do not silently move controls between entrances.
 
