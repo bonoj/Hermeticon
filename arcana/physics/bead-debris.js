@@ -1,10 +1,11 @@
 import {WANDERER_PHYSICS as P,reflectContact,signedFieldNormal,catchVesselUnderside} from './wanderer-contacts.js';
-export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesis=null}){
+export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesis=null,wanderer=null}){
  const geo=new T.IcosahedronGeometry(1,1),mat=new T.MeshStandardMaterial({roughness:.8,metalness:.04});
  let mesh=null,allocated=0;const perf={growths:0,lastGrowthMs:0,peakGrowthMs:0,lastEmitMs:0,peakEmitMs:0,lastPhysicsMs:0,peakPhysicsMs:0,lastRenderMs:0,peakRenderMs:0};
  function ensureMesh(required){if(required<=allocated)return;const t=performance.now();const next=Math.max(required,allocated?allocated*2:256);const replacement=new T.InstancedMesh(geo,mat,next);replacement.frustumCulled=false;replacement.count=0;parent.add(replacement);if(mesh)parent.remove(mesh);mesh=replacement;allocated=next;perf.growths++;perf.lastGrowthMs=performance.now()-t;perf.peakGrowthMs=Math.max(perf.peakGrowthMs,perf.lastGrowthMs);}
  ensureMesh(256);
- const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0,abiogenesis:0};let terrainHits=0,vesselHits=0,emitted=0,abiogenesisCaptures=0,abiogenesisInteriorHits=0,abiogenesisExteriorHits=0,abiogenesisPulses=0,abiogenesisLastAffected=0;
+ const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0,abiogenesis:0,wanderer:0};let wandererCaptures=0,wandererInteriorHits=0,wandererPulses=0,wandererLastAffected=0,wandererPulseClock=0;
+ let terrainHits=0,vesselHits=0,emitted=0,abiogenesisCaptures=0,abiogenesisInteriorHits=0,abiogenesisExteriorHits=0,abiogenesisPulses=0,abiogenesisLastAffected=0;
  function canAccept(){return true;}
  function emit(items,point,impulse=18){const t=performance.now();
   const o=offset();
@@ -20,7 +21,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
  function receiveImpulse(point,{radius=3.2,impulse=18}={}){
   let affected=0;const o=offset();
   for(const b of beads){
-   if(b.owner==='abiogenesis')continue;
+   if(b.owner==='abiogenesis'||b.owner==='wanderer')continue;
    const x=b.x+(b.owner==='vessel'?o.x:0),z=b.z+(b.owner==='vessel'?o.z:0),dx=x-point.x,dy=b.y-point.y,dz=z-point.z,d=Math.hypot(dx,dy,dz);
    if(d>=radius)continue;
    const force=impulse*(1-d/radius)**2,inv=1/Math.max(.001,d);
@@ -31,7 +32,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
  function collideSphere(center,radius,receive){
   const o=offset();let hits=0;
   for(const b of beads){
-   if(b.owner==='abiogenesis')continue;
+   if(b.owner==='abiogenesis'||b.owner==='wanderer')continue;
    const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
    const dx=x-center.x,dy=b.y-center.y,dz=z-center.z,d=Math.hypot(dx,dy,dz);
    if(d>=radius+b.r)continue;
@@ -65,6 +66,19 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   const o=offset(),sample=terrain.sample.bind(terrain);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
   const cradle=abiogenesis?.position,cradleRadius=abiogenesis?abiogenesis.innerRadius*abiogenesis.scale:0;
+  const wi=wanderer?.inspect(),wc=wi?{x:wi.x-o.x,y:wi.centerY,z:wi.z-o.z}:null;
+  wandererPulseClock+=Math.max(0,dt);
+  if(wc&&wandererPulseClock>=1.6){
+   wandererPulseClock%=1.6;wandererPulses++;wandererLastAffected=0;
+   for(const b of beads){
+    if(b.owner==='abiogenesis'||b.owner==='wanderer')continue;
+    const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
+    if((x-wc.x)**2+(z-wc.z)**2>.12**2)continue;
+    if(Math.abs(terrain.sample(x+o.x,b.y,z+o.z))>.24)continue;
+    const dx=wc.x-x,dy=wc.y-b.y,dz=wc.z-z,d=Math.hypot(dx,dy,dz)||1;
+    b.vx=dx/d*9;b.vy=dy/d*9;b.vz=dz/d*9;wandererLastAffected++;
+   }
+  }
   for(const b of beads){
    for(let k=0;k<count;k++){
     // Physics uses the current owner's coordinates; terrain queries always use geology.
@@ -82,6 +96,34 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
      b.rx+=b.ax*step;b.ry+=b.ay*step;b.rz+=b.az*step;
      b.ax*=.999;b.ay*=.999;b.az*=.999;
      continue;
+    }
+    if(b.owner==='wanderer'){
+     const limit=wanderer.innerRadius-b.r-.003;
+     b.x+=b.vx*step;b.y+=b.vy*step;b.z+=b.vz*step;
+     const rr2=b.x*b.x+b.y*b.y+b.z*b.z;
+     if(rr2>limit*limit&&rr2>1e-14){
+      const rr=Math.sqrt(rr2),normal={x:-b.x/rr,y:-b.y/rr,z:-b.z/rr};
+      b.x=-normal.x*limit;b.y=-normal.y*limit;b.z=-normal.z*limit;
+      if(reflectContact(b,normal,P.vesselRestitution))wandererInteriorHits++;
+     }
+     b.rx+=b.ax*step;b.ry+=b.ay*step;b.rz+=b.az*step;
+     b.ax*=.999;b.ay*=.999;b.az*=.999;continue;
+    }
+    if(wc){
+     const dx=ox-(b.owner==='terrain'?o.x:0)-wc.x,dy=oy-wc.y,dz=oz-(b.owner==='terrain'?o.z:0)-wc.z;
+     const sx=b.vx*step,sy=b.vy*step,sz=b.vz*step,r=wanderer.innerRadius-b.r-.003;
+     if(r>0&&Math.min(dx,dx+sx)<=r&&Math.max(dx,dx+sx)>=-r&&Math.min(dy,dy+sy)<=r&&Math.max(dy,dy+sy)>=-r&&Math.min(dz,dz+sz)<=r&&Math.max(dz,dz+sz)>=-r){
+      const e2=(dx+sx)**2+(dy+sy)**2+(dz+sz)**2,d2=dx*dx+dy*dy+dz*dz;
+      let captured=e2<r*r;
+      if(!captured&&d2>=r*r){
+       const aa=sx*sx+sy*sy+sz*sz,bb=dx*sx+dy*sy+dz*sz,disc=bb*bb-aa*(d2-r*r);
+       captured=aa>0&&bb<0&&disc>=0&&(-bb-Math.sqrt(disc))/aa<=1;
+      }
+      if(captured){
+       const ex=dx+sx,ey=dy+sy,ez=dz+sz,fit=Math.min(1,r/(Math.sqrt(e2)||1));
+       b.x=ex*fit;b.y=ey*fit;b.z=ez*fit;b.owner='wanderer';wandererCaptures++;continue;
+      }
+     }
     }
     // Passive one-way entry: exterior glass does not bounce BBs.
     // Swept segment/sphere intersection catches fast crossings.
@@ -142,19 +184,19 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   }
   perf.lastPhysicsMs=performance.now()-physicsStart;perf.peakPhysicsMs=Math.max(perf.peakPhysicsMs,perf.lastPhysicsMs);const renderStart=performance.now();
   ensureMesh(beads.length);
-  let n=0,terrainOwned=0,vesselOwned=0,abiogenesisOwned=0;
+  let n=0,terrainOwned=0,vesselOwned=0,abiogenesisOwned=0,wandererOwned=0;
   for(const b of beads){
-   if(b.owner==='terrain')terrainOwned++;else if(b.owner==='vessel')vesselOwned++;else abiogenesisOwned++;
-   const x=b.owner==='abiogenesis'?abiogenesis.position.x+b.x:b.x-(b.owner==='terrain'?o.x:0);
-   const y=b.owner==='abiogenesis'?abiogenesis.position.y+b.y:b.y;
-   const z=b.owner==='abiogenesis'?abiogenesis.position.z+b.z:b.z-(b.owner==='terrain'?o.z:0);
+   if(b.owner==='terrain')terrainOwned++;else if(b.owner==='vessel')vesselOwned++;else if(b.owner==='abiogenesis')abiogenesisOwned++;else wandererOwned++;
+   const x=b.owner==='wanderer'?wc.x+b.x:b.owner==='abiogenesis'?abiogenesis.position.x+b.x:b.x-(b.owner==='terrain'?o.x:0);
+   const y=b.owner==='wanderer'?wc.y+b.y:b.owner==='abiogenesis'?abiogenesis.position.y+b.y:b.y;
+   const z=b.owner==='wanderer'?wc.z+b.z:b.owner==='abiogenesis'?abiogenesis.position.z+b.z:b.z-(b.owner==='terrain'?o.z:0);
    if(Math.hypot(x,y,z)+b.r>innerRadius)continue;
    dummy.position.set(x,y,z);dummy.rotation.set(b.rx,b.ry,b.rz);dummy.scale.setScalar(b.r);dummy.updateMatrix();
    mesh.setMatrixAt(n,dummy.matrix);mesh.setColorAt(n,b.color);n++;
   }
   mesh.count=n;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;ownership.abiogenesis=abiogenesisOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
+  ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;ownership.abiogenesis=abiogenesisOwned;ownership.wanderer=wandererOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,collideSphere,directRegionToward,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,directionCommands,lastDirected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,collideSphere,directRegionToward,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,wandererCaptures,wandererInteriorHits,wandererPulses,wandererLastAffected,vacuumFootprintRadius:.12,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,directionCommands,lastDirected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
