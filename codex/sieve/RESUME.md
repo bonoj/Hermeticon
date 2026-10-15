@@ -1,8 +1,6 @@
 # John Bono
 **Conjoiner · Cybernetic Systems Architect**  
-**Principal R&D Architect — Applied AI · Interactive Systems · Prototyping**
-
-[Portfolio](https://bonoj.github.io) · [GitHub](https://github.com/bonoj) · [LinkedIn](https://linkedin.com/in/bonoj)  
+[Hermeticon](https://bonoj.github.io/Hermeticon/) · [GitHub](https://github.com/bonoj) · [LinkedIn](https://linkedin.com/in/bonoj)  
 (650) 207-7832 · johnlbono@gmail.com
 
 ## Profile
@@ -14,7 +12,7 @@ Builds both the systems and the means of developing them: deterministic simulati
 Previously delivered production mobile and distributed systems at Xeal, Affirm, DoorDash, and R3PI, following earlier work in geospatial intelligence analysis.
 
 ## Current Work — Hermeticon / Independent R&D
-**Systems Architect & Software Engineer | 2023–Present**
+**Conjoiner · Cybernetic Systems Architect | 2023–Present**
 
 - Architect and build interactive, executable worlds using Three.js/WebGL, JavaScript, Unity, and C#.
 - Develop deterministic terrain and material simulations, high-population particle systems, shallow-water dynamics, procedural construction, and interactive creatures and environments.
@@ -23,7 +21,6 @@ Previously delivered production mobile and distributed systems at Xeal, Affirm, 
 - Explore systems-driven world-building in which materials, environments, inhabitants, and interactions produce meaningful consequences.
 
 **Selected work:** [Hermeticon](https://github.com/bonoj/Hermeticon), [Crucible](https://github.com/bonoj/Crucible), [SixCities](https://github.com/bonoj/SixCities), [OrbitalConstruction](https://github.com/bonoj/OrbitalConstruction), [VerticalAccretion](https://github.com/bonoj/VerticalAccretion), [Foundry](https://github.com/bonoj/Foundry).  
-**Executable portfolio:** https://bonoj.github.io
 
 ## Professional Experience
 
