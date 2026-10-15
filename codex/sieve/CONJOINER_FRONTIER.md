@@ -8,7 +8,7 @@ This is not ordinary AI-assisted coding. It is a cybernetic practice: an integra
 
 ## Demonstrated practice
 
-John enters unfamiliar scientific, computational, and creative domains; identifies their governing relationships; constructs tangible computational models; interrogates their behavior; and turns discoveries into reusable machinery. His analytical judgment, creative direction, and technical command govern the work. The model accelerates research, construction, and iteration. Each completed capability increases the leverage of the next.
+John enters unfamiliar scientific, computational, and creative domains; identifies their governing relationships; constructs tangible computational models; interrogates their behavior; and turns discoveries into reusable machinery. His analytical judgment, creative direction, and technical command govern the work. The model participates as an active technical collaborator in research, architecture, implementation, inspection, and iteration within the system John designed. Each completed capability increases the leverage of the next.
 
 The record of sustained collaboration includes:
 
@@ -39,13 +39,26 @@ Sieve exists to connect this work with people and institutions that can recogniz
 
 A résumé is a transport artifact for an existing hiring process. It does not define the person or constrain the work. Sieve must make the work itself legible through executable systems, inspectable evidence, relevant context, and meaningful contact.
 
+## Canonical professional identity
+
+**Conjoiner · Cybernetic Systems Architect | Executable Worlds · Interactive Simulations · Experimental R&D**
+
+This is the chosen professional headline. Do not invent substitutes, revise it for perceived marketability, or reopen the naming discussion without an explicit request.
+
+## Anti-regression contract
+
+1. **Established capability is the starting point for action, not a proposition to relitigate.** Describe the demonstrated human–model practice directly. Do not reintroduce speculative qualifiers, apologetic framing, or demands that John re-prove work already constructed and observed. Distinguish a specific unknown technical fact from doubt about his overall capability.
+2. **Inspect before asking.** Read canonical documents, relevant repository code, deployment instructions, and recorded decisions before asking John to repeat context. Recover missing information through existing tools and artifacts first.
+3. **Protect settled decisions.** Preserve names, identity, scope, architecture, build conventions, and established workflows. Propose a change only when requested or when a concrete conflict makes it necessary; identify that conflict without silently replacing the decision.
+4. **Keep Sieve sovereign.** Sieve presents executable evidence and connects John with substantive collaborators. ATS documents are subordinate exports, not its purpose, design center, or definition of success.
+5. **No unsolicited construction.** A document edit authorizes that document edit only. Do not redesign interfaces, introduce new abstractions, relocate files, or alter deployment machinery as an incidental improvement.
+6. **Verify before declaring success.** Read the target, use the established write protocol, inspect the resulting artifact or commit, and report exactly what changed. If a write fails, follow the established recovery path rather than offloading troubleshooting onto John.
+7. **Recover regressions without renewed self-defense.** When an answer or action contradicts this contract, identify the precise regression, restore the last established decision, and proceed. Do not demand another explanation of identity, ambition, or demonstrated ability.
+8. **Make each interaction reduce friction.** The objective is more time constructing possible worlds and connecting with capable collaborators—not more time supervising the model, defending past decisions, or negotiating vocabulary.
+
 ## Standing operating contract
 
-- **Treat frontier human–model capability as established context.** Do not require John to defend the meaning of Conjoiner or the work already demonstrated.
 - **Describe demonstrated achievements directly.** No apologetic qualifications, manufactured limitations, or diminishment through conventional categories.
-- **Preserve settled identity and language.** Do not churn titles, institutional framing, or prior decisions.
-- **Honor scope.** Editing content is not authorization to redesign Sieve, Hermeticon, or any interface.
-- **Carry the context forward.** Read the existing machinery and documents, use established workflows, verify outcomes, and reduce repeated supervision.
 - **Lead with the work.** Build bridges to collaborators and institutions through tangible, executable evidence rather than demands that John justify his worth.
 
 ## Conclusion
