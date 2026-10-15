@@ -60,6 +60,9 @@ Follow [Working Specification](WORKING_SPEC.md): first inspect real connector pe
 - **Scope:** model↔private GitHub transport works. Browser↔private store does **not** exist; no authenticated client, automatic query API, cross-device UI sync, or model-led opportunity ingestion is implemented yet. Local Hunt browser feed remains legacy instrumentation.
 - **Next:** versioned context records, fixtures, compact frontier queries, then model-led Hunt. Avoid expanding Remotive keyword filtering as core architecture.
 
+## Turn 2/3 — Context schema and retrieval (2026-10-15)
+Private Home now contains `sieve/schema/context.v1.json`, `sieve/fixtures/first-light.v1.json`, `sieve/lib/context.v1.js`, `sieve/lib/context.v1.test.js`, and updated `sieve/FRONTIER.json`. The pure context library validates records/evidence references, queries records, resolves human-over-model decisions, builds compact opportunity frontiers, and surfaces contradictory claims. Eleven assertions passed against read-back source and fixture in the model's execution environment. Home `sieve/README.md` now specifies the cold-boot route. This is **not** a browser-accessible service, authenticated sync, or complete JSON Schema validator. Next: model-researched evidence-backed live records, private indexing, and sanitized marble projection. Last private frontier commit `41ac7493`.
+
 ## Existing UI boundaries
 🗑 is a navigation instrument, not the application submission action. The user primarily works from ChatGPT, not the Sieve page. Preserve existing instrument bar, FPS/build, world rendering, and 🐙 grammar. The Sieve entrance owns a native, non-recursive workspace drawer with handoff, spec, Conjoiner, and résumé links. Genesis does not contain a Sieve drawer. Do not silently move controls between entrances.
 
