@@ -133,3 +133,13 @@ The timeline begins at the cold-connect build-contract commit, **not** at the be
 3. Validate current application destinations, prepare submissions, obtain explicit approval, and record actual submissions; replace stale routes without arbitrary delays.
 4. Preserve the two accepted connections for later follow-up, **without** creating tasks or sending messages now.
 5. Reconcile every future 👁 idempotently into private Home with SHA-safe writes and read-back; keep the public/private boundary and action-state distinctions intact.
+
+## 13. Cross-disciplinary opportunity principle — 2026-10-15
+
+**The target is not a software position. It is a team doing something worth making possible.** Software is an instrument in John's practice, not the boundary of his profession. He is comfortable joining a team with **zero existing software engineers**, introducing computational capabilities wherever useful, and working across unfamiliar tool suites and disciplines. Do not require a software-forward organization, engineering department, conventional coding title, or established development stack as a fit gate.
+
+Sieve should seek **creative-world people** across world-building, experiential and themed entertainment, games, art, sculpture, fabrication, physical and digital installations, architecture, interactive environments, simulation, mechanical systems, technical art, narrative, and R&D. Relevant counterparts may be creative directors, artists, designers, fabricators, researchers, architects, producers, and studio founders as readily as software engineers. The common denominator is consequential work and room for John's systems thinking, invention, collaboration, and implementation.
+
+This is **not** a refusal to write code: John can architect and implement software, integrate with tool suites, and construct end-to-end systems. The objection is being reduced to code production alone. Lead with the possibility of new capabilities and executable worlds, not a résumé keyword match. Do not narrow the 100/100/100 campaign to software engineering or demand that a team already know how to employ this practice.
+
+**Network implication:** direct relationships with people making compelling worlds can be more valuable than job listings. Preserve accepted contacts for later, without unsolicited follow-up tasks or messages. Keep outbound counts evidence-based and retain non-software prospects in the discovery and outreach funnel.
