@@ -89,7 +89,7 @@ export function createGenesis(){
   wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
  const lanternHermits=createLanternHermits(T,{surface:terrainSurface,offset:botanicalOffset,
   wanderer:()=>wanderer.inspect(),parent:world.content,radius:terrain.getAperture(),seed:741});
- const vacuum={enabled:false,position:abiogenesis.group.position,scale:.12,outerRadius:10.25,innerRadius:10.07,range:3,strength:38,softening:.3,maxAcceleration:95};
+ const vacuum={enabled:false,position:abiogenesis.group.position,scale:.12,outerRadius:10.25,innerRadius:10.07,range:3,impulse:45};
  const debris=createBeadDebris(T,{terrain,offset:botanicalOffset,innerRadius:world.inspect().vessel.innerRadius,parent:world.content,abiogenesis:vacuum});
  // Eye is independent of the established populations and terrain.
  let eye=null,eyeError=null,eyeCamera=null;
@@ -129,7 +129,7 @@ export function createGenesis(){
     abiogenesis.group.getWorldPosition(tapCenter);
     tapSphere.set(tapCenter,10.25*abiogenesis.group.getWorldScale(new T.Vector3()).x);
     if(tapRaycaster.ray.intersectsSphere(tapSphere)){
-     vacuum.enabled=!vacuum.enabled;abiogenesisTaps++;return true;
+     abiogenesisTaps++;debris.pulseAbiogenesis();return true;
     }
    }
   }
@@ -140,6 +140,6 @@ export function createGenesis(){
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'abiogenesis',stationkeeping:{name:cradle.name,center:cradle.center,position:abiogenesis.group.position.toArray()},scale:0.12,vacuum:{enabled:vacuum.enabled,range:vacuum.range,strength:vacuum.strength,taps:abiogenesisTaps},...abiogenesis.inspect()},{name:'eye',enabled:false,instantiated:false,error:null},{name:'Betwixt observer swarm',enabled:false,instantiated:false},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'abiogenesis',stationkeeping:{name:cradle.name,center:cradle.center,position:abiogenesis.group.position.toArray()},scale:0.12,vacuum:{mode:'impulse',range:vacuum.range,impulse:vacuum.impulse,taps:abiogenesisTaps},...abiogenesis.inspect()},{name:'eye',enabled:false,instantiated:false,error:null},{name:'Betwixt observer swarm',enabled:false,instantiated:false},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
  return world;
 }
