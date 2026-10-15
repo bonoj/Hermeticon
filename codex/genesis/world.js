@@ -38,9 +38,9 @@ export function createGenesis(){
   cradle.time+=Math.max(0,dt);
   const t=cradle.time;
   abiogenesis.group.position.set(
-   cradle.center[0]+0.38*Math.sin(t*0.19)+0.14*Math.sin(t*0.071+1.1),
-   cradle.center[1]+0.23*Math.sin(t*0.27+0.4)+0.09*Math.sin(t*0.113),
-   cradle.center[2]+0.32*Math.sin(t*0.16+2.2)+0.13*Math.sin(t*0.063)
+   cradle.center[0]+0.65*Math.sin(t*0.19)+0.25*Math.sin(t*0.071+1.1),
+   cradle.center[1]+0.38*Math.sin(t*0.27+0.4)+0.16*Math.sin(t*0.113),
+   cradle.center[2]+0.56*Math.sin(t*0.16+2.2)+0.22*Math.sin(t*0.063)
   );
  };
  abiogenesis.group.add(abiogenesis.content);
