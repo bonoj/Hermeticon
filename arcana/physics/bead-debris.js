@@ -50,7 +50,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
  function directRegionToward({maxY=0,target,speed=22}){
   const o=offset();let directed=0;
   for(const b of beads){
-   if(b.owner==='abiogenesis'||b.y>maxY)continue;
+   if(b.owner==='abiogenesis'||b.owner==='wanderer'||b.y>maxY)continue;
    const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
    const dx=target.x-x,dy=target.y-b.y,dz=target.z-z;
    const distance=Math.hypot(dx,dy,dz);
