@@ -86,36 +86,24 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
      b.ax*=.999;b.ay*=.999;b.az*=.999;
      continue;
     }
-    // Swept broadphase: three cheap axis comparisons before any distance calculation.
-    // Covers passive exterior bounces AND vacuum-tagged inward crossings.
-    if(abiogenesis){
+    // Abiogenesis has no exterior collision. Only vacuum-pulsed BBs
+    // pay for a capture check; all other BBs pass through freely.
+    if(b.vacuumTicket){
      const c=abiogenesis.position;
-     const wx=ox-(b.owner==='terrain'?o.x:0),wz=oz-(b.owner==='terrain'?o.z:0);
-     const dx=wx-c.x,dy=oy-c.y,dz=wz-c.z;
+     const dx=ox-(b.owner==='terrain'?o.x:0)-c.x;
+     const dy=oy-c.y,dz=oz-(b.owner==='terrain'?o.z:0)-c.z;
      const sx=b.vx*step,sy=b.vy*step,sz=b.vz*step;
-     const limit=abiogenesis.outerRadius*abiogenesis.scale+b.r;
-     const pad=limit+.012;
-     if(Math.min(dx,dx+sx)<=pad&&Math.max(dx,dx+sx)>=-pad&&
-        Math.min(dy,dy+sy)<=pad&&Math.max(dy,dy+sy)>=-pad&&
-        Math.min(dz,dz+sz)<=pad&&Math.max(dz,dz+sz)>=-pad){
-      const r0=dx*dx+dy*dy+dz*dz,r1=(dx+sx)**2+(dy+sy)**2+(dz+sz)**2;
-      if(r0>=limit*limit&&r1<limit*limit&&dx*sx+dy*sy+dz*sz<0){
-       if(b.vacuumTicket){
-        b.vacuumTicket=false;b.x=dx+sx;b.y=dy+sy;b.z=dz+sz;
-        b.owner='abiogenesis';abiogenesisCaptures++;continue;
-       }
-       // Passive collision with outer glass, never an ownership transfer.
-       const d=Math.sqrt(r0)||1;
-       const nx=dx/d,ny=dy/d,nz=dz/d;
-       reflectContact(b,{x:nx,y:ny,z:nz},P.vesselRestitution);
-       abiogenesisExteriorHits++;
-      }
+     const radius=abiogenesis.innerRadius*abiogenesis.scale-b.r-.003;
+     const r2=radius*radius;
+     if(dx*dx+dy*dy+dz*dz>=r2 &&
+        (dx+sx)**2+(dy+sy)**2+(dz+sz)**2<r2){
+      b.vacuumTicket=false;
+      b.x=dx+sx;b.y=dy+sy;b.z=dz+sz;
+      b.owner='abiogenesis';abiogenesisCaptures++;continue;
      }
-     if(b.vacuumTicket){
-      const range=abiogenesis.range;
-      if(Math.abs(dx)>range+Math.abs(sx)||Math.abs(dy)>range+Math.abs(sy)||Math.abs(dz)>range+Math.abs(sz))
-       b.vacuumTicket=false;
-     }
+     const range=abiogenesis.range;
+     if(Math.abs(dx)>range+Math.abs(sx)||Math.abs(dy)>range+Math.abs(sy)||Math.abs(dz)>range+Math.abs(sz))
+      b.vacuumTicket=false;
     }
     const nx=ox+b.vx*step,ny=oy+b.vy*step,nz=oz+b.vz*step;
     const gx=x=>x+(b.owner==='vessel'?o.x:0),gz=z=>z+(b.owner==='vessel'?o.z:0);
