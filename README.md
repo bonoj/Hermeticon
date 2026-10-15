@@ -29,3 +29,7 @@ The terrain-only observation lens **starts in HYBRID**; other modes remain avail
 ## Current nested vessels (2026-10-15)
 
 Genesis includes Abiogenesis (scale 0.12, outer radius 1.23) and Wanderer (scale 0.06, outer radius 0.615). Abiogenesis passively captures BBs entering its cavity; tapping its visible shell directs eligible loose BBs below Genesis y=0 toward it once. Wanderer navigates terrain and pulses once per second, selecting terrain-owned, near-surface detached BBs inside a horizontal 1.23-radius footprint and launching them toward its cavity. Captures transfer ownership without creating or deleting BBs. Both have expanded vertical stationkeeping; see [current handoff](HANDOFF.md) and [Abiogenesis contract](codex/genesis/ABIOGENESIS.md). Live material accounting has been observed; expanded hover clearance is not yet visually verified.
+
+## GitHub access and material instrument direction
+
+The bottom 🐙 drawer links, in order, to **Handoff**, **Commits**, and **Pipeline**. The existing SHA is a noninteractive build readout. The author accepts the present state; avoid unnecessary UI changes. A possible future experiment is a BB-based GitHub deployment-status organism (green/yellow/red/unknown, with motion) whose provenance is inspectable; **not implemented**. See [handoff](HANDOFF.md).
