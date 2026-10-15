@@ -85,7 +85,7 @@ Current task is **converting inventory to executed outreach**, not gathering eve
 
 **One-person flow:** show a large, legible person card → tap **Open LinkedIn** (direct public profile URL) → visually confirm the right human and send a no-note invitation manually → return to Sieve → tap **Connected** or **Not connected** → advance immediately. Provide Back/Undo to correct an outcome. No long-press, occluded controls, unnecessary scoring, forced notes, or multi-step forms.
 
-**Card content:** person's name, organization, role/identity clue, concise relevance, direct LinkedIn link, optional provenance/caveat where affiliation is not current-confirmed, and opaque canonical campaign record ID. Do not present any of the 12 URL-less prospects as actionable connect cards until their direct URLs are resolved; keep them in a separate unresolved queue.
+**Card content:** person's name, organization, role/identity clue, concise relevance, direct LinkedIn link, optional provenance/caveat where affiliation is not current-confirmed, and opaque canonical campaign record ID. Superseded on Oct 15: show the 12 URL-less prospects with LinkedIn people-search links and an unresolved-profile caveat.
 
 **State semantics:** **Connected = user reports invitation sent**, NOT LinkedIn invitation accepted. **Not connected = skipped/deferred, not deleted or falsely sent**. The UI must visibly distinguish pending, reported-sent, and skipped/deferred; show progress as invitations reported sent versus prospects remaining. Never increment the private campaign's sent counter merely because a link was opened. Allow reversible local corrections before reconciliation.
 
@@ -96,3 +96,40 @@ Current task is **converting inventory to executed outreach**, not gathering eve
 **Build and acceptance:** inspect existing Sieve source, deployment path, mobile layout, and build conventions before editing. Implement the real deck, not a conversational preview; preserve existing UI and avoid unrelated changes. Test card navigation, URL-less exclusions, large mobile tap targets, skip/undo, refresh persistence, copy payload correctness, repeated reconciliation, and private/public data separation. Deploy only through established machinery; verify build SHA and actual live behavior before declaring it shipped. Report exact changes, canonical live link, and remaining limitations. Do not claim to have sent LinkedIn invitations or synchronized private campaign from the static page.
 
 **Sequence:** (1) build and deploy cold-connect deck; (2) user performs no-note connections and exports 👁; (3) Clara reconciles reported outcomes into private campaign; (4) prepare/approve email and application outbound packages and use supported routes. The 100/100/100 targets continue to measure actual outbound actions, not inventories.
+
+## 12. Timestamped cold-connect execution — October 15, 2026 (EDT)
+
+The timeline begins at the cold-connect build-contract commit, **not** at the beginning of Sieve or the earlier 100/100/100 research. GitHub timestamps document source commits; the user's 👁 export documents manual card outcomes. Live deployment timing was not independently measured.
+
+| Time (EDT) | Milestone | Evidence |
+| --- | --- | --- |
+| 17:27:18 | Build contract committed | c41aae06 |
+| 17:29:50 | First 88-profile deck published | 789a1398 |
+| 17:30:24 | Mobile card flow and 👁 export implemented | dbb5996a |
+| 17:30:36 | Deck mounted in Sieve | 1de6a7cf |
+| 17:30:47 | Duplicate rendering corrected | 9290394c |
+| 17:31:56 | 12 unresolved prospects added | fa882eec |
+| 17:32:04 | LinkedIn search links added; 100-card source complete | 9359abaf |
+| 17:34:43.900 | First invitation reported | 👁 connect-xvii-1 |
+| 17:56:37.412 | Last card outcome recorded | 👁 connect-anna-huerta |
+| 17:56:39.121 | 100-outcome 👁 exported | sc-mva23hkr-2u110m |
+| Later Oct 15; exact time unavailable | Private campaign reconciled: 97 sent reports, 3 skips | Home 818d0c75 |
+| Later Oct 15; exact time unavailable | Private frontier updated | Home 52e84aa0 |
+| Later Oct 15; exact time unavailable | Two acceptances persisted | Home d604dec6 |
+
+**Elapsed:** 4m46s from build contract to 100-card source completion; 21m53.512s between first and last manual outcome; 29m21.121s from build-contract commit to 👁 export. These are distinct measurements, not total project time.
+
+### State at this checkpoint
+
+- **Connect:** 100 processed, 97 invitations **user-reported sent**, 3 **not connected** (Jeff Mills, Chris Bell, Greg Hermanovic), 0 unprocessed. Two of the 97 subsequently **user-reported accepted**: Zachary Saale (Acronym; connect-xvii-19) and Kaylie Stuteville (Disney Imagineering; connect-xviii-8). Acceptance records persisted in private Home campaign at d604dec6. Do not conflate reported activity with LinkedIn-platform verification.
+- **Apply:** 100 discovered destinations, 0 submissions reported. **Email:** 102 discovered published channels, 0 emails reported sent. These inventories are not fully live-verified.
+- **Runtime:** public Sieve contains the 100-card deck with 88 direct profile URLs and 12 LinkedIn people-search routes, local persistence, navigation and 👁 export. LinkedIn iframe embedding is blocked; direct links remain the path. No in-deck field yet saves newly found direct URLs. Source writes were verified, but actual live-browser deployment was not independently confirmed.
+- **Authority:** Home private campaign is the outreach source of truth. Home frontier commit 52e84aa0 predates the two accepted-connection updates. No follow-up tasks or messaging requested yet; defer them.
+
+### Next steps
+
+1. Find three additional distinct relevant people with direct profiles, preserving all original outcomes, to finish **100 invitations reported sent**; user handles manual connection and exports another 👁.
+2. Prepare and validate legitimate outbound email routes, draft relevant outreach, obtain explicit approval, then send through supported tools and reconcile delivery evidence.
+3. Validate current application destinations, prepare submissions, obtain explicit approval, and record actual submissions; replace stale routes without arbitrary delays.
+4. Preserve the two accepted connections for later follow-up, **without** creating tasks or sending messages now.
+5. Reconcile every future 👁 idempotently into private Home with SHA-safe writes and read-back; keep the public/private boundary and action-state distinctions intact.
