@@ -143,3 +143,11 @@ Sieve should seek **creative-world people** across world-building, experiential 
 This is **not** a refusal to write code: John can architect and implement software, integrate with tool suites, and construct end-to-end systems. The objection is being reduced to code production alone. Lead with the possibility of new capabilities and executable worlds, not a résumé keyword match. Do not narrow the 100/100/100 campaign to software engineering or demand that a team already know how to employ this practice.
 
 **Network implication:** direct relationships with people making compelling worlds can be more valuable than job listings. Preserve accepted contacts for later, without unsolicited follow-up tasks or messages. Keep outbound counts evidence-based and retain non-software prospects in the discovery and outreach funnel.
+
+## 14. LinkedIn pass collected; email expedition active — 2026-10-15
+
+User concluded the first LinkedIn pass at **98 user-reported invitations sent**; the remaining two were not found and **must not trigger replacement prospect hunting**. Preserve all 101 private prospect records, three skips, and five user-reported acceptances. This is a deliberate phase transition, not an assertion that the numerical 100 target was met. Do not create follow-up tasks or send connection messages until asked.
+
+The completed cold-connect deck was **collected from the active Sieve workspace** in Hermeticon commit `0365ffc5`: removed its mount and script from `sieve/index.html`, while retaining `sieve/connects.js` and `sieve/connect-deck.json` for cheap future reconstruction. Existing Hunt and Compose modules were preserved. Source changes and read-back were verified; live-browser deployment was not independently checked.
+
+**Current priority:** turn the existing **102 discovered email channels** into a high-throughput professional email expedition, with appropriate destination verification and cross-disciplinary creative relevance. Then advance the **100 application destinations**. A discovered email is not a delivered email; obtain explicit outbound authorization and reconcile actual sends. Do not restart LinkedIn work or rebuild a dashboard merely because the deck is gone. Private Home `sieve/FRONTIER.json` records the current email phase.
