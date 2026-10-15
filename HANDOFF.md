@@ -1,4 +1,4 @@
-# Hermeticon — cold Clara handoff (2026-10-14)
+# Hermeticon — cold Clara handoff (updated 2026-10-15)
 
 **Mission:** Build beautiful, perturbable, composable executable worlds inside a spherical vessel. Protect accepted work; let the machinery serve the play.
 
@@ -86,3 +86,16 @@ The botanical composition includes original Mists Reeds, the accepted five-speci
 ## Floating Wanderer trial (2026-10-15)
 
 Commit `64723d8b` replaces the original visual cube with a **composed Hermeticon shell** at scale `.06`, half Abiogenesis's `.12`, outer radius `.615` Genesis units. The existing terrain-space route planner and terrain-owned taps remain. `arcana/wanderer.js` now checks signed-field terrain samples under the lower spherical hemisphere (center and radial samples), with center height = support height + sphere radius + `.12` hover clearance. It checks full-sphere containment against the parent vessel and applies bounded nonnegative vertical idle motion, avoiding downward visual penetration. Inspection exposes `centerY`, `radius`, `hoverClearance`, and `stationkeeping` while retaining `y` as terrain support height for existing consumers. This is **source committed only**; runtime and navigation regression have NOT been checked. Sampling is conservative but not a continuous swept-volume proof; complex overhangs and tunnel traversal need further collision work. Local BB sensing/collection/processing is a **next phase**, not implemented by this visual/navigation change. Preserve conservation and no arbitrary caps.
+
+
+## 2026-10-15 — Wanderer surface collection and expanded stationkeeping (current)
+
+This section supersedes the earlier "Floating Wanderer trial" next-phase statement and the historical Abiogenesis vacuum text. The latest implementation is in `arcana/wanderer.js`, `arcana/physics/bead-debris.js`, and `codex/genesis/world.js`.
+
+- **Sizes versus scale:** Abiogenesis scale **0.12** means outer radius **1.23** Genesis units, not radius 0.12; Wanderer scale **0.06**, outer radius **0.615**. Do not confuse scale and physical radius again.
+- **Wanderer navigation:** terrain-owned taps; A* route, maximum speed **3.6** with approach braking; hover clearance **1.0** above support plus its shell radius. Bounded vertical idle is now `max(0, .52 sin(.71t) + .28 sin(.31t+1.2))`, so 0–0.8 additional center height; previous 0–0.07 motion is obsolete. Terrain clearance remains protected by nonnegative idle displacement.
+- **Wanderer collection:** one pulse **every second**, footprint **1.23-radius horizontal disk** centered on Wanderer regardless of its altitude. Scans only detached BBs with owner `terrain`; first rejects by squared XZ distance, then tests signed terrain field for a narrow surface band (reject buried and high-flying). Eligible BBs receive a **single gravity-aware ballistic velocity assignment** toward the Wanderer cavity; no continuous homing or suction, no cylinder geometry, no new raycasts. Passive swept entry transfers existing BB ownership to `wanderer` in local coordinates, with gravity and interior shell reflection. No BB duplication/deletion.
+- **Abiogenesis:** L0 center `[0,-6.23,0]`, horizontal bounded stationkeeping unchanged; vertical motion is now `.72 sin(.27t+.4)+.28 sin(.113t)` around center, combined maximum **±1.0** (previous ±0.54). The separate **tap-triggered direction command** targets detached BBs at y <= 0 with speed 22, skips both nested-vessel owners, and uses terrain-visible occlusion for tap ownership. Passive cavity capture and interior gravity remain; the old continuous-vacuum documentation is historical.
+- **Material evidence supplied by author:** live build `7e8d4537` reported **58.34 FPS**, **6.1 ms last physics**, **21,718 detached**, **6,041 Wanderer-owned**, **5,129 Abiogenesis-owned**, **24,625 total** (2,907 authored + 21,718 detached); detached ownership summed correctly. This is a live snapshot, not a matched-condition benchmark or proof of zero dropped frames. Interior collision counters are cumulative. The expanded-hover commits `f48e7fa7` and `ae4f3ba5` are **committed but not yet visually verified**; verify parent-vessel/terrain clearance and motion in browser.
+- **Performance contract:** avoid arbitrary BB population limits, continuous force fields, or speculative optimization. If requested, measure costs by owner and collision type before optimizing settled interior BBs. No FPS guarantee from the pulse change alone.
+
