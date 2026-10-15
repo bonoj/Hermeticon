@@ -86,22 +86,35 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
      b.ax*=.999;b.ay*=.999;b.az*=.999;
      continue;
     }
-    // Idle path: no nested-vessel collision scan for every bead/substep.
-    // Only beads struck by a vacuum pulse can enter Abiogenesis.
-    if(b.vacuumTicket){
+    // Swept broadphase: three cheap axis comparisons before any distance calculation.
+    // Covers passive exterior bounces AND vacuum-tagged inward crossings.
+    if(abiogenesis){
      const c=abiogenesis.position;
-     const wx=b.x-(b.owner==='terrain'?o.x:0),wz=b.z-(b.owner==='terrain'?o.z:0);
-     const dx=wx-c.x,dy=b.y-c.y,dz=wz-c.z,d=Math.hypot(dx,dy,dz);
-     const nx=dx+b.vx*step,ny=dy+b.vy*step,nz=dz+b.vz*step;
-     const exterior=abiogenesis.outerRadius*abiogenesis.scale+b.r;
-     if(d>=exterior&&Math.hypot(nx,ny,nz)<exterior&&dx*b.vx+dy*b.vy+dz*b.vz<0){
-      b.vacuumTicket=false;
-      b.x=nx;b.y=ny;b.z=nz;b.owner='abiogenesis';abiogenesisCaptures++;
-      continue;
+     const wx=ox-(b.owner==='terrain'?o.x:0),wz=oz-(b.owner==='terrain'?o.z:0);
+     const dx=wx-c.x,dy=oy-c.y,dz=wz-c.z;
+     const sx=b.vx*step,sy=b.vy*step,sz=b.vz*step;
+     const limit=abiogenesis.outerRadius*abiogenesis.scale+b.r;
+     const pad=limit+.012;
+     if(Math.min(dx,dx+sx)<=pad&&Math.max(dx,dx+sx)>=-pad&&
+        Math.min(dy,dy+sy)<=pad&&Math.max(dy,dy+sy)>=-pad&&
+        Math.min(dz,dz+sz)<=pad&&Math.max(dz,dz+sz)>=-pad){
+      const r0=dx*dx+dy*dy+dz*dz,r1=(dx+sx)**2+(dy+sy)**2+(dz+sz)**2;
+      if(r0>=limit*limit&&r1<limit*limit&&dx*sx+dy*sy+dz*sz<0){
+       if(b.vacuumTicket){
+        b.vacuumTicket=false;b.x=dx+sx;b.y=dy+sy;b.z=dz+sz;
+        b.owner='abiogenesis';abiogenesisCaptures++;continue;
+       }
+       // Passive collision with outer glass, never an ownership transfer.
+       const d=Math.sqrt(r0)||1;
+       const nx=dx/d,ny=dy/d,nz=dz/d;
+       reflectContact(b,{x:nx,y:ny,z:nz},P.vesselRestitution);
+       abiogenesisExteriorHits++;
+      }
      }
-     // A pulse is a finite encounter, not a permanent capture permission.
-     if(d>abiogenesis.range+Math.hypot(b.vx,b.vy,b.vz)*step){
-      b.vacuumTicket=false;vacuumCandidates.delete(b);
+     if(b.vacuumTicket){
+      const range=abiogenesis.range;
+      if(Math.abs(dx)>range+Math.abs(sx)||Math.abs(dy)>range+Math.abs(sy)||Math.abs(dz)>range+Math.abs(sz))
+       b.vacuumTicket=false;
      }
     }
     const nx=ox+b.vx*step,ny=oy+b.vy*step,nz=oz+b.vz*step;
