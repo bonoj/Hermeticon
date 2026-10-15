@@ -35,7 +35,7 @@ Hermeticon is an institution for the study and construction of possible worlds.
 - Wrote technical specifications and RFCs establishing feature architecture and implementation strategy.
 - Led mobile release cycles, production monitoring, triage, and hotfix delivery.
 
-### DoorDash — Software Engineer, Android
+### DoorDash — Senior Software Engineer, Android
 *San Francisco, CA | Sep 2019–Nov 2020*
 
 - Integrated navigation capabilities into a modular application architecture.
