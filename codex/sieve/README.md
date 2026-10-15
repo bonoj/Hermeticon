@@ -9,6 +9,8 @@ Sieve is the conversational workspace for connecting Hermeticon's executable wor
 1. **[CONJOINER_FRONTIER.md](CONJOINER_FRONTIER.md)** — canonical identity, demonstrated human–model capability, Sieve's purpose, and anti-regression operating contract. Read first.
 2. **[RESUME.md](RESUME.md)** — factual chronology, selected systems, and domain inventory. A hiring transport artifact, not the definition of the person or of Sieve.
 
+**[Working Specification](WORKING_SPEC.md)** — current architecture, implementation inventory, observation history, and 12-turn roadmap.
+
 ## Working boundaries
 
 - Read the Conjoiner document and relevant source before acting; preserve settled language and decisions.
