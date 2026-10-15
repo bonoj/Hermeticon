@@ -14,3 +14,7 @@ Supersedes the earlier continuous inverse-square vacuum implementation after obs
 ## Collision broadphase (2026-10-15)
 
 Passive exterior bouncing and vacuum-tagged capture share a swept axis-aligned bounding-box rejection against the moving cradle. Only candidate crossings compute squared spherical distances; square root is reserved for actual exterior contact normals. This avoids unconditional per-BB distance/hypotenuse work across physics substeps. A vacuum ticket expires when its bead exits the local jurisdiction. Captured beads use inner-glass confinement. The author reported ~41fps before taps with 20,207 loose BBs and ~15.9ms physics; the optimization is committed but **not yet benchmarked**.
+
+## Exterior collision removed (2026-10-15)
+
+Exterior Abiogenesis glass is now non-colliding. Genesis-owned BBs pass through unless marked by a vacuum pulse; only pulse-tagged BBs receive a per-substep capture check, transferring ownership on inward entry into the inner cavity. Captured BBs remain subject to inner-glass confinement and ordinary gravity. No passive exterior broadphase or exterior bounce. This supersedes the earlier exterior collision contract. FPS improvement requires observation.
