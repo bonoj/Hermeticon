@@ -86,20 +86,22 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
      b.ax*=.999;b.ay*=.999;b.az*=.999;
      continue;
     }
-    if(abiogenesis){
+    // Idle path: no nested-vessel collision scan for every bead/substep.
+    // Only beads struck by a vacuum pulse can enter Abiogenesis.
+    if(b.vacuumTicket){
      const c=abiogenesis.position;
      const wx=b.x-(b.owner==='terrain'?o.x:0),wz=b.z-(b.owner==='terrain'?o.z:0);
      const dx=wx-c.x,dy=b.y-c.y,dz=wz-c.z,d=Math.hypot(dx,dy,dz);
      const nx=dx+b.vx*step,ny=dy+b.vy*step,nz=dz+b.vz*step;
      const exterior=abiogenesis.outerRadius*abiogenesis.scale+b.r;
      if(d>=exterior&&Math.hypot(nx,ny,nz)<exterior&&dx*b.vx+dy*b.vy+dz*b.vz<0){
-      if(b.vacuumTicket){
-       b.vacuumTicket=false;b.x=nx;b.y=ny;b.z=nz;b.owner='abiogenesis';abiogenesisCaptures++;
-       continue;
-      }
-      const inv=1/Math.max(d,1e-7),normal={x:dx*inv,y:dy*inv,z:dz*inv};
-      reflectContact(b,normal,P.vesselRestitution);
-      abiogenesisExteriorHits++;
+      b.vacuumTicket=false;
+      b.x=nx;b.y=ny;b.z=nz;b.owner='abiogenesis';abiogenesisCaptures++;
+      continue;
+     }
+     // A pulse is a finite encounter, not a permanent capture permission.
+     if(d>abiogenesis.range+Math.hypot(b.vx,b.vy,b.vz)*step){
+      b.vacuumTicket=false;vacuumCandidates.delete(b);
      }
     }
     const nx=ox+b.vx*step,ny=oy+b.vy*step,nz=oz+b.vz*step;
