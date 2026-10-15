@@ -24,3 +24,11 @@
 
 /* Explicitly requested fourth instrument: rock palette, placed to the left of globe. */
 #buttons #rockCycle{order:3;font-size:23px;touch-action:manipulation}
+
+/* Octocat-adjacent repository drawer: same instrument grammar, opens above bar. */
+#buttons #githubToggle{order:4;font-size:23px;touch-action:manipulation}
+#githubPanel{pointer-events:auto;position:absolute;right:12px;bottom:calc(62px + env(safe-area-inset-bottom));z-index:27;width:min(280px,calc(100vw - 24px));padding:12px;background:#101c2aef;border:1px solid #9c8556aa;border-radius:10px;box-shadow:0 8px 28px #0009;text-align:left}
+#githubPanel[hidden]{display:none}
+#githubPanel .githubPanelTitle{font:600 12px system-ui;color:#f0d5a0;margin-bottom:10px}
+#githubPanel a{display:block;padding:11px 10px;margin-top:6px;min-height:44px;border:1px solid #66543a;border-radius:8px;background:#172333;color:#e7dbb7;text-decoration:none;font:600 12px system-ui}
+#githubPanel a:focus-visible{outline:2px solid #d9b879;outline-offset:2px}
