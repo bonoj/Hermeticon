@@ -93,3 +93,19 @@ Private `bonoj/Home/sieve/records/` now contains `hunt-20261015.v1.json` (9 reco
 
 **Next ➡️:** perform a broad, multi-organization ecosystem survey and produce a ranked field with people and mandates. Deepen a few standouts only after breadth. Preserve source provenance and uncertainty; don't pretend research coverage or live vacancy verification beyond what was actually checked.
 
+
+## Hunt VI–IX checkpoint — 2026-10-15
+
+The breadth-first landscape survey is **complete as a first pass**, not a future instruction. Private `bonoj/Home/sieve/records/ecosystem-survey-20261015.v1.json` contains **40 organizations**: nine initially source-anchored, 31 explicitly unverified survey targets. Follow-on primary-source validation, roles and negative-fit evidence are in:
+- `sieve/records/ecosystem-validation-20261015.v1.json`
+- `sieve/records/hunt-viii-20261015.json`
+- `sieve/records/hunt-ix-20261015.json`
+
+The live, model-operated GitHub storage path was exercised repeatedly. Hunt VIII initially encountered blocked writes; a later smaller batch succeeded and was read back. **A blocked write is not persisted research; do not claim it was saved until read-back.** The private `sieve/FRONTIER.json` indexes these batches (frontier commit `082e5cfa`). These files are persistent Git-backed documents, not a running transactional database, and the browser has no authenticated private-data bridge.
+
+Current actionable leads: Gardens Interactive Technical Game Designer (Level), thatgamecompany Technical Game Designer (hiring-test caveat), Wizards Digital Ventures Creative Lead (director-level experience hurdle), Hello Games roles. Strong institution/people routes: Maxis, Universal Creative, SideFX, Wētā FX, Disney Research/Imagineering, Embark Creative Play. Riot Central Creative Services Tools is a **negative-fit** infrastructure role; don't mistake its team name for world-building work. Embark's older Narrative & AI Systems vacancy was absent from the live board; don't present it as open. Disney req 10159875 remains officially unresolved.
+
+**Next Hunt:** map real decision-makers, experimental team mandates and credible contact routes at high-fit institutions; verify further primary sources for the remaining 31 survey targets; compare actual authority, location, barriers, and human-working environment. Do not redo the 40-name enumeration or circle one requisition. Preserve existing outreach history, especially Tom Pelini at Larian and Doug Fidaleo at Disney. Do not send contact or applications without approval.
+
+**Integrity contract:** A research claim, a source-backed observation, a job currently listed, and a successful GitHub commit are four different assertions. Mark each separately. Store failures and corrections. No public/private context leakage; no Genesis/Athanor/world modifications.
+
