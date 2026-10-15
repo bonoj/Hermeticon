@@ -90,7 +90,7 @@ The runtime should show **what the model knows and why**, not claim to replace i
 - Interim corrective commits \`d15e011f\` (title gating/exclusions) and \`1a3f86d2\` (reclassify saved candidates, preserve passes). These improve the prototype but **do not validate it as Hunt's discovery strategy**.
 - Hunt source and style commits \`bda14079\`, \`032fa138\`, \`ed80146c\`; observation/spec record \`bd423f64\`. Read latest source before changing code.
 
-**Not implemented:** tool-accessible shared private context store; model-driven ingestion pipeline; graph/index/query APIs; provenance-preserving claims; durable correction engine; real opportunity marbles; official application verification; Forge; private outcome ledger; end-to-end submission reconciliation. Do not describe these as delivered.
+**Implemented since the original inventory:** private model-accessible GitHub file transport, a versioned schema and fixtures, a pure in-memory context query/validation library, and a manually maintained private frontier; see §5A. **Not implemented:** automatic context ingestion or sync, a service-backed query API, graph indexing, durable correction engine, real opportunity marbles, official application verification, Forge, private outcome ledger, or end-to-end submission reconciliation. Do not describe these as delivered.
 
 ### 5.1 Legacy Hunt v0 construction — retained for diagnosis
 
@@ -102,20 +102,89 @@ Sweeps emit \`sweep-start\`, \`sweep-complete\`, or \`sweep-error\`, record rece
 
 **Disposition:** preserve the first-light record and regression fixture; retire the public-feed sweep as the central Hunt operation once a model-context ingestion/read path exists. Do not spend successive turns expanding browser feed adapters or classifier heuristics unless needed to support a specifically requested research source.
 
+## 5A. Implementation journal — private context transport and retrieval (2026-10-15)
+
+This section documents **executed repository work** since the architectural pivot. It supplements §5's inventory of the legacy public runtime. Private source paths are in `bonoj/Home` and require authorized GitHub access; do not copy their contents into the public site.
+
+### 5A.1 Repositories, ownership, and isolation
+
+- **`bonoj/Hermeticon` — public:** Sieve's [working specification](WORKING_SPEC.md), [handoff](HANDOFF.md), [README](README.md), public Sieve entrance, existing `sieve/hunt.js` prototype, and the pre-existing Genesis/Athanor world machinery.
+- **`bonoj/Home` — private:** `sieve/README.md`, `sieve/FRONTIER.json`, `sieve/schema/context.v1.json`, `sieve/fixtures/first-light.v1.json`, `sieve/lib/context.v1.js`, and `sieve/lib/context.v1.test.js`.
+- GitHub repository metadata was inspected through the connected tool: Home reported `visibility=private` and `push=true`; Hermeticon reported `visibility=public` and `push=true`.
+- **Isolation:** Turn 1–3 code changes were private Home context files. Public Hermeticon mutations were Sieve documentation/handoff references, **not** Genesis, Athanor, terrain, rendering, physics, or controls. Public documentation pushes may invoke the ordinary Pages workflow; that is not evidence of executable-world modification.
+- **Trust boundary:** ChatGPT's authorized GitHub connector can read and write Home. A browser running public Sieve **cannot** thereby access private Home; there is no credential-bearing browser integration, authenticated context API, live sync, or automatic private-to-public projection.
+
+### 5A.2 Turn 1 — working private GitHub transport
+
+**Files created:** `Home/sieve/README.md` (contract and cold-boot route) and `Home/sieve/FRONTIER.json` (small working-context aperture).
+
+**Frontier v1 initial fields:** `schema`, `updatedAt`, `mission`, `phase`, `status`, `workingSpec`, `currentFocus`, `observations[]`, `knownBoundaries[]`, `nextActions[]`, `recordRefs[]`, `events[]`. The initial observation captures the user-supplied 2026-10-15 Remotive 👁 report and its Shopify false positive; it is not a new independent source verification.
+
+**Transport procedure executed:** connected GitHub `create_file` → `fetch_file` → parse JSON → `update_file` with fetched blob SHA → `fetch_file` → parse/verify updated status. Home commit `a15926c2` established `transport-write-and-readback-verified`. Public Sieve handoff updated at `3d27185d`.
+
+**Concurrency contract:** fetch authoritative file and SHA; validate existing state; update with that SHA; fetch and compare resulting content. On a write conflict, re-fetch and reconcile; never blindly overwrite newer observations. This is a procedure exercised on one frontier file, **not** yet an automatic transactional store or conflict-resolution engine.
+
+### 5A.3 Turn 2 — context schema and first-light regression fixtures
+
+**Schema:** `Home/sieve/schema/context.v1.json`, JSON Schema draft 2020-12, `$id: sieve.context.v1`. Each record requires `schema: sieve.context.v1`, stable `id`, `kind`, `createdAt`, `updatedAt`, `evidenceIds[]`; optional `data` and `supersedes[]`. Kinds: `entity`, `opportunity`, `observation`, `claim`, `relationship`, `decision`, `outcome`. Kind-specific requirements currently constrain observations (source, observedAt, statement, verification), decisions (subjectId, decision, actor, reason), relationships (fromId, toId, relation, verification), and claims (subjectId, statement, certainty). Other kinds still have sparse structural requirements. The schema file is **a contract artifact**, not proof that all JSON Schema keywords are enforced by the current JavaScript validator.
+
+**Fixture:** `Home/sieve/fixtures/first-light.v1.json` holds three linked records:
+1. `observation:remotive-20261015` — user-reported first 👁 sweep, explicitly marked `user-reported`.
+2. `opportunity:remotive-2091140` — Senior Shopify Developer, Sanctuary Computer Inc; Remotive URL; `officialVerified:false`; not asserted to fit.
+3. `decision:shopify-regression` — model `pass` for the false positive, with rationale that generic word overlap is not evidence of an experimental-world mandate.
+
+Five named test intentions were recorded: round-trip, provenance, Shopify false-positive, human authority, contradiction retention. Fixture and schema were fetched back, JSON parsed, and checked for structural requirements, resolvable evidence IDs, and round-trip preservation. Commits: `5bc3b0b3` (schema), `4510489e` (fixture), `cb4d84f0` (frontier advanced). At this stage behavioral tests were specified but not yet executed.
+
+### 5A.4 Turn 3 — pure deterministic context library and executed tests
+
+**Implementation:** `Home/sieve/lib/context.v1.js` (CommonJS, no network, no storage writes, no browser dependency). It exports:
+
+| Operation | Implemented semantics | Limitations |
+| --- | --- | --- |
+| `validate(records)` | Check record array, IDs, kinds, ISO-like dates, evidence-ID shape, duplicate IDs, kind-specific minimum fields, and cross-record observation/subject/relationship references. Returns error strings. | Manual subset validator; not a full JSON Schema draft 2020-12 implementation. Date check uses `Date.parse` plus ISO-like prefix. |
+| `effectiveDecision(records, subjectId)` | Select latest human decision if any, otherwise latest model decision, ordered by `createdAt` then ID. | Simple precedence; no explicit revocation/supersession semantics yet. |
+| `query(records, filters)` | Bounded filtering by `kind`, case-insensitive text over ID/data, `relatedTo`, effective opportunity `decision`, and `limit` (capped at 100); stable sort by `updatedAt` descending then ID. | In-memory scan, not graph traversal, indexed search, or persistent query service. |
+| `frontier(records, {limit})` | Build `sieve.bundle.v1` containing non-passed opportunities, their directly referenced observations and subject decisions, totals, and unresolved official-verification questions. | One-hop selection; no advanced prioritization, relationship expansion, or source-age scoring. |
+| `contradictions(records)` | Group claims by subject and predicate; return groups with differing serialized values/statements without erasing either claim. | Syntactic conflict detection, not semantic entailment or resolution. |
+
+**Test source:** `Home/sieve/lib/context.v1.test.js` uses Node's built-in `assert` and fixture JSON. The test script was fetched with the library and fixture and executed using an isolated JavaScript evaluation harness that supplied `node:assert/strict`-equivalent assertions and a fixture read shim. **Eleven assertions passed**. Checked: fixture validation; JSON round-trip; Shopify retrieval; effective pass; no investigated Shopify result; exclusion from frontier; later model pursue does not displace a human pass; opposing claims retained; validation of opposed claims; duplicate detection; unresolved evidence detection. This is meaningful execution evidence, **not** proof of a native Node CI run or exhaustive production hardening.
+
+**Commits:** `f9382e0b` (library), `e51b72d4` (tests), `254a043d` (private README retrieval instructions), `41ac7493` (private frontier advanced), `4e9cf4e8` (public handoff). The fetched library blob SHA was `1f0090ac6475ed1c9f8102b6563490c2df3641bf`; test blob SHA `55860ad4c4686300a1b89d48b742eaa278f79c63`.
+
+### 5A.5 Current cold boot, exactly as supported
+
+1. Read [Sanctum](https://github.com/bonoj/Sanctum/blob/main/README.md), Sieve identity and this specification only as necessary for authority.
+2. Through the authorized GitHub connector, fetch **private** `bonoj/Home/sieve/FRONTIER.json`; inspect `phase`, `currentFocus`, `nextActions`, and `recordRefs`.
+3. Fetch only relevant referenced files; currently these point to the schema, fixture, pure JS library, and tests. **No separate live opportunity-record dataset exists yet.**
+4. Validate records, query a working set, and inspect evidence and decisions. Because GitHub connector operations are file reads/writes, executing `context.v1.js` requires a separate JavaScript execution environment or equivalent orchestration; the connector does not execute code on the repository.
+5. For new evidence, prepare records with explicit source and observation time; persist using GitHub blob-SHA optimistic concurrency; fetch and verify; then update `FRONTIER.json` with compact links and next actions.
+6. On failed reads, authorization changes, schema errors, or conflicts, expose the failure. Do not silently synthesize missing memory.
+
+**Latest verified state at documentation time:** private frontier `phase=context-retrieval`, `status=pure-context-engine-tested`, current focus on real model-researched opportunities. No browser-to-private sync or automatic retrieval occurs on its own.
+
+### 5A.6 Outstanding work and acceptance boundaries
+
+- **Next substantive turn:** model-led research with verifiable sources, then persist **live** records separately from fixtures. Current first-light Shopify data is a diagnostic, not a live job lead.
+- Introduce a real append-only observation/event store, index/manifest, and bounded working-set projection; establish version-aware merge and claim supersession. Current `FRONTIER.json` is a manually updated aperture, not an automated materialized view.
+- Run full JSON Schema validation and native Node tests/CI; add negative cases for malformed dates, unknown record fields, unauthorized state transitions, conflicting writes, stale sources, and private-data leakage.
+- Resolve how sanitized public marbles can be projected without exposing Home's private records or GitHub credentials. **Do not** solve this by making Home public or placing private data in Pages.
+- No real employer requisition has been independently researched, official application URL verified, package forged, submission recorded, or cross-session end-to-end run proven in this phase.
+- Continue to leave Genesis, Athanor, and Hermeticon's world implementation unchanged unless explicitly requested. Sieve documentation changes alone do not constitute runtime changes.
+
 ## 6. Working roadmap — next 12 turns, reoriented around model context
 
 Each turn is a bounded implementation milestone with input, work, instrumentation, and exit test. The first user 👁 may reorder these. Do not implement a speculative backend before inspecting available write/read permissions.
 
-### Turn 1 — Context transport and sovereignty
+### Turn 1 — Context transport and sovereignty (implemented: private GitHub file transport; browser seam remains)
 Inspect available ChatGPT↔GitHub/private storage connector operations, repo visibility, Pages exposure, and existing deployment machinery. Select a safe tool-readable, tool-writable store for structured context. Define the explicit transport for model writes and reads and the UI's access (public sanitized mirror or user-controlled import when necessary). **Instrument:** capability matrix, permissions, failed accesses, privacy boundary. **Exit:** successful private test record write, read-back, and retrieval in a separate call; no secret published.
 
-### Turn 2 — Versioned context schema and fixtures
+### Turn 2 — Versioned context schema and fixtures (partially implemented; validation hardening remains)
 Implement entity, opportunity, observation, claim, relationship, decision, outcome, event, and frontier schemas. Add stable IDs, source metadata, timestamps, schema migrations, validation, and redaction rules. Include the Shopify false positive as a regression fixture for evidence-versus-judgment separation. **Instrument:** schema failures, fixture results, migration outcomes. **Exit:** deterministic tests and round-trip preservation of unknowns and provenance.
 
 ### Turn 3 — Model-driven Hunt ingestion
 Perform a **real model-led research hunt** using available research tools, investigating both open requisitions and promising people/teams. Write normalized results with citations and observed timestamps into the store. No browser keyword filter is allowed to be the authoritative hunter. **Instrument:** research source trail, fact/inference/unknown distinctions, write IDs and read-back. **Exit:** several meaningful, inspectable marbles with source-backed rationale; unadvertised prospects labeled as such.
 
-### Turn 4 — Retrieval, working sets, and cold boot
+### Turn 4 — Retrieval, working sets, and cold boot (pure retrieval prototype implemented; durable live-record retrieval remains)
 Implement \`queryContext\` and \`getFrontier\` with compact relevance-aware context bundles, stable ordering, source references, unresolved questions, and recent decisions. Make handoff route directly to frontier retrieval. **Instrument:** retrieval IDs, omitted/expired sources, bundle size, stale flags. **Exit:** new conversation can resume a selected investigation without user restating it.
 
 ### Turn 5 — Provenance and contradiction engine
