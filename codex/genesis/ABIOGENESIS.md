@@ -22,3 +22,7 @@ Exterior Abiogenesis glass is now non-colliding. Genesis-owned BBs pass through 
 ## Current contract (2026-10-15; supersedes vacuum sections above)
 
 Abiogenesis has **no vacuum or specialized gravity**. Tapping it no longer imparts force. Exterior glass is non-colliding; any Genesis-owned loose BB entering the inner cavity is captured and transferred to Abiogenesis ownership. A swept segment/sphere test catches crossings that pass through the cavity in one substep. Captured BBs use ordinary gravity and are confined by the inner glass. Prior vacuum pulse, range, impulse, ticket, and tap telemetry descriptions are historical only.
+
+## Underside direction command (2026-10-15)
+
+Tapping Abiogenesis performs a single O(N) scan of detached BB inventory. Any Genesis-owned BB at world y <= 0 receives velocity of magnitude 22 directed toward the cradle's instantaneous center, using proper owner-to-world coordinate conversion. No persistent steering, vacuum, gravity field, ticket, or collision override. A miss remains a loose BB; passive inward capture remains independently governed by the cavity collision rule. Inspection exposes `directionCommands` and `lastDirected`. This supersedes the earlier description that tapping is inert.
