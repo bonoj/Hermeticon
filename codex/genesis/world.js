@@ -26,6 +26,15 @@ export function createGenesis(){
  world.group.name='Genesis';
  world.content.name='Genesis contents';
  world.group.add(world.content);
+ // Abiogenesis: an empty nested Hermeticon halfway down the lower hemisphere.
+ const abiogenesis=createHermeticon();
+ abiogenesis.group.name='Abiogenesis';
+ abiogenesis.content.name='Abiogenesis contents';
+ abiogenesis.group.position.set(0,-5,0);
+ abiogenesis.group.scale.setScalar(0.24);
+ abiogenesis.group.add(abiogenesis.content);
+ world.content.add(abiogenesis.group);
+ world.abiogenesis=abiogenesis;
  const terrain=createTerrain();
  world.content.add(terrain.group);
  world.observationTargets=()=>({terrain:terrain.group});
@@ -103,6 +112,6 @@ export function createGenesis(){
  const inspectShell=world.inspect.bind(world);
  const materialSurvey=createMaterialSurvey({populations:[reeds,garden,secondGarden,...creatureSystems],debris});
  world.materialSurvey=materialSurvey;
- world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'eye',enabled:false,instantiated:false,error:null},{name:'Betwixt observer swarm',enabled:false,instantiated:false},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
+ world.inspect=()=>({name:'Genesis',shell:inspectShell(),systems:[{name:'abiogenesis',position:[0,-5,0],scale:0.24,...abiogenesis.inspect()},{name:'eye',enabled:false,instantiated:false,error:null},{name:'Betwixt observer swarm',enabled:false,instantiated:false},{name:'terrain',...terrain.inspect()},{name:'wanderer',...wanderer.inspect()},{name:'mists-reeds',...reeds.inspect()},garden.inspect(),secondGarden.inspect(),bestiary.inspect(),velvetDrifters.inspect(),threadwyrms.inspect(),glasswings.inspect(),bellwraiths.inspect(),lanternHermits.inspect(),cinderfall.inspect(),debris.inspect()],material:materialSurvey(),meteorImpact:impactDispatcher.inspect(),edgeGeometry:equatorial.geometry,edgeTreatment:equatorial.inspect(),nodes:nodeMaker.inspect(),tapOwnership:navigation.inspect()});
  return world;
 }
