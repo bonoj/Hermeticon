@@ -32,3 +32,12 @@
 #githubPanel .githubPanelTitle{font:600 12px system-ui;color:#f0d5a0;margin-bottom:10px}
 #githubPanel a{display:block;padding:11px 10px;margin-top:6px;min-height:44px;border:1px solid #66543a;border-radius:8px;background:#172333;color:#e7dbb7;text-decoration:none;font:600 12px system-ui}
 #githubPanel a:focus-visible{outline:2px solid #d9b879;outline-offset:2px}
+
+/* Sieve drawer: existing brass instrument grammar and protected title/control margins. */
+#buttons #sieveToggle{order:5;font-size:23px;touch-action:manipulation}
+#sieveOverlay[hidden]{display:none}
+#sieveOverlay{position:fixed;z-index:24;top:calc(92px + env(safe-area-inset-top));bottom:calc(88px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:900px;margin:0 auto;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:#101c2af5;border:1px solid #9c8556aa;border-radius:10px;box-shadow:0 8px 30px #000a}
+#sieveOverlayHead{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:5px 8px 5px 16px;border-bottom:1px solid #66543a;color:#f0d5a0;font:600 13px Georgia,serif;letter-spacing:.14em}
+#sieveClose{min-width:40px;min-height:38px;padding:5px 12px;font-size:18px;background:#172333;border:1px solid #66543a;border-radius:9px;color:#d9b879}
+#sieveFrame{display:block;flex:1;width:100%;min-height:0;border:0;background:#050b14}
+@media(max-height:560px){#sieveOverlay{top:calc(65px + env(safe-area-inset-top));bottom:calc(68px + env(safe-area-inset-bottom))}}
