@@ -1,0 +1,423 @@
+{
+  "schema": "sieve-connect-deck-v1",
+  "generated": "2026-10-15",
+  "source": "Public professional profile fields from private campaign; no action history",
+  "records": [
+    {
+      "id": "connect-xvii-1",
+      "name": "Ed Purver",
+      "org": "Moment Factory",
+      "role": "Creative Director",
+      "url": "https://www.linkedin.com/in/edpurver",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-2",
+      "name": "Sue Slagle",
+      "org": "Meow Wolf",
+      "role": "Creative Technologist",
+      "url": "https://www.linkedin.com/in/sue-slagle",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-4",
+      "name": "Justin Restaino",
+      "org": "Moment Factory",
+      "role": "Creative Director",
+      "url": "https://www.linkedin.com/in/justinrestaino",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-6",
+      "name": "Erin Carter",
+      "org": "Universal Creative",
+      "role": "Advanced Technology Initiatives",
+      "url": "https://www.linkedin.com/in/erin-carter-8516a4192",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-7",
+      "name": "Chad Jones",
+      "org": "Universal Creative",
+      "role": "Creative Director",
+      "url": "https://www.linkedin.com/in/chadallanjones",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-9",
+      "name": "Kenji Endo",
+      "org": "Disney Animation",
+      "role": "Technical Director",
+      "url": "https://www.linkedin.com/in/kenji-endo",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-10",
+      "name": "Rob Stauffer",
+      "org": "SideFX",
+      "role": "Technical Director",
+      "url": "https://www.linkedin.com/in/robstauffer",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-11",
+      "name": "Tobias Steiner",
+      "org": "SideFX",
+      "role": "Technical Director",
+      "url": "https://www.linkedin.com/in/tobiasvfx",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-13",
+      "name": "Patrick Moynihan",
+      "org": "Pixomondo",
+      "role": "Senior Technical Director Innovation Lab",
+      "url": "https://www.linkedin.com/in/patrick-moynihan",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-14",
+      "name": "Chris Sprance",
+      "org": "Epic Games",
+      "role": "Technical Art Director",
+      "url": "https://www.linkedin.com/in/chrissprance",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-15",
+      "name": "Cody Borst",
+      "org": "Fictive",
+      "role": "Creative Technologist",
+      "url": "https://www.linkedin.com/in/codyborst",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-16",
+      "name": "Morgan Barnard",
+      "org": "Meow Wolf",
+      "role": "Creative Technologist",
+      "url": "https://www.linkedin.com/in/morgan-barnard",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-17",
+      "name": "Gillian Moon",
+      "org": "Meow Wolf",
+      "role": "Creative Technology",
+      "url": "https://www.linkedin.com/in/gillymoon",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-18",
+      "name": "Crystal Cortez",
+      "org": "Meow Wolf",
+      "role": "Sound Artist Creative Technologist",
+      "url": "https://www.linkedin.com/in/crystal-cortez-quartez-94a417b1",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-19",
+      "name": "Zachary Saale",
+      "org": "Acronym",
+      "role": "Engineering Leader Creative Technologist",
+      "url": "https://www.linkedin.com/in/zcsaale",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xvii-21",
+      "name": "Seneca Howell",
+      "org": "Universal Creative",
+      "role": "Technical Creative Coordinator",
+      "url": "https://www.linkedin.com/in/seneca-howell",
+      "verification": "public-linkedin-profile-observed"
+    },
+    {
+      "id": "connect-xviii-1",
+      "name": "Ray Scanlon",
+      "org": "Disney Imagineering",
+      "role": "R&D creative technologist",
+      "url": "https://www.linkedin.com/in/rayscan",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-2",
+      "name": "Clare Carroll",
+      "org": "Disney Imagineering",
+      "role": "R&D creative technologist",
+      "url": "https://www.linkedin.com/in/claremcarroll",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-3",
+      "name": "Dale Sheehan",
+      "org": "Meow Wolf",
+      "role": "Executive creative director",
+      "url": "https://www.linkedin.com/in/dale-sheehan-3419353",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-4",
+      "name": "Dimitri Simakis",
+      "org": "Meow Wolf",
+      "role": "Creative director worldbuilder",
+      "url": "https://www.linkedin.com/in/dimitrisimakis",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-5",
+      "name": "Christopher Els",
+      "org": "Meow Wolf",
+      "role": "Creative technology",
+      "url": "https://www.linkedin.com/in/christopherels",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-6",
+      "name": "Luke Bern Carr",
+      "org": "Meow Wolf",
+      "role": "Creative tech production director",
+      "url": "https://www.linkedin.com/in/luke-bern-carr-a39374210",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-7",
+      "name": "Casey Crowdis",
+      "org": "Meow Wolf",
+      "role": "Creative director",
+      "url": "https://www.linkedin.com/in/crowdis",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xviii-8",
+      "name": "Kaylie Stuteville",
+      "org": "Disney Imagineering",
+      "role": "Creative technologist R&D",
+      "url": "https://www.linkedin.com/in/kaylie-stuteville-758274236",
+      "verification": "public-profile-web-confirmed-2026-10-15"
+    },
+    {
+      "id": "connect-xix-1",
+      "name": "Sarah Turner",
+      "org": "Meow Wolf",
+      "role": "Video designer and creative technologist",
+      "url": "https://www.linkedin.com/in/sarahsarahturnerturner",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
+      "id": "connect-xix-2",
+      "name": "Nolan Jacobs Walker",
+      "org": "Disney Imagineering",
+      "role": "Creative technology",
+      "url": "https://www.linkedin.com/in/nolan-jacobs-walker",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
+      "id": "connect-xix-3",
+      "name": "Rebecca Harter-Foist",
+      "org": "Disney Imagineering",
+      "role": "Imagineering professional",
+      "url": "https://www.linkedin.com/in/rebecca-harter-foist-5b8614248",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
+      "id": "connect-xix-4",
+      "name": "Stefanie Perosa",
+      "org": "Disney Imagineering",
+      "role": "Creative technology and themed experience",
+      "url": "https://www.linkedin.com/in/stefperosa",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
+      "id": "connect-xix-6",
+      "name": "Sydney Heller",
+      "org": "AOA",
+      "role": "Creative technology show control",
+      "url": "https://www.linkedin.com/in/hellersydneyn",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
+      "id": "connect-xix-7",
+      "name": "Ashley Elizabeth Harriett",
+      "org": "Meow Wolf",
+      "role": "Creative technologist",
+      "url": "https://www.linkedin.com/in/ashley-harriett",
+      "verification": "public-linkedin-profile-observed-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-1",
+      "name": "Brianna Butler",
+      "org": "Walt Disney Imagineering",
+      "role": "Associate R&D Imagineer, Creative Technologist",
+      "url": "https://www.linkedin.com/in/brianna-butler-633865180",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-2",
+      "name": "Bryan Ray",
+      "org": "SideFX Software",
+      "role": "Technical Consultant, TV/Film",
+      "url": "https://www.linkedin.com/in/bryanrayvfx",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-8",
+      "name": "Jeff Mills",
+      "org": "Mighty Coconut",
+      "role": "Creative technology and interactive design",
+      "url": "https://www.linkedin.com/in/jeff-mills-5842722",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-9",
+      "name": "Francesca Benevento",
+      "org": "XR Studios",
+      "role": "Immersive production and virtual content",
+      "url": "https://www.linkedin.com/in/francescabenevento1",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxii-10",
+      "name": "Christine Marsh",
+      "org": "Via Reach",
+      "role": "Immersive media and interdisciplinary design",
+      "url": "https://www.linkedin.com/in/christinemarsh",
+      "verification": "public-linkedin-profile-search-2026-10-15"
+    },
+    {
+      "id": "connect-xxiii-cameron-mcleod",
+      "name": "Cameron McLeod",
+      "org": "Disney Imagineering",
+      "role": "Advanced Development creative technologist",
+      "url": "https://www.linkedin.com/in/cameron-mcleod98",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-ashley-perez",
+      "name": "Ashley Perez",
+      "org": "Disney Imagineering",
+      "role": "Creative technologist",
+      "url": "https://www.linkedin.com/in/ashleysperez",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-matt-wilson",
+      "name": "Matt Wilson",
+      "org": "Disney",
+      "role": "Creative technologist tools",
+      "url": "https://www.linkedin.com/in/mwilso",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-cary-phillips",
+      "name": "Cary Phillips",
+      "org": "Industrial Light & Magic",
+      "role": "R&D engineering architecture",
+      "url": "https://www.linkedin.com/in/caryphillips",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-nick-proulx",
+      "name": "Nick Proulx",
+      "org": "Industrial Light & Magic",
+      "role": "R&D and virtual production network",
+      "url": "https://www.linkedin.com/in/nick-proulx-0ab625155",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-david-christensen",
+      "name": "David Christensen",
+      "org": "Disney Research",
+      "role": "Robotics and sensors R&D",
+      "url": "https://www.linkedin.com/in/d-christensen-engineering",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-andreane-d-arcy-lepage",
+      "name": "Andréane d'Arcy-Lepage",
+      "org": "Disney Research",
+      "role": "Digital characters and robotics",
+      "url": "https://www.linkedin.com/in/andreane-d-arcy-lepage",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-joe-fox",
+      "name": "Joe Fox",
+      "org": "Meow Wolf",
+      "role": "Technical direction themed entertainment",
+      "url": "https://www.linkedin.com/in/joefox97",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-ryan-tang",
+      "name": "Ryan Tang",
+      "org": "Meow Wolf",
+      "role": "Theatrical technical director",
+      "url": "https://www.linkedin.com/in/ryan-w-tang",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-tj-martin",
+      "name": "TJ Martin",
+      "org": "Meow Wolf",
+      "role": "Technical director immersive environments",
+      "url": "https://www.linkedin.com/in/tj-martin-",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-william-slayden",
+      "name": "William Slayden",
+      "org": "Meow Wolf",
+      "role": "Scenic and technical direction",
+      "url": "https://www.linkedin.com/in/william-slayden-a2415a14",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxiii-drew-trujillo",
+      "name": "Drew Trujillo",
+      "org": "Meow Wolf",
+      "role": "Immersive technology leadership historical",
+      "url": "https://www.linkedin.com/in/drwoohoo",
+      "verification": "public-linkedin-profile-indexed-affiliation-currentness-not-independently-confirmed"
+    },
+    {
+      "id": "connect-xxviii-a-4",
+      "name": "Kyle Nelli",
+      "org": "Weta FX",
+      "role": "Simulation research",
+      "url": "https://www.linkedin.com/in/kyle-nelli",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-b-3",
+      "name": "Robert Lyle",
+      "org": "Walt Disney Imagineering",
+      "role": "Robotics engineer",
+      "url": "https://www.linkedin.com/in/robert-lyle",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxviii-b-4",
+      "name": "Kyle Morin",
+      "org": "Walt Disney Imagineering",
+      "role": "Engineering software",
+      "url": "https://www.linkedin.com/in/kyletmorin",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxxi-9",
+      "name": "Allen Holbrook",
+      "org": "Wētā FX / VFX",
+      "role": "Animation Technical Director background",
+      "url": "https://www.linkedin.com/in/allen-holbrook",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-xxxi-10",
+      "name": "Erin O'Brien",
+      "org": "Walt Disney Imagineering",
+      "role": "Imagineering professional",
+      "url": "https://www.linkedin.com/in/erin-o-brien-b3600b47",
+      "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    }
+  ]
+}
