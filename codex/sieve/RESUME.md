@@ -65,7 +65,7 @@ Hermeticon is an institution for the study and construction of possible worlds.
 - Applied pattern recognition, spatial reasoning, and rigorous hypothesis evaluation to dynamic, time-sensitive problems.
 - Worked across analytical and technical disciplines, developing deep experience in systems-level reasoning under uncertainty.
 
-## Capabilities
+## Domain of Mastery
 
 **Creative direction & world architecture:** Experimental world-building · Systems design · Creative technology · Interactive environments · Simulation architecture · Procedural generation · Generative systems · Spatial reasoning · Emergent behavior · Rapid prototyping · Research and development · Human–model collaboration
 
