@@ -706,6 +706,114 @@
       "role": "Imagineering professional",
       "url": "https://www.linkedin.com/in/erin-o-brien-b3600b47",
       "verification": "public-indexed-profile-current-affiliation-unconfirmed"
+    },
+    {
+      "id": "connect-chris-bell",
+      "name": "Chris Bell",
+      "org": "Gardens Interactive",
+      "role": "Cofounder Creative Director Co-Design Lead",
+      "url": null,
+      "sourceUrl": "https://gardens.dev/press",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-lexie-dostal",
+      "name": "Lexie Dostal",
+      "org": "Gardens Interactive",
+      "role": "Cofounder CTO Co-Design Lead",
+      "url": null,
+      "sourceUrl": "https://gardens.dev/press",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-dan-ristic",
+      "name": "Dan Ristic",
+      "org": "Gardens Interactive",
+      "role": "Technical Director",
+      "url": null,
+      "sourceUrl": "https://gardens.dev/press",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-andy-nguyen",
+      "name": "Andy Nguyen",
+      "org": "Gardens Interactive",
+      "role": "Design Manager",
+      "url": null,
+      "sourceUrl": "https://gardens.dev/press",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-leslie-evans",
+      "name": "Leslie Evans",
+      "org": "Walt Disney Imagineering",
+      "role": "Executive R&D Imagineer",
+      "url": null,
+      "sourceUrl": "https://sites.disney.com/waltdisneyimagineering/careers/",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-kyle-laughlin",
+      "name": "Kyle Laughlin",
+      "org": "Walt Disney Imagineering",
+      "role": "Executive R&D Technology and Engineering",
+      "url": null,
+      "sourceUrl": "https://events.fastcompany.com/innovation-festival/session/4385504/building-at-the-speed-of-imagination-inside-walt-disney-imagineering%E2%80%99s-workshop",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-asa-kalama",
+      "name": "Asa Kalama",
+      "org": "Walt Disney Imagineering",
+      "role": "Executive Creative and Interactive Experiences",
+      "url": null,
+      "sourceUrl": "https://events.fastcompany.com/innovation-festival/session/4385504/building-at-the-speed-of-imagination-inside-walt-disney-imagineering%E2%80%99s-workshop",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-molly-murphy",
+      "name": "Molly Murphy",
+      "org": "Universal Creative",
+      "role": "President",
+      "url": null,
+      "sourceUrl": "https://corporate.universaldestinationsandexperiences.com/leadership/",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-virgil-watkins",
+      "name": "Virgil Watkins",
+      "org": "Embark Studios",
+      "role": "Design Director",
+      "url": null,
+      "sourceUrl": "https://www.linkedin.com/posts/embark-studios-ab_proud-to-see-our-design-director-virgil-watkins-activity-7437063159619772416-hkf2",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-kim-davidson",
+      "name": "Kim Davidson",
+      "org": "SideFX",
+      "role": "Cofounder historical",
+      "url": null,
+      "sourceUrl": "https://www.sidefx.com/company/about-sidefx/",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-greg-hermanovic",
+      "name": "Greg Hermanovic",
+      "org": "SideFX",
+      "role": "Cofounder historical",
+      "url": null,
+      "sourceUrl": "https://www.sidefx.com/company/about-sidefx/",
+      "verification": "source-recorded-role-needs-current-check"
+    },
+    {
+      "id": "connect-anna-huerta",
+      "name": "Anna Huerta",
+      "org": "Maxis",
+      "role": "Senior Creative Director as of 2025",
+      "url": null,
+      "sourceUrl": "https://www.polygon.com/the-sims/522300/the-sims-4-anna-huerta-creative-director",
+      "verification": "source-recorded-role-needs-current-check"
     }
   ]
 }
