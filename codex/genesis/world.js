@@ -119,6 +119,7 @@ export function createGenesis(){
  const navigation=createTerrainNavigation({terrain,actor:wanderer});
  world.attachView=view=>{navigation.attachView(view);eyeCamera=view?.camera??null};
  const tapRaycaster=new T.Raycaster(),tapPoint=new T.Vector2(),tapSphere=new T.Sphere(),tapCenter=new T.Vector3();
+ const terrainTapRaycaster=new T.Raycaster();
  world.tap=(x,y)=>{
   if(eyeCamera?.isCamera){
    const canvas=document.querySelector('#stage canvas'),rect=canvas?.getBoundingClientRect();
@@ -127,7 +128,14 @@ export function createGenesis(){
     tapRaycaster.setFromCamera(tapPoint,eyeCamera);
     abiogenesis.group.getWorldPosition(tapCenter);
     tapSphere.set(tapCenter,10.25*abiogenesis.group.getWorldScale(new T.Vector3()).x);
-    if(tapRaycaster.ray.intersectsSphere(tapSphere)){
+    const sphereDistance=tapRaycaster.ray.intersectSphere(tapSphere,new T.Vector3());
+    if(sphereDistance){
+     // The visible terrain is opaque to taps: the Cradle may only receive
+     // a tap if its front shell is nearer than the first terrain surface.
+     const terrainHit=terrainTapRaycaster.ray.copy(tapRaycaster.ray);
+     const occluder=terrainTapRaycaster.intersectObjects(terrain.group.children,false)[0];
+     const shellDistance=tapRaycaster.ray.origin.distanceTo(sphereDistance);
+     if(occluder&&occluder.distance<=shellDistance+1e-4)return navigation.tap(x,y);
      debris.directRegionToward({maxY:0,target:{x:abiogenesis.group.position.x,y:abiogenesis.group.position.y,z:abiogenesis.group.position.z},speed:22});
      return true;
     }
