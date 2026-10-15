@@ -4,7 +4,7 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
  let mesh=null,allocated=0;const perf={growths:0,lastGrowthMs:0,peakGrowthMs:0,lastEmitMs:0,peakEmitMs:0,lastPhysicsMs:0,peakPhysicsMs:0,lastRenderMs:0,peakRenderMs:0};
  function ensureMesh(required){if(required<=allocated)return;const t=performance.now();const next=Math.max(required,allocated?allocated*2:256);const replacement=new T.InstancedMesh(geo,mat,next);replacement.frustumCulled=false;replacement.count=0;parent.add(replacement);if(mesh)parent.remove(mesh);mesh=replacement;allocated=next;perf.growths++;perf.lastGrowthMs=performance.now()-t;perf.peakGrowthMs=Math.max(perf.peakGrowthMs,perf.lastGrowthMs);}
  ensureMesh(256);
- const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0,abiogenesis:0};let terrainHits=0,vesselHits=0,emitted=0,abiogenesisCaptures=0,abiogenesisInteriorHits=0,abiogenesisExteriorHits=0;
+ const beads=[],dummy=new T.Object3D(),ownership={terrain:0,vessel:0,abiogenesis:0};let terrainHits=0,vesselHits=0,emitted=0,abiogenesisCaptures=0,abiogenesisInteriorHits=0,abiogenesisExteriorHits=0,abiogenesisPulses=0,abiogenesisLastAffected=0;
  function canAccept(){return true;}
  function emit(items,point,impulse=18){const t=performance.now();
   const o=offset();
@@ -44,6 +44,28 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   }
   return hits;
  }
+ // One spatial scan per tap; never an inverse-square field in the frame loop.
+ function pulseAbiogenesis(){
+  if(!abiogenesis)return 0;
+  const o=offset(),c=abiogenesis.position,range=abiogenesis.range;
+  let affected=0;
+  for(const b of beads){
+   if(b.owner==='abiogenesis')continue;
+   const x=b.x-(b.owner==='terrain'?o.x:0)-c.x;
+   const y=b.y-c.y,z=b.z-(b.owner==='terrain'?o.z:0)-c.z;
+   const d=Math.hypot(x,y,z);
+   if(d>=range||d<1e-6)continue;
+   const ux=x/d,uy=y/d,uz=z/d;
+   const radial=b.vx*ux+b.vy*uy+b.vz*uz;
+   // Cancel outward radial velocity, then deliver a decisive inward kick.
+   const kick=abiogenesis.impulse+Math.max(0,radial);
+   b.vx-=ux*kick;b.vy-=uy*kick;b.vz-=uz*kick;
+   b.vacuumTicket=true;
+   affected++;
+  }
+  abiogenesisPulses++;abiogenesisLastAffected=affected;
+  return affected;
+ }
  function update(dt){const physicsStart=performance.now();
   const o=offset(),sample=(x,y,z)=>terrain.sample(x,y,z);
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
@@ -53,14 +75,6 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
     const ox=b.x,oy=b.y,oz=b.z;b.vy-=P.gravity*step;
     if(b.owner==='abiogenesis'){
      const limit=abiogenesis.innerRadius*abiogenesis.scale-b.r-.003;
-     if(abiogenesis.enabled){
-      const d=Math.hypot(b.x,b.y,b.z);
-      if(d>1e-5&&d<abiogenesis.range){
-       const taper=(1-d/abiogenesis.range)**2;
-       const a=Math.min(abiogenesis.maxAcceleration,abiogenesis.strength*taper/(d*d+abiogenesis.softening**2));
-       b.vx-=b.x/d*a*step;b.vy-=b.y/d*a*step;b.vz-=b.z/d*a*step;
-      }
-     }
      b.x+=b.vx*step;b.y+=b.vy*step;b.z+=b.vz*step;
      const rr=Math.hypot(b.x,b.y,b.z);
      if(rr>limit&&rr>1e-7){
@@ -76,16 +90,11 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
      const c=abiogenesis.position;
      const wx=b.x-(b.owner==='terrain'?o.x:0),wz=b.z-(b.owner==='terrain'?o.z:0);
      const dx=wx-c.x,dy=b.y-c.y,dz=wz-c.z,d=Math.hypot(dx,dy,dz);
-     if(abiogenesis.enabled&&d>1e-6&&d<abiogenesis.range){
-      const taper=(1-d/abiogenesis.range)**2;
-      const a=Math.min(abiogenesis.maxAcceleration,abiogenesis.strength*taper/(d*d+abiogenesis.softening**2));
-      b.vx-=dx/d*a*step;b.vy-=dy/d*a*step;b.vz-=dz/d*a*step;
-     }
      const nx=dx+b.vx*step,ny=dy+b.vy*step,nz=dz+b.vz*step;
      const exterior=abiogenesis.outerRadius*abiogenesis.scale+b.r;
      if(d>=exterior&&Math.hypot(nx,ny,nz)<exterior&&dx*b.vx+dy*b.vy+dz*b.vz<0){
-      if(abiogenesis.enabled){
-       b.x=nx;b.y=ny;b.z=nz;b.owner='abiogenesis';abiogenesisCaptures++;
+      if(b.vacuumTicket){
+       b.vacuumTicket=false;b.x=nx;b.y=ny;b.z=nz;b.owner='abiogenesis';abiogenesisCaptures++;
        continue;
       }
       const inv=1/Math.max(d,1e-7),normal={x:dx*inv,y:dy*inv,z:dz*inv};
@@ -133,5 +142,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;ownership.abiogenesis=abiogenesisOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,collideSphere,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,collideSphere,pulseAbiogenesis,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
