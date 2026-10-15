@@ -69,7 +69,7 @@ globalThis.HermeticonSurvey=()=>[...mounts.values()].filter(m=>m.active).map(m=>
 
 const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.38;document.querySelector('#stage').append(renderer.domElement);
 const camera=new T.PerspectiveCamera(42,1,.1,150);scene.add(new T.HemisphereLight(0x82c6dc,0x17202d,1.5));const sun=new T.DirectionalLight(0xffc77e,2.4);sun.position.set(-7,13,7);scene.add(sun);const blue=new T.PointLight(0x2cbed7,95,36);blue.position.set(2,-2,2);scene.add(blue);
-let angle=.6,elev=.27,dist=27,targetY=0,lastX=0,lastY=0;
+let angle=.6,elev=.52,dist=27,targetY=0,lastX=0,lastY=0;
 const pointers=new Map(),pointerStarts=new Map();let pinch=0,multiGesture=false;
 const TAP_SLOP=12;
 renderer.domElement.addEventListener('pointerdown',e=>{
