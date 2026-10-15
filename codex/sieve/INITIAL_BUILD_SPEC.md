@@ -170,3 +170,15 @@ The script sets text via \`textContent\`, not interpolated \`innerHTML\`; extern
 6. **Reliability:** Read before writing; verify GitHub write by read-back; verify Pages build SHA and browser behavior before declaring live.
 7. **Human authority:** ChatGPT is the cockpit; the user selects, approves, and submits applications. No second chat UI and no autonomous application submission.
 8. **Iteration:** The next engineering turn starts from the most recent actual 👁 observation, not an assumption that earlier behavior succeeded.
+
+
+## F. 👁 Observation 001 — first actual Hunt sweep (2026-10-15)
+**Evidence received from user, UTC:** report at \`2026-10-15T19:15:25.004Z\`; sweep started \`19:15:20.473Z\`, completed \`19:15:21.712Z\` (~1.239 seconds). Source \`remotive\`, URL \`https://remotive.com/api/remote-jobs?limit=200\`. Result \`ok\`; received 14, accepted 14, duplicate 0, rejected 0. Registry counts: total 14, investigate 1, passed 2 (remaining 11 unreviewed). These are observations, not a claim of representative job-market coverage.
+
+**False positive:** \`remotive:2091140\`, \`Senior Shopify Developer\`, Sanctuary Computer Inc, Worldwide, \`https://remotive.com/remote-jobs/software-development/senior-shopify-developer-2091140\`. Triggered generic \`world\`, \`creative\`, \`systems\` in description; no verified employer-hosted application, creative autonomy, or arrangement. This is not evidence of suitable experimental-worlds work. **Root cause:** classification accepted any three keywords anywhere in the 4,000-character description; the source's broad remote-job category further constrained useful coverage.
+
+**Correction committed:** \`d15e011f\` changes \`classify()\` to exclude clearly commercial Shopify/e-commerce/SEO/marketing titles and require a domain-specific title or target-employer signal for \`investigate\`; \`1a3f86d2\` re-evaluates saved candidates on startup, preserving manually passed records. A candidate no longer qualifies solely because its description includes generic terms. This is a conservative interim filter, **not** the final semantic Judgment engine; relevant unconventional titles may now be missed. Subsequent observations must test both precision and recall.
+
+**Confirmed by report:** browser-to-Remotive transport succeeded on that occasion; the event path, normalization and reporting produced a coherent record. **Not confirmed:** clipboard permissions generally, export/download, official apply verification, cross-device persistence, later sweeps, full mobile rendering, and deployment of the corrective commits. No user application or employer verification occurred.
+
+**Next test:** after deployment, open Sieve, inspect the new SHA, open 🗑 and copy a fresh 👁 report. Confirm \`Senior Shopify Developer\` is no longer \`investigate\`, the existing 14 entries remain in local state, manual passes remain passed, and a subsequent sweep still works. If another false positive appears, record its title and exact signals before changing rules. Prioritize official employer-careers discovery next; do not mistake this remote-only feed for Hunt's intended search coverage.
