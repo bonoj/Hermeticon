@@ -9,7 +9,7 @@ ChatGPT is the cockpit. Sieve is the machinery that finds worthwhile work, evalu
 
 ## Current implementation (2026-10-15)
 - [Sieve public entrance](https://bonoj.github.io/Hermeticon/sieve/) — independent world cloned from Genesis; it is **not yet the application pipeline**.
-- [Hermeticon public entrance](https://bonoj.github.io/Hermeticon/) — 🗑 instrument opens Sieve in a lazy-loaded overlay. Overlay reserves title/build/FPS space above and button-bar space below. The 🐙 repository drawer links here.
+- [Hermeticon public entrance](https://bonoj.github.io/Hermeticon/) — Genesis does not own the 🗑 instrument. 🗑 belongs to the independent Sieve entrance, where it opens a native Sieve workspace drawer. The drawer reserves title/build/FPS space above and button-bar space below. Sieve's 🐙 repository drawer links here.
 - [Sieve entry HTML](../../sieve/index.html), [Sieve composer](../../sieve/compose.js), [Sieve world](world.js).
 - [Hermeticon entry HTML](../../index.html), [Sieve overlay controller](../../athanor/sieve-overlay.js), [shared instrument CSS](../../athanor/interface.css).
 - [Initial Build Spec](INITIAL_BUILD_SPEC.md) is the approved implementation blueprint; its pipeline is **specified, not implemented**.
@@ -51,7 +51,7 @@ Read source and contract before edits. Change only requested surfaces. The Pages
 Follow [Initial Build Spec](INITIAL_BUILD_SPEC.md): inspect existing machinery; establish verified evidence map, opportunity schema, private persistence plan and fit rubric; discover and verify real openings; generate application package with direct link and required documents; reconcile 👁 evidence; repeat without rebuilding. Keep private application history out of public Pages output.
 
 ## Existing UI boundaries
-🗑 is a navigation instrument, not the application submission action. The user primarily works from ChatGPT, not the Sieve page. Preserve existing instrument bar, FPS/build, world rendering, and 🐙 grammar. The overlay currently embeds the Sieve world in an iframe; don't silently redesign it.
+🗑 is a navigation instrument, not the application submission action. The user primarily works from ChatGPT, not the Sieve page. Preserve existing instrument bar, FPS/build, world rendering, and 🐙 grammar. The Sieve entrance owns a native, non-recursive workspace drawer with handoff, spec, Conjoiner, and résumé links. Genesis does not contain a Sieve drawer. Do not silently move controls between entrances.
 
 ## State and verification
 This handoff records repository source and intended behavior, not proof of a live browser session. At each new thread, fetch the current files and latest commits; this document may lag later changes. A GitHub write is successful only after read-back. A deploy is successful only after build identity and browser behavior are verified.
