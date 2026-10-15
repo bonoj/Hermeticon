@@ -67,17 +67,31 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   const count=Math.max(1,Math.ceil(Math.min(.05,dt)/.008)),step=Math.min(.05,dt)/count;
   const cradle=abiogenesis?.position,cradleRadius=abiogenesis?abiogenesis.innerRadius*abiogenesis.scale:0;
   const wi=wanderer?.inspect(),wc=wi?{x:wi.x-o.x,y:wi.centerY,z:wi.z-o.z}:null;
+  // A once-per-second surface collector. One horizontal disk, no 3D
+  // proximity test against the elevated Wanderer and no geometry allocation.
+  // Only terrain-owned, surface-contact BBs are eligible; free-flying and
+  // vessel-owned material cannot be vacuumed through terrain or glass.
   wandererPulseClock+=Math.max(0,dt);
   if(wc&&wandererPulseClock>=1){
    wandererPulseClock%=1;wandererPulses++;wandererLastAffected=0;
+   const footprintRadius=1.23,footprint2=footprintRadius*footprintRadius;
    for(const b of beads){
-    if(b.owner==='abiogenesis'||b.owner==='wanderer')continue;
-    const x=b.x-(b.owner==='terrain'?o.x:0),z=b.z-(b.owner==='terrain'?o.z:0);
-    if((x-wc.x)**2+(z-wc.z)**2>.12**2)continue;
-    // Signed field is positive inside solid: reject buried BBs, retain surface and above-ground BBs.
-    if(terrain.sample(x+o.x,b.y,z+o.z)>.02)continue;
-    const dx=wc.x-x,dy=wc.y-b.y,dz=wc.z-z,d=Math.hypot(dx,dy,dz)||1;
-    b.vx=dx/d*9;b.vy=dy/d*9;b.vz=dz/d*9;wandererLastAffected++;
+    if(b.owner!=='terrain')continue;
+    const dx=wc.x+o.x-b.x,dz=wc.z+o.z-b.z;
+    if(dx*dx+dz*dz>footprint2)continue;
+    // Positive signed field is solid. A narrow surface band prevents
+    // collecting buried or high-flying beads.
+    const field=sample(b.x,b.y,b.z);
+    if(field>Math.max(.015,b.r*.35)||field< -Math.max(.12,b.r*2))continue;
+    const dy=wc.y-b.y,dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
+    if(dist<.001)continue;
+    // Ballistic one-shot launch: enough upward speed to reach the moving
+    // cavity under gravity, with a small margin. No persistent suction.
+    const flight=Math.max(.16,Math.sqrt(2*Math.max(.01,dy)/P.gravity));
+    const invTime=1/flight;
+    b.vx=dx*invTime;b.vz=dz*invTime;
+    b.vy=dy*invTime+.5*P.gravity*flight+1.5;
+    wandererLastAffected++;
    }
   }
   for(const b of beads){
@@ -199,5 +213,5 @@ export function createBeadDebris(T,{terrain,offset,innerRadius,parent,abiogenesi
   ownership.terrain=terrainOwned;ownership.vessel=vesselOwned;ownership.abiogenesis=abiogenesisOwned;ownership.wanderer=wandererOwned;perf.lastRenderMs=performance.now()-renderStart;perf.peakRenderMs=Math.max(perf.peakRenderMs,perf.lastRenderMs);
  }
 
- return {emit,canAccept,receiveImpulse,collideSphere,directRegionToward,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,wandererCaptures,wandererInteriorHits,wandererPulses,wandererLastAffected,vacuumFootprintRadius:.12,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,directionCommands,lastDirected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
+ return {emit,canAccept,receiveImpulse,collideSphere,directRegionToward,update,inspect:()=>({name:'Detached anatomical BBs',count:beads.length,visible:mesh.count,terrainHits,vesselHits,wandererCaptures,wandererInteriorHits,wandererPulses,wandererLastAffected,vacuumFootprintRadius:1.23,abiogenesisCaptures,abiogenesisInteriorHits,abiogenesisExteriorHits,abiogenesisPulses,abiogenesisLastAffected,directionCommands,lastDirected,emitted,allocated,perf:{...perf},ownership:{...ownership}})};
 }
