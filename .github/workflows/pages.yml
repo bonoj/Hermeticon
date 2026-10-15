@@ -51,9 +51,9 @@ jobs:
           assert all((base/n).is_file() and (athanor/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
           wanderer=(base/'index.html').read_text()
           assert all(f'./{name}?v={sha}' in wanderer for name in ('world.js','interface.css','errors.js'))
-          for entry in (root/'index.html',athanor/'index.html'):
+          for entry in (root/'index.html',athanor/'index.html',root/'sieve/index.html'):
               html=entry.read_text()
-              assert 'HERMETICON' in html and 'compose.js' in html
+              assert ('SIEVE' if entry==root/'sieve/index.html' else 'HERMETICON') in html and 'compose.js' in html
               assert 'world.js' not in html
           assert all((base/n).is_file() for n in ('index.html','world.js','interface.css','errors.js'))
           # Every public entrance must reference the newly deployed Athanor script.
@@ -61,11 +61,13 @@ jobs:
               html=entry.read_text()
               assert 'compose.js' in html
               # CSS must share the build identity; stale styles caused mixed-version controls.
-              css_path='./athanor/interface.css' if entry==root/'index.html' else './interface.css'
+              css_path=('../athanor/interface.css' if entry==root/'sieve/index.html' else './athanor/interface.css' if entry==root/'index.html' else './interface.css')
               assert css_path in html
               html=html.replace(css_path,f'{css_path}?v={sha}')
               html=html.replace('compose.js',f'compose.js?v={sha}')
               entry.write_text(html)
+          assert (root/'sieve/compose.js').is_file() and (root/'codex/sieve/world.js').is_file()
+          assert "'../codex/sieve/world.js'" in (root/'sieve/compose.js').read_text()
           assert (athanor/'athanor.js').is_file()
           instrument=athanor/'athanor.js'
           source=instrument.read_text()
@@ -114,7 +116,7 @@ jobs:
           python3 - <<'PY'
           import os,time,urllib.request
           sha=os.environ['BUILD_SHA']
-          for url,marker in (('https://bonoj.github.io/Hermeticon/','HERMETICON'),('https://bonoj.github.io/Hermeticon/athanor/','HERMETICON'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./world.js?v='+sha)):
+          for url,marker in (('https://bonoj.github.io/Hermeticon/','HERMETICON'),('https://bonoj.github.io/Hermeticon/athanor/','HERMETICON'),('https://bonoj.github.io/Hermeticon/sieve/','SIEVE'),('https://bonoj.github.io/Hermeticon/examples/wanderer-separated/','./world.js?v='+sha)):
               for i in range(36):
                   try:
                       req=urllib.request.Request(url+'?deployment='+sha+'&attempt='+str(i),headers={'Cache-Control':'no-cache','Pragma':'no-cache'})
