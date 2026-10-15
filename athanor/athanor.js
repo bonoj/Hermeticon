@@ -15,6 +15,20 @@ try {
 document.querySelector('#build').textContent=BUILD==='unverified'?'--------':BUILD.slice(0,8);
 // Refresh navigates to a new URL, bypassing cached HTML as well as modules.
 // A plain reload can reuse the same cached entry and its old import graph.
+const githubToggle=document.querySelector('#githubToggle'),githubPanel=document.querySelector('#githubPanel');
+if(githubToggle&&githubPanel){
+ githubToggle.addEventListener('click',()=>{
+  const opening=githubPanel.hidden;
+  githubPanel.hidden=!opening;
+  githubToggle.setAttribute('aria-expanded',String(opening));
+ });
+ document.addEventListener('pointerdown',event=>{
+  if(!githubPanel.hidden&&!githubPanel.contains(event.target)&&!githubToggle.contains(event.target)){
+   githubPanel.hidden=true;githubToggle.setAttribute('aria-expanded','false');
+  }
+ });
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!githubPanel.hidden){githubPanel.hidden=true;githubToggle.setAttribute('aria-expanded','false');githubToggle.focus()}});
+}
 document.querySelector('#fresh').onclick=()=>{
  const url=new URL(location.href);
  url.searchParams.set('fresh',Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
