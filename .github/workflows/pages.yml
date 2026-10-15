@@ -61,13 +61,14 @@ jobs:
               html=entry.read_text()
               assert 'compose.js' in html
               # CSS must share the build identity; stale styles caused mixed-version controls.
-              css_path=('../athanor/interface.css' if entry==root/'sieve/index.html' else './athanor/interface.css' if entry==root/'index.html' else './interface.css')
+              css_path=('./style.css' if entry==root/'sieve/index.html' else './athanor/interface.css' if entry==root/'index.html' else './interface.css')
               assert css_path in html
               html=html.replace(css_path,f'{css_path}?v={sha}')
               html=html.replace('compose.js',f'compose.js?v={sha}')
               entry.write_text(html)
-          assert (root/'sieve/compose.js').is_file() and (root/'codex/sieve/world.js').is_file()
-          assert "'../codex/sieve/world.js'" in (root/'sieve/compose.js').read_text()
+          assert (root/'sieve/compose.js').is_file() and (root/'codex/sieve/applicant.json').is_file()
+          assert json.loads((root/'codex/sieve/applicant.json').read_text())['schema']=='sieve.applicant.v1'
+          assert 'sieve.resume.inspect.v1' in (root/'sieve/compose.js').read_text()
           assert (athanor/'athanor.js').is_file()
           instrument=athanor/'athanor.js'
           source=instrument.read_text()
