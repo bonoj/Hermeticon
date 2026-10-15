@@ -68,3 +68,28 @@ Private Home now contains `sieve/schema/context.v1.json`, `sieve/fixtures/first-
 
 ## State and verification
 This handoff records repository source and intended behavior, not proof of a live browser session. At each new thread, fetch the current files and latest commits; this document may lag later changes. A GitHub write is successful only after read-back. A deploy is successful only after build identity and browser behavior are verified.
+
+## Hunt operating correction — breadth before depth (2026-10-15)
+
+**User correction, binding for subsequent Hunts:** The first five Hunts over-investigated Disney, Epic, and Larian, repeatedly revisited Disney requisition 10159875, and treated each ➡️ as a tiny research/write cycle. This was inefficient. **➡️ authorizes a substantial expedition**, not a single finding, commit, or incremental verification step.
+
+### Operating order
+1. **Landscape first:** survey roughly 30–50 relevant organizations per broad Hunt where research access and evidence allow. Include studios, Imagineering/research labs, simulation and procedural-world teams, experimental game studios, creative technology groups, and relevant leaders. These are discovery targets, not 30–50 verified vacancies.
+2. **Find mandates and people:** map teams, principal investigators, technical/creative directors, experimental programs, and evidence of the actual work. Open jobs are one entry route, not the sole unit of discovery.
+3. **Triage at shallow depth:** distinguish (a) currently confirmed official vacancies, (b) plausible roles requiring verification, (c) people/team relationship routes, and (d) interesting institutions with no established opening. Clearly label uncertainty. Reject conventional implementation-only roles even if titles sound appealing.
+4. **Rank by the user's desired work:** experimental executable worlds, systemic magic, simulation, expressive agents, creative R&D, prototyping, technical invention, autonomy, and influence across design and engineering. Coding is welcome; coding **alone** is not the objective. Don't confuse conventional tool-maintenance jobs with creative systems mandates.
+5. **Persist in batches:** preserve a compact source-backed shortlist, candidate graph, key reasons, uncertainty, and next actions privately. GitHub transport/read-back is necessary infrastructure, not the narrative or success criterion of a Hunt.
+6. **Deepen only selectively:** investigate official requisition status, compensation, hiring chain, skills gaps, and outreach strategy for the strongest few leads or when preparing an actual application. Do not spend repeated turns resolving a single ambiguous posting while the broader landscape remains unmapped.
+7. **Deliver meaningful work per ➡️:** a substantial new survey, ranked field, or several completed investigations. Stop only for material tool limits, a user decision, or a natural substantial milestone. Avoid one-commit-per-turn pacing.
+
+### Reporting and measurement
+- Report breadth (`organizations scanned`, `teams/people found`, `distinct leads`), quality (`high-fit`, `plausible`, `rejected`), source/verification status, and genuinely new discoveries. Never inflate counts with duplicates or unsupported claims.
+- A Hunt is successful when it meaningfully expands the user's choices, **not** merely when a GitHub write succeeds.
+- Carry forward previous outreach so we don't duplicate messages. Human controls contact and applications.
+- Keep Genesis/Athanor/world implementation isolated; the Hunt changes private context and Sieve documentation only unless expressly instructed.
+
+### Existing first-Hunt baseline and next action
+Private `bonoj/Home/sieve/records/` now contains `hunt-20261015.v1.json` (9 records), `hunt-deepening-20261015.v1.json` (10), `disney-research-20261015.v1.json` (7), `disney-productization-20261015.v1.json` (4), and `disney-status-20261015.v1.json` (4). These are **records**, not 34 unique opportunities. The frontier indexed these files. Disney req 10159875 is high-fit but official active status remains unknown; do not let that unresolved question dominate the next Hunt.
+
+**Next ➡️:** perform a broad, multi-organization ecosystem survey and produce a ranked field with people and mandates. Deepen a few standouts only after breadth. Preserve source provenance and uncertainty; don't pretend research coverage or live vacancy verification beyond what was actually checked.
+
