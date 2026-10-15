@@ -103,3 +103,9 @@ Minimal checklist for every new nested Hermeticon:
 6. On regression, revert only the experiment's Genesis integration to the last user-confirmed stable composition; preserve independent Arcana work. Restore populations first, then repair the experiment offline.
 
 **Failure record:** Eye was invisible because `parent.add(root)` was missing. We wasted several commits guessing camera coordinates and iris orientation. A later regression caused all populations to disappear; restoring stable Genesis (`001fc1fe` composition) brought them back. The repaired eye integration is `532118c4`, with attachment and isolated update errors. These are source-level findings; visual confirmation remains separate.
+
+## Nested-vessel material behavior (2026-10-15)
+
+**Implementation ownership:** `wanderer.js` owns supported navigation and bounded hover; `physics/bead-debris.js` owns detached BB integration, one-second Wanderer surface pulses, passive nested-shell capture, local-frame ownership and collision telemetry; `codex/genesis/world.js` composes Abiogenesis stationkeeping and tap routing. Do not duplicate these mechanics in authored worlds.
+
+Wanderer scale 0.06 (outer radius 0.615) is distinct from its **1.23 world-unit collection footprint**. Surface-only selection: terrain-owned detached BBs, squared horizontal footprint rejection, then signed-field surface-band eligibility, followed by one-shot gravity-aware launch. Abiogenesis scale 0.12 gives outer radius 1.23; it passively captures loose BBs entering the inner cavity, and shell taps issue one-shot directions for eligible detached material below y=0. Both retain ordinary gravity and interior glass. No continuous vacuum, population cap, or new geometry. Expanded hover amplitudes and live evidence: [root handoff](../HANDOFF.md).
