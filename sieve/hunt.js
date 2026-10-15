@@ -27,6 +27,14 @@ function classify(c){
  const domainTitle=/simulation|procedural|research|world.?build|creative technolog|technical director|r&d|interactive systems|gameplay systems|engine architect|technical artist|tools architect/i.test(c.title);
  return {decision:exclusions?'pass':(employers.length||domainTitle)?'investigate':'unreviewed',signals:hits,employers,uncertainties:['Employer-hosted requisition and apply link unverified','Creative authority and autonomy unverified','Work arrangement may not fit']};
 }
+// Re-evaluate previously persisted discoveries after a rule correction, preserving manual passes.
+for(const candidate of Object.values(state.candidates)){
+ if(!candidate||typeof candidate!=='object')continue;
+ const previous=candidate.decision;
+ Object.assign(candidate,classify(candidate));
+ if(previous==='pass')candidate.decision='pass';
+}
+persist();
 function normalize(item){
  const title=clean(item.title),company=clean(item.company_name),link=url(item.url);
  if(!title||!company||!link||!item.id)return null;
