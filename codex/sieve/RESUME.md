@@ -10,8 +10,10 @@ Experimental world-builder and systems architect creating executable environment
 
 Brings together more than a decade in signals intelligence, subsequent production engineering experience, and current work on interactive simulation. Intelligence work developed an analytical practice grounded in incomplete information, evolving spatial relationships, and complex systems; engineering supplied the means to build reliable machinery; Hermeticon brings those disciplines together in possible worlds.
 
-## Hermeticon — Independent R&D
+## Hermeticon — Research Services
 **Conjoiner · Cybernetic Systems Architect | 2023–Present**
+
+Hermeticon is an institution for the study and construction of possible worlds. We investigate executable environments, simulation, material systems, procedural worlds, and human–model collaboration. Our practice is experimental, our methods are empirical, and our ambitions are unreasonable. We build things to discover what they might become.
 
 - Conceive, architect, and build interactive worlds and experimental systems using Three.js/WebGL, JavaScript, Unity, and C#.
 - Explore deterministic terrain, material transport, deformable environments, shallow-water dynamics, high-population simulations, procedural construction, and interacting entities.
