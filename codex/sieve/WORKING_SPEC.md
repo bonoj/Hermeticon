@@ -354,3 +354,53 @@ Sieve's default search strategy is now **high-volume opportunity creation**, not
 
 ### Immediate consequence
 The earlier seven-marble human UI roadmap is **a prototype for the interaction grammar**, not a cap on the campaign or the main delivery goal. The previous people-first ranking strategy is superseded by campaign-scale prospecting and preparation. No outreach is sent solely by adding this specification.
+
+
+## 11. Sanctum → Sieve reorientation: corrected operating course (2026-10-15)
+
+**Recovery path actually followed:** `bonoj/Sanctum/README.md` → `bonoj/Sanctum/CONTRACT.md` → `bonoj/Hermeticon/codex/sieve/README.md` → `CONJOINER_FRONTIER.md` → `RESUME.md` → this working specification. This section governs any conflicting earlier hunt or UI roadmap language.
+
+### Why the prior course was wrong
+
+Hunts X–XII repeatedly produced small, carefully ranked groups of executives, speculative hiring authority, and increasingly deep investigations of a few organizations. Each ➡️ should have advanced the user's practical campaign substantially. Instead, Sieve acted as if it needed to certify the Conjoiner's suitability for a tiny set of positions. That violates Sanctum's obligations to protect time and creative agency, respect demonstrated capability, and reduce friction. The repeated recommendation to rank, validate, and seek perfect fit was a strategic error, not an instruction from the user.
+
+### Governing doctrine
+
+**Boom, boom, boom: 100 cold connections, 100 applications, 100 emails.** These are campaign-scale action targets, not a request for three more lists of 100 interesting names. Build toward real submissions and conversations, with truthful accounting and human control of external actions.
+
+**Qualification is not a gate Clara controls.** John has demonstrated systems architecture, creative direction, interactive-world construction, and implementation. He will write code; he does not want his professional contribution limited to writing code. He chooses work on the basis of interest, enjoyment, ambition, and possibility. A conventional requirements mismatch may shape the message but must not silently discard the route. Do not resurrect debates about title, legitimacy, experience, degrees, shipped AAA credits, or job-market permission.
+
+**Discover, capture, prepare, act, reconcile.** Use lightweight evidence sufficient to identify a real person, real role, or legitimate business channel. Pursue broad discovery across many institutions and levels, not serial deep dives into five executives. Prepare reusable truthful materials and only modest per-target personalization. Provide efficient approval and action mechanisms using actually available tools. Do not confuse research with delivery.
+
+### Operating targets and action records
+
+Maintain three independent queues in private GitHub:
+
+- `connect`: a distinct professional, public profile/connection route, reason for contact, short draft, status, and follow-up.
+- `apply`: a distinct official requisition or clearly labeled open-application channel, submission URL, appropriate truthful material, status, and follow-up.
+- `email`: a legitimate published business or professional channel, relevant recipient/team, short draft, status, and follow-up. No guessed email formats or private contact scraping.
+
+Use durable stable IDs, source URL, observation time, institution, role/person/team, fit-interest rationale, `verificationStatus`, `actionStatus`, last action time, and evidence reference. Distinguish **discovered / verified / prepared / approved / sent or submitted / responded / follow-up / closed**. Never count a draft as sent or an open application link as submitted. Keep totals for each queue and show both inventory and completed actions. Avoid duplicates, especially existing conversations with Tom Pelini and Doug Fidaleo.
+
+### Per-➡️ standard
+
+A single ➡️ authorizes a **substantial, bounded batch** of discovery and preparation, not a single company investigation, cosmetic report, or tiny GitHub commit. Work breadth-first. Prefer dozens of new actionable destinations per expedition when evidence and tool access permit. Use bulk source discovery and deduplication; verify the highest-value claims and mark uncertainty on the rest rather than blocking the batch. Persist the batch and frontier, read back both, and report numeric queue deltas and actual actions separately. Never imply work continues between turns without a configured automation.
+
+### User experience and interface correction
+
+The seven-marble proposal in §9 remains a *possible interaction experiment*, not a gate or primary roadmap. A campaign cockpit should emphasize rapid triage, batch preparation, copy/open actions, deduplicated queues, status accounting, and fast feedback. Do not build UI without authorization. Do not require John to supervise hundreds of tiny model turns. The model should absorb the research, evidence, and GitHub operations itself.
+
+### Approval and ethics
+
+The 100/100/100 directive establishes **goals**, not standing authorization to send messages, request connections, or submit applications to third parties without confirmation. Seek explicit approval for outbound batches; never fabricate experience, use deceptive identities, invent contact addresses, or misrepresent a submission. Where a connected tool can legitimately perform a user-approved action, use it; otherwise prepare direct links and copy-ready materials and track human-confirmed outcomes. Avoid repetitive low-relevance unsolicited messages.
+
+### Immediate next execution
+
+1. Inspect private Home `sieve/FRONTIER.json` and existing records; reuse them without another rankings exercise.
+2. Create or extend real three-queue campaign inventory in private Home, with distinct stable IDs and deduplication; do not make the public world a database.
+3. Prospect broadly enough to create meaningful volume in each queue, recording actual reachable URLs and channels, not mere company names.
+4. Draft a concise common introduction plus a small number of truthful audience variants; keep John's canonical headline untouched.
+5. Record precise counts for discovered, prepared, approved, and executed actions; report bottlenecks plainly.
+6. Preserve the public/private boundary and leave Hermeticon Genesis, Athanor, and runtime untouched unless separately requested.
+
+**North star:** Less time asking whether John qualifies. More real doors opened, more conversations started, and more time available to build worlds.
