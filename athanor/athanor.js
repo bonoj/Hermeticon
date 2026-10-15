@@ -13,7 +13,13 @@ try {
  BUILD=info.sha;
 } catch(error){console.warn('Hermeticon build identity unavailable',error)}
 document.querySelector('#build').textContent=BUILD==='unverified'?'--------':BUILD.slice(0,8);
-document.querySelector('#fresh').onclick=()=>location.reload();
+// Refresh navigates to a new URL, bypassing cached HTML as well as modules.
+// A plain reload can reuse the same cached entry and its old import graph.
+document.querySelector('#fresh').onclick=()=>{
+ const url=new URL(location.href);
+ url.searchParams.set('fresh',Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+ location.replace(url.href);
+};
 
 
 
