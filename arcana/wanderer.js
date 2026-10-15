@@ -2,11 +2,12 @@ import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.modul
 import {createHermeticon} from './hermeticon.js';
 // Movement, supported-path A*, and stable-plane tap picking retained from Wanderer Separated.
 export function createWanderer({terrain}){
- const R=9.65,MAXY=3.6,MINY=-3.6,WANDER_SIZE=1.23,WALK_SPEED=1.8,HANGOUT_R=9.72*.5;
+ const R=9.65,MAXY=3.6,MINY=-3.6,WANDER_SIZE=1.23,WALK_SPEED=3.6,HANGOUT_R=9.72*.5;
  const fieldSample=terrain.sample;
  const group=new T.Group();group.name='wanderer';
  const vessel=createHermeticon();vessel.group.name='Wanderer Hermeticon';vessel.group.scale.setScalar(.06);vessel.group.add(vessel.content);group.add(vessel.group);
- const BODY_RADIUS=10.25*.06, HOVER_CLEARANCE=.12;
+ const BODY_RADIUS=10.25*.06, HOVER_CLEARANCE=1.0;
+ let travelSpeed=0;
  let idleTime=0,hoverCenter=1.15+BODY_RADIUS+HOVER_CLEARANCE;
  const surfacePoints=[[0,0],[1,0],[-1,0],[0,1],[0,-1],[.707,.707],[.707,-.707],[-.707,.707],[-.707,-.707]];
  let wanderX=0,wanderZ=0;
@@ -93,6 +94,7 @@ function walkRoute(tx,tz){
 function moveTo(tx,tz){
  if(!Number.isFinite(tx)||!Number.isFinite(tz)||walkSupport(tx,tz)===null){walker.rejected++;return false}
  walker.route=walkRoute(tx,tz);walker.target=walker.route.shift()??null;
+ travelSpeed=0;
  if(walker.target){walker.accepted++;return true}walker.rejected++;return false;
 }
 
@@ -100,7 +102,27 @@ function moveTo(tx,tz){
  function update(dt){
  idleTime+=Math.max(0,dt);
  if(walker.accepted===0&&!walker.target){const h=walkSupport(walker.x,walker.z);if(h!==null)walker.y=h}
- if(walker.target){const dx=walker.target.x-walker.x,dz=walker.target.z-walker.z,d=Math.hypot(dx,dz);if(d<=.07)walker.target=walker.route.shift()??null;else{const step=Math.min(d,WALK_SPEED*dt),ux=dx/d,uz=dz/d;let blocked=false;for(let travelled=0;travelled<step;){const stride=Math.min(.065,step-travelled),nx=walker.x+ux*stride,nz=walker.z+uz*stride,h=walkSupport(nx,nz);if(h===null){blocked=true;break}walker.x=nx;walker.z=nz;walker.y=h;travelled+=stride}if(blocked){walker.route=[];walker.target=null}}}
+ if(walker.target){
+  const dx=walker.target.x-walker.x,dz=walker.target.z-walker.z,d=Math.hypot(dx,dz);
+  if(d<=.07){walker.target=walker.route.shift()??null;if(!walker.target)travelSpeed=0}
+  else{
+   let remaining=d,px=walker.target.x,pz=walker.target.z;
+   for(const next of walker.route){remaining+=Math.hypot(next.x-px,next.z-pz);px=next.x;pz=next.z}
+   // Accelerate from rest, then brake for the FINAL tap destination,
+   // not at every intermediate A* waypoint.
+   const desiredSpeed=Math.min(WALK_SPEED,Math.sqrt(2*6*Math.max(0,remaining-.07)));
+   const delta=desiredSpeed-travelSpeed,limit=(delta>=0?7:6)*Math.max(0,dt);
+   travelSpeed+=T.MathUtils.clamp(delta,-limit,limit);
+   const step=Math.min(d,travelSpeed*Math.max(0,dt)),ux=dx/d,uz=dz/d;
+   let blocked=false;
+   for(let travelled=0;travelled<step;){
+    const stride=Math.min(.065,step-travelled),nx=walker.x+ux*stride,nz=walker.z+uz*stride,h=walkSupport(nx,nz);
+    if(h===null){blocked=true;break}
+    walker.x=nx;walker.z=nz;walker.y=h;travelled+=stride;
+   }
+   if(blocked){walker.route=[];walker.target=null;travelSpeed=0}
+  }
+ }else travelSpeed=0;
  const screenX=walker.x-wanderX,screenZ=walker.z-wanderZ,rad=Math.hypot(screenX,screenZ);
  if(rad>HANGOUT_R){const factor=(rad-HANGOUT_R)/rad;wanderX=T.MathUtils.clamp(wanderX+screenX*factor,-14,14);wanderZ=T.MathUtils.clamp(wanderZ+screenZ*factor,-14,14);terrain.setOffset(wanderX,wanderZ)}
  // Stationkeeping is bounded and never allowed to sink the shell into terrain.
@@ -112,5 +134,5 @@ function moveTo(tx,tz){
  hoverCenter=desired;
  vessel.group.position.set(walker.x-wanderX,hoverCenter,walker.z-wanderZ);
  }
- return {group,update,moveTo,getWalkingHeight:()=>walker.y,inspect:()=>({x:walker.x,y:walker.y,z:walker.z,centerY:hoverCenter,radius:BODY_RADIUS,hoverClearance:HOVER_CLEARANCE,stationkeeping:'bounded vertical idle',offset:[wanderX,wanderZ],accepted:walker.accepted,rejected:walker.rejected,target:walker.target,route:walker.route.length,support:walkSupport(walker.x,walker.z)})};
+ return {group,update,moveTo,getWalkingHeight:()=>walker.y,inspect:()=>({x:walker.x,y:walker.y,z:walker.z,centerY:hoverCenter,radius:BODY_RADIUS,hoverClearance:HOVER_CLEARANCE,travelSpeed,maxTravelSpeed:WALK_SPEED,stationkeeping:'bounded vertical idle',offset:[wanderX,wanderZ],accepted:walker.accepted,rejected:walker.rejected,target:walker.target,route:walker.route.length,support:walkSupport(walker.x,walker.z)})};
 }
