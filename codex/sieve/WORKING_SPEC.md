@@ -68,3 +68,7 @@ Never fabricate credentials, contacts, job openings, delivery receipts, or appli
 Report **requested vs newly verified vs persisted vs actually sent/submitted**, numerical deltas for all three queues, links to useful representative destinations, and read-back verified commit identifiers. State what remains unsatisfied and why. Avoid lengthy postmortems in place of work.
 
 **North star:** Less time supervising Clara, defending settled identity, or rediscovering old machinery; more genuine doors, real conversations, and time building impossible worlds.
+
+## 9. Long-turn expedition engine
+
+The operational long-turn and checkpoint protocol lives in private [Home Sieve Expedition Engine](https://github.com/bonoj/Home/blob/main/sieve/EXPEDITION_ENGINE.md). **Read and execute it for every ➡️ and substantial campaign request.** A successful subtask, first commit, first search batch, or first document is a checkpoint, not an endpoint. Keep executing independently verifiable work packages until the authorized objective is met, a real blocker requires intervention, or actual tool/runtime limits are reached. Never pretend work continues after the turn. Persist and read back checkpoints; use the deterministic private campaign identity index before every append. No expansion of outbound authorization.
