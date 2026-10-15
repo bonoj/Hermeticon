@@ -404,3 +404,11 @@ The 100/100/100 directive establishes **goals**, not standing authorization to s
 6. Preserve the public/private boundary and leave Hermeticon Genesis, Athanor, and runtime untouched unless separately requested.
 
 **North star:** Less time asking whether John qualifies. More real doors opened, more conversations started, and more time available to build worlds.
+
+## Campaign execution addendum — Hunt XVIII (2026-10-15)
+
+**Operational source of truth:** private `bonoj/Home/sieve/campaign/CAMPAIGN.v1.json`, indexed by `bonoj/Home/sieve/FRONTIER.json`. The private `sieve/README.md` now specifies high-throughput batching, deduplication, state accounting, write verification, and tool failure recovery. The earlier seven-marble roadmap and browser Hunt v0 are prototypes, not limits on campaign throughput.
+
+**Goal:** 100 no-note LinkedIn connections, 100 applications, 100 professional emails **actually sent/submitted**. `➡️` means substantive discovery and persistence; it does not authorize automatic outbound actions. Source-verified URLs are not sent actions. Use broad cross-organization hunts targeting 25–50 new useful records per turn when supported, and prioritize underfilled queues. Preserve official vs general email distinctions, verified vs unverified profiles, and observed vs currently open vacancies. Never fabricate addresses, roles, submission outcomes, or claimed integrations.
+
+**Hunt XVIII dated checkpoint:** 44 named connection prospects, 32 direct public profile URLs, 50 application destinations, 7 published email channels; 0 sent connections, 0 submitted applications, 0 sent emails. Fetch live private campaign before using these counts. LinkedIn Premium and Clay are not dependencies; no direct LinkedIn connection-sending integration is established. No Sieve UI or Hermeticon world modification is authorized by campaign research.
