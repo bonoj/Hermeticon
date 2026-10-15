@@ -10,3 +10,7 @@ Supersedes the earlier continuous inverse-square vacuum implementation after obs
 - Single authoritative BB inventory. Inspect pulse count, affected count, capture count, interior/exterior hits and ownership. No population caps.
 - Preserve accepted terrain, Hybrid, gardens, glass and brass.
 - Source commits do not prove deployed runtime or visual behavior.
+
+## Collision broadphase (2026-10-15)
+
+Passive exterior bouncing and vacuum-tagged capture share a swept axis-aligned bounding-box rejection against the moving cradle. Only candidate crossings compute squared spherical distances; square root is reserved for actual exterior contact normals. This avoids unconditional per-BB distance/hypotenuse work across physics substeps. A vacuum ticket expires when its bead exits the local jurisdiction. Captured beads use inner-glass confinement. The author reported ~41fps before taps with 20,207 loose BBs and ~15.9ms physics; the optimization is committed but **not yet benchmarked**.
