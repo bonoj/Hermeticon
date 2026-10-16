@@ -15,7 +15,7 @@ const nodes=[
 ['phenome','Hypothesis','Phenome','A persistent locus of potential perspective, changed by what it encounters.','❋',H+'PRE_GITHUB_LINEAGE.md'],
 ['moth','Archaeology','Moth & Familiar','Attention, private salience and memory; shared causal history before executable familiar worlds.','☼',C+'PRE_GITHUB_ARCHAEOLOGY.md'],
 ['chemlab','Crossing','Chemlab','The relational graph is authoritative; chemistry gives the projected geometry something independent to answer to.','⚗',L+'chemlab_crossing/account.md'],
-['ozymandias','Crossing','Ozymandias','The intended lamp becomes a spear fisher. Geometry can be coherent and semantically wrong.','♜',L+'ozymandias_crossing/account.md'],
+['ozymandias','Marble 001','Ozymandias','The spear fisher’s observatory: six interactive discoveries, articulated geometry, observation and Rendezvous.','♜','./ozymandias/'],
 ['neptunian','Crossing','Neptunian','Bounded perception, anonymous continuity, and observations without privileged semantic identity.','◍',L+'neptunian_crossing/account.md'],
 ['observer','Instrument','Observer','Raycasts, normals, coverage and refinement turn geometry into evidence the model can inspect.','◎',L+'notes/observer.md'],
 ['graphmind','Crossing','Graph Mind','A deterministic graph encounters contradictions its vocabulary cannot explain.','◇',L+'graph_mind_crossing/account.md'],
