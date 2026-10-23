@@ -34,7 +34,7 @@ Hermeticon is an institution for the study and construction of possible worlds.
 - **[Hermeticon](https://github.com/bonoj/Hermeticon):** Composable environment for constructing, observing, and investigating possible worlds.
 
 ### Xeal — Senior Software Engineer, Android
-*Los Angeles, CA | Oct 2022–2023*
+*Los Angeles, CA | Oct 2022–Jun 2023*
 
 - Architected offline-first software for connected EV charging infrastructure, handling unreliable connectivity and distributed device state.
 - Engineered mobile coordination for firmware updates and charging-station telemetry.
